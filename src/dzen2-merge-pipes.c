@@ -69,7 +69,7 @@ void process_template(const char *template, char **placeholders) {
     fflush(stdout);
 }
 
-void print_last_line_of_file(const char *filename, int index) {
+void update_last_line_of_file(const char *filename, int index) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("fopen");
@@ -91,7 +91,7 @@ void print_last_line_of_file(const char *filename, int index) {
     fclose(file);
 }
 
-void print_last_line_from_fifo(int *fd, int index, const char *filename) {
+void update_last_line_from_fifo(int *fd, int index, const char *filename) {
     char buffer[8 * 1024];
     ssize_t num_bytes;
 
@@ -152,7 +152,7 @@ in a given template with these last lines.\n\n");
     int max_fd = 0;
 
     if (!wd || !fifo_fds || !last_lines || !file_names) {
-        fprintf(stderr, "Memory allocation error\n");
+        perror("Memory allocation error");
         exit(EXIT_FAILURE);
     }
 
@@ -167,7 +167,7 @@ in a given template with these last lines.\n\n");
     for (i = 1; i < argc; i++) {
         file_names[i - 1] = strdup(basename(argv[i]));
         if (!file_names[i - 1]) {
-            fprintf(stderr, "Memory allocation error\n");
+            perror("Memory allocation error");
             exit(EXIT_FAILURE);
         }
 
@@ -226,14 +226,14 @@ in a given template with these last lines.\n\n");
                     DEBUG_PRINT("Event name: %s\n", event->name);
                     if (event->mask & IN_MODIFY) {
                         DEBUG_PRINT("File '%s' was modified\n", event->name);
-                        print_last_line_of_file(event->name, i);
+                        update_last_line_of_file(event->name, i);
                     }
                 } else {
                     DEBUG_PRINT("Event has no associated filename (event->len is 0).\n");
                     for (int j = 1; j < argc; j++) {
                         if (wd[j - 1] == event->wd) {
                             DEBUG_PRINT("File descriptor %d corresponds to file '%s'\n", event->wd, argv[j]);
-                            print_last_line_of_file(argv[j], j-1);
+                            update_last_line_of_file(argv[j], j-1);
                             break;
                         }
                     }
@@ -245,7 +245,7 @@ in a given template with these last lines.\n\n");
         for (i = 0; i < argc - 1; i++) {
             if (fifo_fds[i] != -1 && FD_ISSET(fifo_fds[i], &read_fds)) {
                 DEBUG_PRINT("FIFO '%s' is readable\n", argv[i + 1]);
-                print_last_line_from_fifo(&fifo_fds[i], i, argv[i + 1]);
+                update_last_line_from_fifo(&fifo_fds[i], i, argv[i + 1]);
             }
         }
 
