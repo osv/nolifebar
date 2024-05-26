@@ -13,6 +13,14 @@
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define EVENT_BUF_LEN (1024 * (EVENT_SIZE + 16))
 
+#ifndef MAX_LINE_SIZE
+#define MAX_LINE_SIZE 64 * 1024
+#endif
+
+#ifndef MAX_PLACEHOLDER_SIZE
+#define MAX_PLACEHOLDER_SIZE 256
+#endif
+
 // Enable or disable debug prints
 // #define DEBUG_EVENT 1
 
@@ -41,12 +49,12 @@ void update_last_line(int index, char *new_line) {
 }
 
 void process_template(const char *template, char **placeholders) {
-    char result[4096] = {0};
+    char result[MAX_LINE_SIZE] = {0};
     char *output = result;
     while (*template) {
         if (*template == '{') {
             template++;
-            char key[256];
+            char key[MAX_PLACEHOLDER_SIZE];
             int key_len = 0;
             while (*template && *template != '}') {
                 key[key_len++] = *template++;
@@ -92,7 +100,7 @@ void update_last_line_of_file(const char *filename, int index) {
 }
 
 void update_last_line_from_fifo(int *fd, int index, const char *filename) {
-    char buffer[8 * 1024];
+    char buffer[MAX_LINE_SIZE];
     ssize_t num_bytes;
 
     while ((num_bytes = read(*fd, buffer, sizeof(buffer) - 1)) > 0) {

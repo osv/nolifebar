@@ -60,7 +60,9 @@ else
   dzen2_status="yes"
 fi
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile
+                 bin/Makefile
+                 lib/dzen2-status-bar/Makefile])
 
 # Generate the configuration script.
 AC_OUTPUT

@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     struct timeval last_print_time;
     gettimeofday(&last_print_time, NULL);
 
-    char buffer[1024];
+    char buffer[64 * 1024];
     while (fgets(buffer, sizeof(buffer), stdin)) {
         struct timeval current_time;
         gettimeofday(&current_time, NULL);
