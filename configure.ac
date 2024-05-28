@@ -8,6 +8,11 @@ AC_PROG_CC
 PKG_CHECK_MODULES([X11], [x11])
 PKG_CHECK_MODULES([XFT], [xft])
 
+PKG_CHECK_MODULES([XCB], [xcb])
+PKG_CHECK_MODULES([XCB_EWMH], [xcb-ewmh])
+PKG_CHECK_MODULES([XCB_ICCCM], [xcb-icccm])
+
+
 # merge pipe
 AC_ARG_ENABLE([dzen2-merge-pipes],
   [AS_HELP_STRING([--disable-dzen2-merge-pipes], [Disable compilation of dzen2-merge-pipes program.

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+# Check if the resource file path is provided
+if [ -z "$1" ]; then
+    echo "Usage: $0 path_to_config_file"
+    exit 1
+fi
+
+# Get the absolute path of the resource file
+RESOURCE_FILE=$(realpath "$1")
+
+# Get the directory of the resource file
+RESOURCE_DIR=$(dirname "$RESOURCE_FILE")
+
+# Get the directory of the main script
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
+# Load the resource file
+source "$RESOURCE_FILE"
+
+# Execute each plugin with its options
+for plugin in "${PLUGINS[@]}"; do
+    # Construct the variable name for options
+    options_var_name="${plugin^^}_OPTIONS"
+
+    # Extract the options for the current plugin
+    options=${!options_var_name}
+
+    # Determine the plugin path
+    if [ -f "$RESOURCE_DIR/$plugin" ]; then
+        plugin_path="$RESOURCE_DIR/mod_$plugin"
+    elif [ -f "$SCRIPT_DIR/$plugin" ]; then
+        plugin_path="$SCRIPT_DIR/mod_$plugin"
+    else
+        echo "Plugin mod_$plugin not found in either $RESOURCE_DIR or $SCRIPT_DIR"
+        exit 1
+    fi
+
+    # Execute the plugin with its options
+    "$plugin_path" "$options"
+done
