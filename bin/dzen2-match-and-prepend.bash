@@ -5,6 +5,8 @@ print_help() {
     echo
     echo "COMMANDS should be in the format MATCHTEXT=DELAY:PREFIX[,DELAY:PREFIX]..."
     echo "For example:"
+    echo "  echo HELLO | ./bin/dzen2-match-and-prepend.bash \"HELLO=0.2:^bg(red)^fg(black), 0.2:^bg(black)^fg(red), 0.2:^bg(red)^fg(black),0.2:^bg(black)^fg(red)\" | dzen2 -p"
+    echo
     echo "  echo HELLO | $0 \"HELLO=0.3:foo, 0.5:bar, 0.3:baz\" \"WORLD=0.2:one, 0.2:two\""
     echo
     echo "This script reads lines from stdin. If a line matches MATCHTEXT,"
