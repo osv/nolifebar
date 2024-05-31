@@ -20,11 +20,11 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-# Parse commands from arguments
+# Parse commands from arguments into an associative array
 declare -A commands
 for arg in "$@"; do
-    match_text=$(echo "$arg" | cut -d'=' -f1)
-    pairs=$(echo "$arg" | cut -d'=' -f2)
+    match_text="${arg%%=*}"
+    pairs="${arg#*=}"
     commands["$match_text"]="$pairs"
 done
 
@@ -36,8 +36,8 @@ process_input() {
     if [[ -n "$pairs" ]]; then
         IFS=',' read -ra pair_array <<< "$pairs"
         for pair in "${pair_array[@]}"; do
-            delay=$(echo "$pair" | cut -d':' -f1 | tr -d ' ')
-            prefix=$(echo "$pair" | cut -d':' -f2)
+            delay="${pair%%:*}"
+            prefix="${pair#*:}"
             echo "${prefix}${line}"
             sleep "$delay"
         done
