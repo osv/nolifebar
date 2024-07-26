@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+echo "Executing Time Plugin"
+
+: "${PLUGIN_CORE_DIR:=$(dirname $0)}"
+source "$PLUGIN_CORE_DIR/functions"
+
+# check_dependencies ffmpeg xxx ssss convert xwininfo xinput dzen2
+
+while true; do
+    read_sleep 0.5
+    printf '%(%Y-%m-%d %H:%M %S)T\n' -1 > "$FIFO_FILE"
+    read_sleep 0.5
+    printf '%(%Y-%m-%d %H:%M:%S)T\n' -1 > "$FIFO_FILE"
+done

@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+
+set -e
+
+echo "Executing Memory Plugin"
+
+: "${PLUGIN_CORE_DIR:=$(dirname $0)}"
+source "$PLUGIN_CORE_DIR/functions"
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+
+interval="${MOD_MEM_INTERVAL:-2}"
+
+default_format() {
+    local used_percentage="$1"
+    local mem_total="$2"
+    local mem_used="$3"
+    local mem_free="$4"
+    local mem_available="$5"
+    local mem_buffers="$6"
+    local mem_cached="$7"
+    local mem_shared="$8"
+    local mem_sreclaimable="$9"
+    local mem_swap_total="${10}"
+    local mem_used_swap="${11}"
+    local mem_swap_cache="${12}"
+
+    printf "%d%%\n" "$used_percentage"
+}
+
+if declare -f MOD_MEM_fn_format > /dev/null; then
+    format_function=MOD_MEM_fn_format
+else
+    format_function=default_format
+fi
+
+print_memory_info() {
+    while true; do
+        local mem_total=0
+        local mem_free=0
+        local mem_available=0
+        local mem_buffers=0
+        local mem_cached=0
+        local mem_shared=0
+        local mem_sreclaimable=0
+        local mem_swap_total=0
+        local mem_swap_cache=0
+        local mem_swap_free=0
+
+        while IFS= read -r line; do
+            if [[ "$line" == MemTotal:* ]]; then
+                mem_total=${line#MemTotal: }
+                mem_total=${mem_total% kB}
+            elif [[ "$line" == MemFree:* ]]; then
+                mem_free=${line#MemFree: }
+                mem_free=${mem_free% kB}
+            elif [[ "$line" == MemAvailable:* ]]; then
+                mem_available=${line#MemAvailable: }
+                mem_available=${mem_available% kB}
+            elif [[ "$line" == Buffers:* ]]; then
+                mem_buffers=${line#Buffers: }
+                mem_buffers=${mem_buffers% kB}
+            elif [[ "$line" == Cached:* ]]; then
+                mem_cached=${line#Cached: }
+                mem_cached=${mem_cached% kB}
+            elif [[ "$line" == Shmem:* ]]; then
+                mem_shared=${line#Shmem: }
+                mem_shared=${mem_shared% kB}
+            elif [[ "$line" == SReclaimable:* ]]; then
+                mem_sreclaimable=${line#SReclaimable: }
+                mem_sreclaimable=${mem_sreclaimable% kB}
+            elif [[ "$line" == SwapTotal:* ]]; then
+                mem_swap_total=${line#SwapTotal: }
+                mem_swap_total=${mem_swap_total% kB}
+            elif [[ "$line" == SwapCached:* ]]; then
+                mem_swap_cache=${line#SwapCached: }
+                mem_swap_cache=${mem_swap_cache% kB}
+            elif [[ "$line" == SwapFree:* ]]; then
+                mem_swap_free=${line#SwapFree: }
+                mem_swap_free=${mem_swap_free% kB}
+            fi
+        done < /proc/meminfo
+
+        # See https://github.com/htop-dev/htop/blob/main/linux/LinuxMachine.c#L209
+
+        # Adjust mem_cached and calculate mem_used
+        mem_cached=$((mem_cached + mem_sreclaimable - mem_shared))
+        local used_diff=$((mem_free + mem_cached + mem_sreclaimable + mem_buffers))
+        local mem_used=$((mem_total >= used_diff ? mem_total - used_diff : mem_total - mem_free))
+
+        mem_available=$((mem_available != 0 ? mem_available : mem_free))
+        local mem_used_swap=$((mem_swap_total - mem_swap_free - mem_swap_cache))
+
+        local used_percentage=$((mem_used * 100 / mem_total))
+
+        "$format_function" \
+            "$used_percentage" \
+            "${mem_total}" \
+            "${mem_used}" \
+            "${mem_free}" \
+            "${mem_available}" \
+            "${mem_buffers}" \
+            "${mem_cached}" \
+            "${mem_shared}" \
+            "${mem_sreclaimable}" \
+            "${mem_swap_total}" \
+            "${mem_used_swap}" \
+            "${mem_swap_cache}"
+
+        read_sleep "$interval"
+    done
+}
+
+print_memory_info > "$FIFO_FILE"

@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+
+# Default number of values to remember
+DEFAULT_NUM=8
+NUM_VALUES=$DEFAULT_NUM
+
+# Default colors
+COLORS=("\033[31m" "\033[33m" "\033[32m") # Red, Yellow, Green
+
+# Function to display usage
+usage() {
+  echo "Usage: $0 [-num N] [-colors c1,c2,c3,...]"
+  echo "  -num N            Set the number of values to remember (default: $DEFAULT_NUM)"
+  echo "  -colors c1,c2,... Set the colors for different levels using ANSI color codes (default: red, yellow, green)"
+  exit 1
+}
+
+# Parse command line arguments
+while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do
+  case $1 in
+    -num )
+      shift
+      if [[ "$1" =~ ^[0-9]+$ ]]; then
+        NUM_VALUES=$1
+      else
+        echo "Error: -num requires a numerical argument."
+        usage
+      fi
+      ;;
+    -colors )
+      shift
+      IFS=',' read -r -a COLORS <<< "$1"
+      ;;
+    * )
+      echo "Error: Unknown option $1"
+      usage
+      ;;
+  esac
+  shift
+done
+if [[ "$1" == '--' ]]; then shift; fi
+
+# Initialize the values array with zeros
+values=()
+for ((i = 0; i < NUM_VALUES; i++)); do
+  values+=(0)
+done
+
+# Function to draw histogram
+draw_histogram() {
+  local max=${values[0]}
+
+  # Find the maximum value
+  for val in "${values[@]}"; do
+    if (( val > max )); then
+      max=$val
+    fi
+  done
+
+  local num_colors=${#COLORS[@]}
+
+  # Print the histogram
+  for val in "${values[@]}"; do
+    if (( max > 0 )); then
+      level=$(( 7 * val / max ))
+    else
+      level=0
+    fi
+
+    # Determine color
+    if (( num_colors > 0 )); then
+      color_index=$(( num_colors * val / (max + 1) ))
+      if (( color_index >= num_colors )); then
+        color_index=$(( num_colors - 1 ))
+      fi
+      color=${COLORS[$color_index]}
+    else
+      color="\033[0m"
+    fi
+
+    case $level in
+      0) echo -en "${color}▁" ;;
+      1) echo -en "${color}▂" ;;
+      2) echo -en "${color}▃" ;;
+      3) echo -en "${color}▄" ;;
+      4) echo -en "${color}▅" ;;
+      5) echo -en "${color}▆" ;;
+      6) echo -en "${color}▇" ;;
+      7) echo -en "${color}█" ;;
+      *) echo -en "${color} " ;;
+    esac
+  done
+  echo -e "\033[0m"  # Reset color
+}
+
+# Read numbers from stdin
+while read -r num; do
+  # Append the new number and shift the list if necessary
+  values+=("$num")
+  if (( ${#values[@]} > NUM_VALUES )); then
+    values=("${values[@]:1}")
+  fi
+
+  # Draw the histogram
+  draw_histogram
+done

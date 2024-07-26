@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+
+check_dependencies() {
+    local missing_dependencies=()
+
+    # Check for each dependency
+    for dep in "$@"; do
+        if ! type "$dep" &>/dev/null; then
+            missing_dependencies+=("$dep")
+        fi
+    done
+
+    # If there are missing dependencies, print them and exit
+    if [ ${#missing_dependencies[@]} -ne 0 ]; then
+        echo >&2 "Missing dependencies: ${missing_dependencies[@]}"
+        exit 1
+    fi
+}
+
+read_sleep() {
+    # Usage: read_sleep 1
+    #        read_sleep 0.2
+    read -rt "$1" <> <(:) || :
+}
+
+build_sed_replace_command() {
+    local sed_command=""
+    for key in "${!REPLACE_MAP[@]}"; do
+        value="${REPLACE_MAP[$key]}"
+        sed_command+="s/$key/$value/g;"
+    done
+    echo "$sed_command"
+}
+
+#######################################################
+# Dzen2 utils
+#######################################################
+
+dzen2_draw_stacked_bar() {
+    # Default values
+    local width=100
+    local height=4
+    local max_value=100
+    local values=()
+    local fg_colors=(40 20 5)
+    local padding=1
+    local bg="#CCCCCC"
+    local draw_outline=""
+
+    # Parse named arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -width)
+                width="$2"
+                shift 2
+                ;;
+            -height)
+                height="$2"
+                shift 2
+                ;;
+            -max_value)
+                max_value="$2"
+                shift 2
+                ;;
+            -values)
+                IFS=',' read -r -a values <<< "$2"
+                shift 2
+                ;;
+            -fg_colors)
+                IFS=',' read -r -a fg_colors <<< "$2"
+                shift 2
+                ;;
+            -padding)
+                padding="$2"
+                shift 2
+                ;;
+            -bg)
+                bg="$2"
+                shift 2
+                ;;
+            -draw_outline)
+                draw_outline="yes"
+                shift 1
+                ;;
+            *)
+                echo "Unknown option: $1" 1>&2
+                return 1
+                ;;
+        esac
+    done
+
+    local num_values=${#values[@]}
+    local total_padding=$((padding * (num_values-1)))
+    local available_width=$((width - total_padding))
+
+    local progress_bar="^ib(1)"
+
+    local rendered_width=total_padding
+    if [[ -n "$draw_outline" ]]; then
+        available_width=$((available_width - 1))
+        progress_bar="${progress_bar}^p(1,0)" # 1px left padding
+    else
+        progress_bar="${progress_bar}^fg($bg)^r(${width}x${height})^p(-${width},0)"
+    fi
+
+    for ((i = 0; i < num_values; i++)); do
+        local value=${values[i]}
+        local fg_color=${fg_colors[i]}
+
+        if ((value > 0)); then
+            local bar_width=$((value * available_width / max_value))
+
+            progress_bar="${progress_bar}^fg(${fg_color})^r(${bar_width}x${height}})^p(${padding},0)"
+            rendered_width=$((rendered_width + bar_width))
+        fi
+    done
+
+    if [[ -n "$draw_outline" ]]; then
+        rendered_width=$((rendered_width + 2))
+        # set X pos back of rendered width and render outline rect on top
+        progress_bar="${progress_bar}^p(-${rendered_width},0)^fg($bg)^ro(${width}x${height})"
+    else
+        offset=$((available_width - rendered_width + 1))
+        if ((offset > 0)); then
+            progress_bar="${progress_bar}^fg($bg)^p($((offset > 0 ? offset : 0))x8)"
+        fi
+    fi
+
+    printf "%s\n" "${progress_bar}^ib()"
+}

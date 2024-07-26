@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+echo "Executing Network Plugin"
+
+: "${PLUGIN_CORE_DIR:=$(dirname $0)}"
+source "$PLUGIN_CORE_DIR/functions"
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+
+# Use environment variable INTERVAL with a default of 1 if not set
+interval="${MOD_NETWORK_INTERVAL:-1}"
+interface="${MOD_NETWORK_INTERFACE:-[ew]*}"
+echo "Interface: $interface"
+
+default_format() {
+    printf "Received: %dKB, Transmitted: %dKB\n" "$1" "$2"
+}
+
+if declare -f MOD_NETWORK_fn_format > /dev/null; then
+    format_function=MOD_NETWORK_fn_format
+else
+    format_function=default_format
+fi
+
+# Function to get network data in KB
+get_network_data() {
+    local interfaces=("/sys/class/net/$interface/statistics")
+    local rx_bytes=0
+    local tx_bytes=0
+
+    for interface in "${interfaces[@]}"; do
+        for rx_file in $interface/rx_bytes; do
+            if [ -f "$rx_file" ]; then
+                read -r value < "$rx_file"
+                rx_bytes=$((rx_bytes + value))
+            fi
+        done
+        for tx_file in $interface/tx_bytes; do
+            if [ -f "$tx_file" ]; then
+                read -r value < "$tx_file"
+                tx_bytes=$((tx_bytes + value))
+            fi
+        done
+    done
+
+    # Convert bytes to kilobytes
+    rx_kb=$((rx_bytes / 1024))
+    tx_kb=$((tx_bytes / 1024))
+
+    printf "%d %d" "$rx_kb" "$tx_kb"
+}
+
+# Initial data
+read -r initial_rx initial_tx < <(get_network_data)
+
+while true; do
+    read -r current_rx current_tx < <(get_network_data)
+
+    rx_diff=$(((current_rx - initial_rx) / interval))
+    tx_diff=$(((current_tx - initial_tx) / interval))
+
+    initial_rx=$current_rx
+    initial_tx=$current_tx
+
+    "$format_function" "$rx_diff" "$tx_diff" > "$FIFO_FILE"
+    read_sleep "$interval"
+done
