@@ -20,13 +20,40 @@ if is_array MOD_CPU_BARS_TOTAL_PARAMS; then
     additional_total_params=("${MOD_CPU_BARS_TOTAL_PARAMS[@]}")
 fi
 
+show_total_only=0
 default_format() {
     local total_stats_dzen="$1"
     local cores_stats_dzen="$2"
     local total_cpu_perc="$3"
+    local total_nice_perc="$4"
+    local total_user_perc="$5"
+    local total_system_perc="$6"
+    local total_virt_perc="$7"
 
-    printf "CPU %s%% %s^p(3)%s\n" "$total_cpu_perc" "$total_stats_dzen" "$cores_stats_dzen"
+    local txt=""
+    if ((show_total_only)); then
+        colors=$(extract_param_value "-fg_colors" "${additional_total_params[@]}")
+        if [ -z "$colors" ]; then
+            colors=("${DEFAULT_STACK_COLORS[@]}")
+        else
+            IFS=',' read -r -a colors <<< "$colors"
+        fi
+        txt=$(printf "CPU: ^fg(${colors[0]})Low %d%%^fg(${colors[1]})  Normal %d%%^fg(${colors[2]})  System %d%%^fg(${colors[3]})  Guest %d%%\n" \
+            "$total_nice_perc" "$total_user_perc" "$total_system_perc" "$total_virt_perc")
+    else
+        txt=$(printf "CPU %s%% %s^p(3)%s\n" "$total_cpu_perc" "$total_stats_dzen" "$cores_stats_dzen")
+    fi
+    # 1 - left click toggle show total cpu only
+    printf "^ca(1, kill -SIGUSR1 $$)%s^ca()\n" "$txt"
 }
+
+handle_signal() {
+  echo "Signal received: show_total_only=${show_total_only}"
+  show_total_only=$((show_total_only ? 0 : 1))
+  update
+}
+
+trap 'handle_signal' SIGUSR1
 
 if declare -f MOD_CPU_BARS_fn_format > /dev/null; then
     format_function=MOD_CPU_BARS_fn_format
@@ -52,6 +79,11 @@ calculate_and_print_usage() {
     local result_cores=""
     local result_total=""
     local total_cpu_perc=0
+    local total_nice_perc=0
+    local total_user_perc=0
+    local total_system_perc=0
+    local total_virt_perc=0
+
     for i in "${!previousStats[@]}"; do
         local previousStat_elemant_array=(${previousStats[i]})
         local currentStat_elemant_array=(${currentStats[i]})
@@ -64,9 +96,9 @@ calculate_and_print_usage() {
         local prev_iowait="${previousStat_elemant_array[5]}"
         local prev_irq="${previousStat_elemant_array[6]}"
         local prev_softirq="${previousStat_elemant_array[7]}"
-        local prev_steal="${previousStat_elemant_array[8]}"
-        local prev_guest="${previousStat_elemant_array[9]}"
-        local prev_guest_nice="${previousStat_elemant_array[10]}"
+        local prev_steal="${previousStat_elemant_array[8]:-0}" # Might be optional for some kernel
+        local prev_guest="${previousStat_elemant_array[9]:-0}"
+        local prev_guest_nice="${previousStat_elemant_array[10]:-0}"
 
         local cur_user="${currentStat_elemant_array[1]}"
         local cur_nice="${currentStat_elemant_array[2]}"
@@ -75,9 +107,9 @@ calculate_and_print_usage() {
         local cur_iowait="${currentStat_elemant_array[5]}"
         local cur_irq="${currentStat_elemant_array[6]}"
         local cur_softirq="${currentStat_elemant_array[7]}"
-        local cur_steal="${currentStat_elemant_array[8]}"
-        local cur_guest="${currentStat_elemant_array[9]}"
-        local cur_guest_nice="${currentStat_elemant_array[10]}"
+        local cur_steal="${currentStat_elemant_array[8]:-0}"
+        local cur_guest="${currentStat_elemant_array[9]:-0}"
+        local cur_guest_nice="${currentStat_elemant_array[10]:-0}"
 
         local user_delta=$((cur_user - prev_user))
         local nice_delta=$((cur_nice - prev_nice))
@@ -112,6 +144,10 @@ calculate_and_print_usage() {
         if [[ "$cpu_identifier" == "cpu" ]]; then
             result_total="${stats}"
             total_cpu_perc=$(((nice_usage + user_usage + system_usage + virt_usage) / 10))
+            total_nice_perc=$((nice_usage / 10))
+            total_user_perc=$((user_usage / 10))
+            total_system_perc=$((system_usage / 10))
+            total_virt_perc=$((virt_usage / 10))
         else
             if [ -z "${result_cores}" ]; then
                 result_cores="${stats}"
@@ -143,7 +179,15 @@ calculate_and_print_usage() {
     "$format_function" \
         "$total_stats_dzen" \
         "$cores_stats_dzen" \
-        "$total_cpu_perc"
+        "$total_cpu_perc" \
+        "$total_nice_perc" \
+        "$total_user_perc" \
+        "$total_system_perc" \
+        "$total_virt_perc"
+}
+
+update() {
+    calculate_and_print_usage > "$FIFO_FILE"
 }
 
 while true; do
@@ -152,5 +196,5 @@ while true; do
     read_sleep "$interval"
     declare -a currentStats
     get_cpu_stats currentStats
-    calculate_and_print_usage > "$FIFO_FILE"
+    update
 done

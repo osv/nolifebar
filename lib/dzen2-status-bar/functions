@@ -39,6 +39,26 @@ is_array() {
     [[ $var_decl =~ "declare -a" ]]
 }
 
+# Function to extract the value of a given parameter
+extract_param_value() {
+    local param_name="$1"
+    shift
+    local params=("$@")
+    local param_value=""
+
+    for (( i=0; i<${#params[@]}; i++ )); do
+        if [[ "${params[i]}" == "$param_name" ]]; then
+            # Assuming the next item is the value
+            param_value="${params[i+1]}"
+            break
+        fi
+    done
+
+    echo "$param_value"
+}
+
+DEFAULT_STACK_COLORS=("#ff8b92" "#c3e88d" "#e1acff" "#ffe585")
+
 #######################################################
 # Dzen2 utils
 #######################################################
@@ -49,7 +69,7 @@ dzen2_draw_stacked_bar() {
     local height=4
     local max_value=100
     local values=()
-    local fg_colors=("#ff8b92" "#c3e88d" "#e1acff" "#ffe585")
+    local fg_colors=("${DEFAULT_STACK_COLORS[@]}")
     local padding=1
     local bg="#CCCCCC"
     local draw_outline=""
