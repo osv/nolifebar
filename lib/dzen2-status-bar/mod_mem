@@ -23,6 +23,7 @@ default_format() {
     local mem_swap_total="${10}"
     local mem_used_swap="${11}"
     local mem_swap_cache="${12}"
+    local zfs_arc_size="${13}"
 
     printf "%d%%\n" "$used_percentage"
 }
@@ -80,6 +81,16 @@ print_memory_info() {
             fi
         done < /proc/meminfo
 
+        local zfs_arc_size=0
+        if [[ -e "/proc/spl/kstat/zfs/arcstats" ]]; then
+            while read -r key type value; do
+                if [ "$key" = "size" ]; then
+                    zfs_arc_size=$((value / 1024))
+                    break
+                fi
+            done < /proc/spl/kstat/zfs/arcstats
+        fi
+
         # See https://github.com/htop-dev/htop/blob/main/linux/LinuxMachine.c#L209
 
         # Adjust mem_cached and calculate mem_used
@@ -104,7 +115,8 @@ print_memory_info() {
             "${mem_sreclaimable}" \
             "${mem_swap_total}" \
             "${mem_used_swap}" \
-            "${mem_swap_cache}"
+            "${mem_swap_cache}" \
+            "${zfs_arc_size}"
 
         read_sleep "$interval"
     done

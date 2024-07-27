@@ -32,6 +32,13 @@ build_sed_replace_command() {
     echo "$sed_command"
 }
 
+is_array() {
+    local var_name=$1
+    local var_decl
+    var_decl=$(eval "declare -p $var_name" 2>/dev/null)
+    [[ $var_decl =~ "declare -a" ]]
+}
+
 #######################################################
 # Dzen2 utils
 #######################################################
@@ -42,7 +49,7 @@ dzen2_draw_stacked_bar() {
     local height=4
     local max_value=100
     local values=()
-    local fg_colors=(40 20 5)
+    local fg_colors=("#ff8b92" "#c3e88d" "#e1acff" "#ffe585")
     local padding=1
     local bg="#CCCCCC"
     local draw_outline=""
@@ -83,48 +90,162 @@ dzen2_draw_stacked_bar() {
                 shift 1
                 ;;
             *)
-                echo "Unknown option: $1" 1>&2
+                echo "dzen2_draw_stacked_bar(): Unknown option: $1" 1>&2
                 return 1
                 ;;
         esac
     done
 
     local num_values=${#values[@]}
-    local total_padding=$((padding * (num_values-1)))
+    local total_padding=$((padding * (num_values - 1)))
     local available_width=$((width - total_padding))
 
-    local progress_bar="^ib(1)"
+    local output="^ib(1)"
 
-    local rendered_width=total_padding
+    local rendered_width=0
     if [[ -n "$draw_outline" ]]; then
         available_width=$((available_width - 1))
-        progress_bar="${progress_bar}^p(1,0)" # 1px left padding
+        rendered_width=$((rendered_width + 1))
+        output="${output}^p(1,0)" # 1px left padding
     else
-        progress_bar="${progress_bar}^fg($bg)^r(${width}x${height})^p(-${width},0)"
+        output="${output}^fg($bg)^r(${width}x${height})^p(-${width},0)"
     fi
 
     for ((i = 0; i < num_values; i++)); do
         local value=${values[i]}
         local fg_color=${fg_colors[i]}
+        local bar_width=$((value * available_width / max_value))
 
-        if ((value > 0)); then
-            local bar_width=$((value * available_width / max_value))
-
-            progress_bar="${progress_bar}^fg(${fg_color})^r(${bar_width}x${height}})^p(${padding},0)"
-            rendered_width=$((rendered_width + bar_width))
+        if ((bar_width > 0)); then
+            output="${output}^fg(${fg_color})^r(${bar_width}x${height}})^p(${padding},0)"
+            rendered_width=$((rendered_width + bar_width + padding))
         fi
     done
 
     if [[ -n "$draw_outline" ]]; then
-        rendered_width=$((rendered_width + 2))
+        rendered_width=$((rendered_width))
         # set X pos back of rendered width and render outline rect on top
-        progress_bar="${progress_bar}^p(-${rendered_width},0)^fg($bg)^ro(${width}x${height})"
+        output="${output}^p(-${rendered_width},0)^fg($bg)^ro(${width}x${height})"
     else
         offset=$((available_width - rendered_width + 1))
         if ((offset > 0)); then
-            progress_bar="${progress_bar}^fg($bg)^p($((offset > 0 ? offset : 0))x8)"
+            output="${output}^fg($bg)^p($((offset > 0 ? offset : 0))x8)"
         fi
     fi
 
-    printf "%s\n" "${progress_bar}^ib()"
+    printf "%s\n" "${output}^ib()"
+}
+
+
+dzen2_draw_h_stacked_bars() {
+    # Default values
+    local bar_width=4
+    local height=22
+    local bottom_margin=1
+    local max_value=100
+    local stacks=1
+    local values=()
+    local fg_colors=("#ff8b92" "#c3e88d" "#e1acff" "#ffe585")
+    local bar_padding=1
+    local stack_padding=1
+    local bg="#333"
+    local border_fg="#777"
+
+    # Parse named arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -bar_width)
+                bar_width="$2"
+                shift 2
+                ;;
+            -height)
+                height="$2"
+                shift 2
+                ;;
+            -bottom_margin)
+                bottom_margin="$2"
+                shift 2
+                ;;
+            -max_value)
+                max_value="$2"
+                shift 2
+                ;;
+            -stacks)
+                stacks="$2"
+                shift 2
+                ;;
+            -values)
+                IFS=',' read -r -a values <<< "$2"
+                shift 2
+                ;;
+            -fg_colors)
+                IFS=',' read -r -a fg_colors <<< "$2"
+                shift 2
+                ;;
+            -bar_padding)
+                bar_padding="$2"
+                shift 2
+                ;;
+            -stack_padding)
+                stack_padding="$2"
+                shift 2
+                ;;
+            -bg)
+                bg="$2"
+                shift 2
+                ;;
+            -border_fg)
+                border_fg="$2"
+                shift 2
+                ;;
+            *)
+                echo "dzen2_draw_h_stacked_bars(): Unknown option: $1" 1>&2
+                return 1
+                ;;
+        esac
+    done
+
+    local num_values=${#values[@]}
+    local num_bars=$((num_values / stacks))
+    local total_h_padding=$((bar_padding * (num_bars - 1)))
+
+    local widget_width=$((num_bars * bar_width + total_h_padding + 2)) # 2 - borders
+    local output="^p(_BOTTOM)^p(-3)^ib(1)^fg(${bg})^r(${widget_width}x${height}+0-$((height + bottom_margin)))" # bg rect
+    output="${output}^fg(${border_fg})^ro(${widget_width}x${height}-${widget_width}+0)^p(-${widget_width})" # border
+
+    # Iterate values. Step is count of stacks per bar
+    for ((i = 0; i < num_values; i+=stacks)); do
+        local non_zero_stacks=0
+        for ((s = 0; s < stacks; s++)); do
+            local total_v_padding=$((stack_padding * (stacks - 1)))
+            local value=${values[$((i + s))]}
+            local available_height=$((height - 2 - total_v_padding))
+            local stack_height=$((value * available_height / max_value))
+            if ((stack_height > 0)); then
+                non_zero_stacks=$((non_zero_stacks + 1))
+            fi
+        done
+        local total_v_padding=$((stack_padding * ((non_zero_stacks > 0 ? non_zero_stacks : 1) - 1)))
+
+        for ((s = 0; s < stacks; s++)); do
+            local value=${values[$((i + s))]}
+            local fg_color=${fg_colors[s]} # bar color
+            local available_height=$((height - 2 - total_v_padding))
+            local stack_height=$((value * available_height / max_value))
+
+            if ((s == 0)); then
+                # For first bar, use 1px (border)
+                local x_offset=$((i == 0 ? 1 : bar_padding))
+                local y_offset=$((stack_height + bottom_margin + 1))
+                output="${output}^p(_BOTTOM)^p(-3)^fg(${fg_color})^r(${bar_width}x${stack_height}+${x_offset}-${y_offset})"
+            else
+                output="${output}^fg(${fg_color})^r(${bar_width}x${stack_height}-${bar_width}-$((stack_height + stack_padding )))"
+            fi
+
+            if ((stack_height == 0)); then
+                output="${output}^p(0;+${stack_padding})"
+            fi
+        done
+    done
+    printf "%s\n" "${output}^ib()^p()"
 }
