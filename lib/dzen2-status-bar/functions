@@ -25,10 +25,11 @@ read_sleep() {
 
 build_sed_replace_command() {
     local sed_command=""
-    for key in "${!REPLACE_MAP[@]}"; do
-        value="${REPLACE_MAP[$key]}"
+    for key in "${!CFG_REPLACE_MAP[@]}"; do
+        local value="${CFG_REPLACE_MAP[$key]}"
         sed_command+="s/$key/$value/g;"
     done
+
     echo "$sed_command"
 }
 
@@ -160,7 +161,7 @@ dzen2_draw_stacked_bar() {
 dzen2_draw_h_stacked_bars() {
     # Default values
     local bar_width=4
-    local height=22
+    local height=$((CFG_HEIGHT - 2))
     local bottom_margin=1
     local max_value=100
     local stacks=1
@@ -267,5 +268,5 @@ dzen2_draw_h_stacked_bars() {
             fi
         done
     done
-    printf "%s\n" "${output}^ib()^p()"
+    printf "%s\n" "${output}^ib()^p()^p(1)"
 }

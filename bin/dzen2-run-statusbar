@@ -20,9 +20,9 @@ template_fifo="$TMP_DIR/template.fifo"
 RESOURCE_DIR=$(dirname "$RESOURCE_FILE")
 
 # Get the directory of the main script
-PLUGIN_CORE_DIR=$(realpath $(dirname "$(realpath "$0")")/../lib/dzen2-status-bar)
-export PLUGIN_CORE_DIR
-source "$PLUGIN_CORE_DIR/functions"
+MODULE_CORE_DIR=$(realpath $(dirname "$(realpath "$0")")/../lib/dzen2-status-bar)
+export MODULE_CORE_DIR
+source "$MODULE_CORE_DIR/functions"
 
 # Load the resource file
 source "$RESOURCE_FILE"
@@ -84,34 +84,34 @@ cleanup_on_exit() {
     rm "$template_fifo"
 }
 
-load_plugin() {
-    local plugin="$1"
-    local plugin_file="mod_${plugin}"
+load_module() {
+    local module="$1"
+    local module_file="mod_${module}"
 
-    # Determine the plugin path
-    if [ -f "$RESOURCE_DIR/$plugin_file" ]; then
-        plugin_path="$RESOURCE_DIR/$plugin_file"
-    elif [ -f "$PLUGIN_CORE_DIR/$plugin_file" ]; then
-        plugin_path="$PLUGIN_CORE_DIR/$plugin_file"
+    # Determine the module path
+    if [ -f "$RESOURCE_DIR/$module_file" ]; then
+        module_path="$RESOURCE_DIR/$module_file"
+    elif [ -f "$MODULE_CORE_DIR/$module_file" ]; then
+        module_path="$MODULE_CORE_DIR/$module_file"
     else
-        echo "Plugin $plugin_file not found in either $RESOURCE_DIR or $PLUGIN_CORE_DIR"
+        echo "Module $module_file not found in either $RESOURCE_DIR or $MODULE_CORE_DIR"
         exit 1
     fi
 
-    local plugin_color
-    get_color "$plugin" plugin_color
+    local module_color
+    get_color "$module" module_color
 
-    local FIFO_FILE="${TMP_DIR}/out_${plugin}"
+    local FIFO_FILE="${TMP_DIR}/out_${module}"
     mkfifo "$FIFO_FILE"
     fifo_files+=("$FIFO_FILE")
     export FIFO_FILE
-    run_with_output_prefix "$plugin_color" "mod_$plugin" "$plugin_path" "" &
+    run_with_output_prefix "$module_color" "mod_$module" "$module_path" "" &
 }
 
-load_plugins() {
-    local plugins=("$@")
-    for plugin in "${plugins[@]}"; do
-        load_plugin "$plugin"
+load_modules() {
+    local modules=("$@")
+    for module in "${modules[@]}"; do
+        load_module "$module"
     done
 }
 
@@ -138,10 +138,11 @@ process_dzen2_output() {
 run_and_wait_for_dzen2() {
     echo "$template_fifo $(IFS=' '; echo "${fifo_files[*]}")"
     mkfifo "$template_fifo"
+
     ./bin/dzen2-merge-pipes "$template_fifo" $(IFS=' '; echo "${fifo_files[*]}") |\
         sed --unbuffered "$SED_COMMAND" |\
         debug_pipe |\
-        dzen2 |\
+        $CFG_STATUS_BAR_CMD |\
         process_dzen2_output &
     pid=$!
 
@@ -152,6 +153,6 @@ run_and_wait_for_dzen2() {
 
 trap cleanup_on_exit EXIT
 
-load_plugins "${PLUGINS[@]}"
+load_modules "${CFG_MODULES[@]}"
 SED_COMMAND=$(build_sed_replace_command)
 run_and_wait_for_dzen2

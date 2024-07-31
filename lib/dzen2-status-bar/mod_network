@@ -2,8 +2,8 @@
 
 echo "Executing Network Plugin"
 
-: "${PLUGIN_CORE_DIR:=$(dirname $0)}"
-source "$PLUGIN_CORE_DIR/functions"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+source "$MODULE_CORE_DIR/functions"
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 
 # Use environment variable INTERVAL with a default of 1 if not set

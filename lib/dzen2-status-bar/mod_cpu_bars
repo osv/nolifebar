@@ -4,8 +4,8 @@ set -e
 
 echo "Executing CPU Bars Plugin"
 
-: "${PLUGIN_CORE_DIR:=$(dirname $0)}"
-source "$PLUGIN_CORE_DIR/functions"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+source "$MODULE_CORE_DIR/functions"
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 
 interval="${MOD_CPU_BARS_INTERVAL:-1}"
@@ -161,7 +161,6 @@ calculate_and_print_usage() {
 
     total_stats_dzen=$(dzen2_draw_h_stacked_bars \
         -bar_width 5 \
-        -height 22 \
         "${additional_total_params[@]}" \
         -max_value 1000 \
         -stacks 4 \
@@ -170,7 +169,6 @@ calculate_and_print_usage() {
     local cores_stats_dzen=""
     cores_stats_dzen=$(dzen2_draw_h_stacked_bars \
         -bar_width 3 \
-        -height 22 \
         "${additional_core_params[@]}" \
         -max_value 1000 \
         -stacks 4 \

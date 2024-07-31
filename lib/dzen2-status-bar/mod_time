@@ -2,8 +2,8 @@
 
 echo "Executing Time Plugin"
 
-: "${PLUGIN_CORE_DIR:=$(dirname $0)}"
-source "$PLUGIN_CORE_DIR/functions"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+source "$MODULE_CORE_DIR/functions"
 
 # check_dependencies ffmpeg xxx ssss convert xwininfo xinput dzen2
 

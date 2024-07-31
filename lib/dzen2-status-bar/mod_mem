@@ -4,8 +4,8 @@ set -e
 
 echo "Executing Memory Plugin"
 
-: "${PLUGIN_CORE_DIR:=$(dirname $0)}"
-source "$PLUGIN_CORE_DIR/functions"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+source "$MODULE_CORE_DIR/functions"
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 
 interval="${MOD_MEM_INTERVAL:-2}"
