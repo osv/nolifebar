@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+echo "Executing CAVA Input Plugin"
+
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+. "$MODULE_CORE_DIR/functions"
+: "${TMP_DIR:=/tmp}"
+
+check_dependencies cava
+
+# shared cava code
+. "$MODULE_CORE_DIR/sc.functions"
+
+sc_init_variables # init sc_range, etc
+
+cava_cfg="$TMP_DIR/cava_in.cfg"
+
+default_create_config() {
+    local config="$1"
+
+    check_dependencies pactl
+
+    default_source=$(pactl info | grep "Default Source" | cut -d ' ' -f3)
+
+    cat << EOF > "$config"
+[general]
+bars = $sc_bars
+sleep_timer = 1
+framerate = $sc_framerate
+autosens = 0
+sensitivity = $sc_sensitivity
+
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = $sc_range
+mono_option = average
+channels = mono
+mono_option = average
+
+[input]
+method = pulse
+source = "$default_source"
+
+[smoothing]
+noise_reduction = 20
+
+EOF
+
+    printf "Cava is configured with
+. FPS: %15i
+. Bars: %14i
+. Sensitivity: %7i
+. Source: %s\n" "$sc_framerate" "$sc_bars" "$sc_sensitivity" "$default_source"
+}
+
+
+# you can override create config by creating MOD_CAVA_OUT_fn_create_config
+"$sc_fn_create_file" "$cava_cfg"
+
+sc_run_cava_and_print_to_file "$cava_cfg" "$FIFO_FILE"

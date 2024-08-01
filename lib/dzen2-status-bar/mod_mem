@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
-
 echo "Executing Memory Plugin"
 
 : "${MODULE_CORE_DIR:=$(dirname $0)}"

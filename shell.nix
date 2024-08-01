@@ -18,5 +18,13 @@ mkShell {
     xorg.xcbutilrenderutil
 
     pkg-config
+
+    # runrime plugin
+    cava
+    pulseaudio # pactl
   ];
+
+  shellHook = ''
+    echo "Welcome to the development shell"
+  '';
 }

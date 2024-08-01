@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Each variable can have next prefixes:
-# CFG_ - used in main scripts
+# CFG_ - configs by main scripts and modules
 # MOD_ - used by modules
 
 # Modules that will be loaded by main script
@@ -10,70 +10,79 @@
 # Exported variables from main script:
 #   $RESOURCE_FILE - Path to this file. Usually module must evaluate this, e.g: [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 #   $TMP_DIR - path to temp directory. Module must create temp files in this directory
-#
-CFG_MODULES=("mem" "time" "network" "cpu_bars")
+#   $MOD_NAME - upper case of current module, usuful if you want to have shared code between modules and eval
+#   $MODULE_CORE_DIR - dir to library of this project (shared bash code, modules)
+CFG_MODULES=("mem" "time" "network" "cpu_bars" "cava_out" "cava_in")
 
 # # Uncomment to output data for dzen2 to STDOUT for debugging
 # DEBUG=true
 
-# Replace text before sending to status bar
+# Replace text before sending to status bar:
 declare -A CFG_REPLACE_MAP=(
     ["<FG>"]="#fff"
     ["<BG>"]="#000"
     ["<FN_MAIN>"]="RobotoMono Nerd Font:size=12"
-    ["<FN_SMALL>"]="Terminus-12"
+    ["<FN_2_ROWS>"]="Terminus-8"
+    ["<FN_SANS_MAIN>"]="RobotoMono Nerd Font:size=12"
+    ["<BAR1>"]="#ff8b92"
+    ["<BAR2>"]="#c3e88d"
+    ["<BAR3>"]="#e1acff"
+    ["<BAR4>"]="#ffe585"
 )
 
 # Some functions uses this for draw rects
-CFG_HEIGHT=20
+CFG_HEIGHT=24
 
 # Status bar command, dzen2
-CFG_STATUS_BAR_CMD="dzen2 -fn Terminus-10  -ta l -h ${CFG_HEIGHT}"
+CFG_STATUS_BAR_CMD="dzen2 -fn Terminus-8  -ta r -h ${CFG_HEIGHT}"
 
-########### Network
-MOD_NETWORK_INTERVAL=1        # Must be decimal
+# # Default colors for stack bars. Some modules might have other var to override colors
+# CFG_DEFAULT_STACK_COLORS=("<BAR1>" "<BAR2>" "<BAR3>" "<BAR4>")
 
-MOD_NETWORK_fn_format() {
-  printf "Down: %dKB, Up: %dKB\n" "$1" "$2"
-}
-MOD_NETWORK_INTERFACE="[ew]*" # e.g wlp7s0
+# ################################ Network
+# MOD_NETWORK_INTERVAL=1        # Must be decimal
 
-########### Mem
-MOD_MEM_INTERVAL=2
+# MOD_NETWORK_fn_format() {
+#   printf "Down: %dKB, Up: %dKB\n" "$1" "$2"
+# }
+# MOD_NETWORK_INTERFACE="[ew]*" # e.g wlp7s0
 
-MOD_MEM_fn_format() {
-  local used_percentage="$1"
-  local mem_total="$2"
-  local mem_used="$3"
-  local mem_free="$4"
-  local mem_available="$5"
-  local mem_buffers="$6"
-  local mem_cached="$7"
-  local mem_shared="$8"
-  local mem_sreclaimable="$9"
-  local mem_swap_total="${10}"
-  local mem_used_swap="${11}"
-  local mem_swap_cache="${12}"
-  local zfs_arc_size="${13}"
-  local mem_buf_and_shared=$((mem_buffers + mem_shared))
-  local mem_used_without_arc=$((mem_used - zfs_arc_size))
+# ############################### Mem
+# MOD_MEM_INTERVAL=2
 
-  local bar
-  bar=$(dzen2_draw_stacked_bar \
-    -width 100 \
-    -height 4 \
-    -draw_outline \
-    -values "${zfs_arc_size},${mem_used_without_arc},${mem_buf_and_shared},${mem_cached}" \
-    -fg_colors "#ff8b92,#c3e88d,#e1acff,#ffe585" \
-    -bg "#777" \
-    -padding 1 \
-    -max_value "${mem_total}")
+# MOD_MEM_fn_format() {
+#   local used_percentage="$1"
+#   local mem_total="$2"
+#   local mem_used="$3"
+#   local mem_free="$4"
+#   local mem_available="$5"
+#   local mem_buffers="$6"
+#   local mem_cached="$7"
+#   local mem_shared="$8"
+#   local mem_sreclaimable="$9"
+#   local mem_swap_total="${10}"
+#   local mem_used_swap="${11}"
+#   local mem_swap_cache="${12}"
+#   local zfs_arc_size="${13}"
+#   local mem_buf_and_shared=$((mem_buffers + mem_shared))
+#   local mem_used_without_arc=$((mem_used - zfs_arc_size))
 
-  printf "Mem: %d%%^p(_TOP)^p(-150,-14)%s^p()\n" "$used_percentage" "$bar"
-  # printf "%s\n" "$bar_txt"
-}
+#   local bar
+#   bar=$(dzen2_draw_stacked_bar \
+#     -width 100 \
+#     -height 4 \
+#     -draw_outline \
+#     -values "${zfs_arc_size},${mem_used_without_arc},${mem_buf_and_shared},${mem_cached}" \
+#     -fg_colors "#ff8b92,#c3e88d,#e1acff,#ffe585" \
+#     -bg "#777" \
+#     -padding 1 \
+#     -max_value "${mem_total}")
 
-########### CPU Bar
+#   printf "Mem: %d%%^p(_TOP)^p(-150,-14)%s^p()\n" "$used_percentage" "$bar"
+#   # printf "%s\n" "$bar_txt"
+# }
+
+# ############################## CPU Bar
 # # Custom params for CPU Cores charts
 # # fg_colors for bars: Low(nice),Normal(user),Kernel,Guest
 # declare -a MOD_CPU_BARS_CORES_PARAMS=(
@@ -91,7 +100,7 @@ MOD_MEM_fn_format() {
 #   -fg_colors "#7f4b32,#73984d,#817c99,#777545"
 # )
 
-MOD_CPU_BARS_INTERVAL=1 # Interval, float
+# MOD_CPU_BARS_INTERVAL=1 # Interval, float
 
 # # Example of format function
 # MOD_CPU_BARS_fn_format() {
@@ -102,10 +111,87 @@ MOD_CPU_BARS_INTERVAL=1 # Interval, float
 #     printf "CPU %s\n" "$cores_stats_dzen"
 # }
 
+# ############################### Cava OUT (bars)
+# MOD_CAVA_OUT_FRAMERATE=40 # FPS of cava output, default 10
+# MOD_CAVA_OUT_BARS=30      # count of cava bars, default 30
+# MOD_CAVA_OUT_HEIGHT=10    # default: $CFG_HEIGHT
 
-####################################
+# # Custom create cava config
+# MOD_CAVA_OUT_fn_create_config() {
+#   local config="$1"
+#   cat << EOF > "$config"
+# [general]
+# bars = $sc_bars
+# sleep_timer = 1
+# framerate = $sc_framerate
+# [output]
+# method = raw
+# raw_target = /dev/stdout
+# data_format = ascii
+# ascii_max_range = $sc_range
+# channels = mono
+# mono_option = average
+# [smoothing]
+# noise_reduction = 20
+# EOF
+# }
+
+# # Additional params to dzen2_draw_h_stacked_bars
+# declare -a MOD_CAVA_OUT_BAR_PARAMS=(
+#   -bar_width 1
+#   -bar_padding 0
+#   -fg_colors "#fff"
+# )
+
+# ############################### Cava Input (microphone)
+# # Same like for MOD_CAVA_OUT
+#
+# MOD_CAVA_IN_SENSITIVITY=400 # default
+# MOD_CAVA_IN_FRAMERATE=40    # FPS of cava output, default 10
+# MOD_CAVA_IN_BARS=30         # count of cava bars, default 30
+# MOD_CAVA_IN_HEIGHT=10       # default: $CFG_HEIGHT
+
+# # Custom create cava config
+# # You might want to override source and method
+# # By default used pulse
+#  MOD_CAVA_IN_fn_create_config() {
+#     local config="$1"
+#     default_source=$(pactl info | \
+#                      grep "Default Source" | \
+#                      cut -d ' ' -f3)
+#     cat << EOF > "$config"
+# [general]
+# bars = $sc_bars
+# sleep_timer = 1
+# framerate = $sc_framerate
+# autosens = 0
+# sensitivity = $sc_sensitivity
+# [output]
+# method = raw
+# raw_target = /dev/stdout
+# data_format = ascii
+# ascii_max_range = $sc_range
+# mono_option = average
+# channels = mono
+# mono_option = average
+# [input]
+# method = pulse
+# source = "$default_source"
+# [smoothing]
+# noise_reduction = 20
+# EOF
+# }
+
+# # Additional params to dzen2_draw_h_stacked_bars
+# declare -a MOD_CAVA_IN_BAR_PARAMS=(
+#   -bar_width 1
+#   -bar_padding 0
+#   -fg_colors "#fff"
+# )
+
+###############################
 # Widget layout format function
-####################################
+###############################
 
 state=""
 fn_format_template() {
@@ -113,7 +199,7 @@ fn_format_template() {
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"
   else
-      printf "{out_network} ^ca(1, echo one) time: {out_time}^ca() mem {out_mem} {out_cpu_bars} \n"
+      printf "{out_network} ^ca(1, echo one) ^ca() mem {out_mem} {out_cpu_bars} ^fg(<FG>)Out {out_cava_out} ^fg(<FG>)In {out_cava_in} ^fg(<FG>){out_time} \n"
   fi
 
 }

@@ -105,6 +105,8 @@ load_module() {
     mkfifo "$FIFO_FILE"
     fifo_files+=("$FIFO_FILE")
     export FIFO_FILE
+    MOD_NAME="mod_$module"
+    export MOD_NAME="${MOD_NAME^^}" # ^^ - upper case
     run_with_output_prefix "$module_color" "mod_$module" "$module_path" "" &
 }
 
@@ -136,7 +138,7 @@ process_dzen2_output() {
 }
 
 run_and_wait_for_dzen2() {
-    echo "$template_fifo $(IFS=' '; echo "${fifo_files[*]}")"
+    # echo "$template_fifo $(IFS=' '; echo "${fifo_files[*]}")"
     mkfifo "$template_fifo"
 
     ./bin/dzen2-merge-pipes "$template_fifo" $(IFS=' '; echo "${fifo_files[*]}") |\

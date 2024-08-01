@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+echo "Executing CAVA Output Plugin"
+
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+. "$MODULE_CORE_DIR/functions"
+: "${TMP_DIR:=/tmp}"
+
+check_dependencies cava pactl
+
+# shared cava
+. "$MODULE_CORE_DIR/sc.functions"
+
+sc_init_variables # init sc_range, etc
+
+cava_cfg="$TMP_DIR/cava_out.cfg"
+
+default_create_config() {
+    local config="$1"
+    cat << EOF > "$config"
+[general]
+bars = $sc_bars
+sleep_timer = 1
+framerate = $sc_framerate
+
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = $sc_range
+
+channels = mono
+mono_option = average
+
+[smoothing]
+noise_reduction = 20
+EOF
+
+    printf "Cava is configured with
+. FPS: %15i
+. Bars: %14i\n" "$sc_framerate" "$sc_bars"
+}
+
+# you can override create config by creating MOD_CAVA_OUT_fn_create_config
+"$sc_fn_create_file" "$cava_cfg"
+
+sc_run_cava_and_print_to_file "$cava_cfg" "$FIFO_FILE"

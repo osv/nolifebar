@@ -4,9 +4,9 @@ set -e
 
 echo "Executing CPU Bars Plugin"
 
-: "${MODULE_CORE_DIR:=$(dirname $0)}"
-source "$MODULE_CORE_DIR/functions"
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+. "$MODULE_CORE_DIR/functions"
 
 interval="${MOD_CPU_BARS_INTERVAL:-1}"
 additional_core_params=()
@@ -34,7 +34,7 @@ default_format() {
     if ((show_total_only)); then
         colors=$(extract_param_value "-fg_colors" "${additional_total_params[@]}")
         if [ -z "$colors" ]; then
-            colors=("${DEFAULT_STACK_COLORS[@]}")
+            colors=("${CFG_DEFAULT_STACK_COLORS[@]}")
         else
             IFS=',' read -r -a colors <<< "$colors"
         fi
