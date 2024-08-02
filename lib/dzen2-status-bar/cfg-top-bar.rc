@@ -15,7 +15,7 @@
 #   $TMP_DIR - path to temp directory. Module must create temp files in this directory
 #   $MOD_NAME - upper case of current module, usuful if you want to have shared code between modules and eval
 #   $MODULE_CORE_DIR - dir to library of this project (shared bash code, modules)
-CFG_MODULES=("mem" "time" "network" "cpu_bars" "cava_out" "cava_in")
+CFG_MODULES=("mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn")
 
 # # Uncomment to output data for dzen2 to STDOUT for debugging
 # DEBUG=true
@@ -24,9 +24,15 @@ CFG_MODULES=("mem" "time" "network" "cpu_bars" "cava_out" "cava_in")
 declare -A CFG_REPLACE_MAP=(
     ["<FG>"]="#fff"
     ["<BG>"]="#000"
+
+    ["<ON>"]="#c3e88d"
+    ["<OFF>"]="#777"
+    ["<ACTIVE>"]="#ff8b92"
+
     ["<FN_MAIN>"]="RobotoMono Nerd Font:size=12"
     ["<FN_2_ROWS>"]="Terminus-8"
     ["<FN_SANS_MAIN>"]="RobotoMono Nerd Font:size=12"
+
     ["<BAR1>"]="#ff8b92"
     ["<BAR2>"]="#c3e88d"
     ["<BAR3>"]="#e1acff"
@@ -34,10 +40,10 @@ declare -A CFG_REPLACE_MAP=(
 )
 
 # Some functions uses this for draw rects
-CFG_HEIGHT=24
+CFG_HEIGHT=26
 
 # Status bar command, dzen2
-CFG_STATUS_BAR_CMD=(dzen2 -fn 'RobotoMono Nerd Font:size=12'  -ta r -h "${CFG_HEIGHT}")
+CFG_STATUS_BAR_CMD=(dzen2 -fn 'RobotoMono Nerd Font:size=12' -ta r -h "${CFG_HEIGHT}")
 
 # # Default colors for stack bars. Some modules might have other var to override colors
 # CFG_DEFAULT_STACK_COLORS=("<BAR1>" "<BAR2>" "<BAR3>" "<BAR4>")
@@ -192,6 +198,92 @@ MOD_CAVA_OUT_BARS=60      # count of cava bars, default 30
 #   -fg_colors "#fff"
 # )
 
+# ############################### OpenVPN
+
+# MOD_OPENVPN_SERVICE_PREFIX="openvpn-" # systemd service prefix
+
+# List of openvpn services, but without prefix and without ".service"
+# E.g if service called openvpn-foo.service then use "foo" in list
+MOD_OPENVPN_SERVICES=(kz-production kz-development)
+
+# draw VPN function, see global dictionary: "services_status", global array: "services"
+# First arg - fifo file for output
+# Second arg - last line from log
+MOD_OPENVPN_fn_draw() {
+  local fifo="$1"
+  local last_line="$2"
+  if [[ -n "$MOD_OPENVPN_fn_draw_pid" ]]; then
+    kill "$MOD_OPENVPN_fn_draw_pid" 2>/dev/null
+    wait "$MOD_OPENVPN_fn_draw_pid" 2>/dev/null
+  fi
+
+  openvpn_draw "$fifo" "$last_line" 1 &
+  MOD_OPENVPN_fn_draw_pid=$!
+
+}
+
+openvpn_draw() {
+  local fifo="$1"
+  local last_line="$2" # not used for now
+  local active="$3"
+
+  local out="^ib(1)"
+  local kzprod="${services_status[kz-production]}"
+  local kzdev="${services_status[kz-development]}"
+  local set_border_color=""
+  local vpn_label_size=45 # size for VPN block
+  local name_size=50
+  local fgcolor="<ON>"
+  if [ "$active" -eq 1 ]; then
+    fgcolor="<ON>" # fgcolor="<ACTIVE>"
+  fi
+
+  if [[ "$kzprod" == "ON" || "$kzdev" == "ON" ]]; then
+    if [ "$active" -eq 1 ]; then
+      out+="^p()^fg(${fgcolor})^r(${vpn_label_size}x$CFG_HEIGHT})^fg(<BG>)"
+    else
+      out+="^p()^fg(${fgcolor})^ro(${vpn_label_size}x$CFG_HEIGHT})"
+    fi
+    set_border_color="^fg(${fgcolor})"
+  else
+    out+="^p()^fg(<OFF>)^ro(${vpn_label_size}x${CFG_HEIGHT})"
+    set_border_color="^fg(<OFF>)"
+  fi
+  # centered label "VPN"
+  out+="^p(-${vpn_label_size})^ba(${vpn_label_size},_CENTER)VPN"
+  # setup 2 rows mode
+  out+="^fn(<FN_2_ROWS>)^p(_TOP)^p(-3)"
+
+  # draw 1st row
+  out+="${set_border_color}"
+  local prod_txt="^p(-$name_size)^ba($name_size,_CENTER)prod"
+  if [[ "$kzprod" == "ON" ]]; then
+    out+="^r(${name_size}x$((CFG_HEIGHT / 2 +1)))^fg(<BG>)$prod_txt"
+  else
+    out+="^ro(${name_size}x$((CFG_HEIGHT / 2 +1)))$prod_txt"
+  fi
+
+  # draw 2nd row
+  out+="^p(_TOP)^p(-$((name_size + 2)))"
+  out+="${set_border_color}"
+  local dev_txt="^p(-${name_size})^ba(${name_size},_CENTER)dev"
+  if [[ "$kzdev" == "ON" ]]; then
+    out+="^r(${name_size}x$((CFG_HEIGHT / 2 ))-0+$((CFG_HEIGHT / 2)))^fg(<BG>)$dev_txt"
+  else
+    out+="^ro(${name_size}x$((CFG_HEIGHT / 2 ))-0+$((CFG_HEIGHT / 2)))$dev_txt"
+  fi
+
+  # reset state
+  out+="^ib()^p()^fg(<FG>)^bg(<BG>)^fn(<FN_MAIN>)"
+  printf "%s\n" "$out" > "$fifo"
+
+  # Animate. Change activity to 0 and draw with normal FG color
+  if [ "$active" -eq 1 ]; then
+    read_sleep 0.8
+    openvpn_draw "$fifo" "$last_line" 0
+  fi
+}
+
 ###############################
 # Widget layout format function
 ###############################
@@ -202,7 +294,7 @@ fn_format_template() {
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"
   else
-      printf "{out_network} ^ca(1, echo one) ^ca() mem {out_mem} {out_cpu_bars} ^fg(<FG>)Out {out_cava_out} ^fg(<FG>)In {out_cava_in} ^fg(<FG>){out_time} \n"
+      printf "{out_network} {out_openvpn} ^ca(1, echo one) ^ca() mem {out_mem} {out_cpu_bars} Out {out_cava_out} ^fg(<FG>)In {out_cava_in} ^fg(<FG>){out_time} \n"
   fi
 
 }

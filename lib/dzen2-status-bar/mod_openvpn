@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+
+echo "Executing OpenVPN Plugin"
+
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+. "$MODULE_CORE_DIR/functions"
+: "${TMP_DIR:=/tmp}"
+
+check_dependencies systemctl journalctl
+
+service_prefix="${MOD_OPENVPN_SERVICE_PREFIX:-openvpn-}"
+
+services=()
+if is_array MOD_OPENVPN_SERVICES; then
+    services=("${MOD_OPENVPN_SERVICES[@]}")
+fi
+
+# Value: ON/OFF, for using in draw fn
+declare -A services_status
+
+# First arg - fifo file for output
+# Second arg - last line from log
+default_draw() {
+    local fifo="$1"
+    local last_line="$2"
+    local out="VPN:"
+    for service in "${services[@]}"; do
+        out+=" $service=${services_status[$service]}"
+    done
+    printf "[%s]\n" "$out" > "$fifo"
+}
+
+if declare -f MOD_OPENVPN_fn_draw > /dev/null; then
+    draw=MOD_OPENVPN_fn_draw
+else
+    draw=default_draw
+fi
+
+main() {
+    local fifo="$1"
+
+    if [ ${#services[@]} -eq 0 ]; then
+        echo "No openvpn services to monitor."
+        echo "Exiting, please set MOD_OPENVPN_SERVICES=() if you want to monitor VPN status" >&2
+        exit
+    fi
+
+    local journalctl_cmd=(journalctl -f --since now --output cat)
+
+    # Set dict with init state
+    for service in "${services[@]}"; do
+        services_status["$service"]="OFF"
+    done
+
+    "$draw" "$fifo"
+
+    printf "Checking status of services:\n"
+    for service in "${services[@]}"; do
+        local service_name="${service_prefix}${service}.service"
+        local status
+        status=$(systemctl show -p ActiveState --value "$service_name" | sed 's/inactive/OFF/;s/active/ON/')
+        services_status["$service"]="$status"
+        journalctl_cmd+=(-u)
+        journalctl_cmd+=("${service_name}")
+        printf "Update: %-16s %4s\n" "$service" "$status"
+    done
+
+    "$draw" "$fifo"
+
+    # cut msg output all except message
+    "${journalctl_cmd[@]}" | while IFS= read -r line; do
+        # Check for "Stopped OpenVPN instance" and extract the service name
+        if [[ "$line" == *"Stopped OpenVPN instance"* ]]; then
+            local service="${line#*‘}"
+            service="${service%%’*}"
+            services_status["$service"]="OFF"
+            printf "Update: %-16s %4s\n" "$service" "${services_status[$service]}"
+        fi
+
+        # Check for "Started OpenVPN instance" and extract the service name
+        if [[ "$line" == *"Started OpenVPN instance"* ]]; then
+            local service="${line#*‘}"
+            service="${service%%’*}"
+            services_status["$service"]="ON"
+            printf "Update: %-16s %4s\n" "$service" "${services_status[$service]}"
+        fi
+        echo "change: $line"
+        "$draw" "$fifo" "$line"
+    done
+}
+
+main "$FIFO_FILE"
