@@ -45,7 +45,7 @@ method = pulse
 source = "$default_source"
 
 [smoothing]
-noise_reduction = 20
+noise_reduction = 15
 
 EOF
 

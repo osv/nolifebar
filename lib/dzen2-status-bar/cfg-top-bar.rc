@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Note: dzen max len is 8k, you cannot use huge ramp
+# Note: dzen max len is 8k, you cannot use big count of bars
 # #define MAX_LINE_LEN   8192
 
 # Each variable can have next prefixes:
@@ -115,8 +115,8 @@ CFG_STATUS_BAR_CMD=(dzen2 -fn 'RobotoMono Nerd Font:size=12'  -ta r -h "${CFG_HE
 # }
 
 # ############################### Cava OUT (bars)
-# MOD_CAVA_OUT_FRAMERATE=40 # FPS of cava output, default 10
-# MOD_CAVA_OUT_BARS=30      # count of cava bars, default 30
+MOD_CAVA_OUT_FRAMERATE=15 # FPS of cava output, default 15
+MOD_CAVA_OUT_BARS=60      # count of cava bars, default 30
 # MOD_CAVA_OUT_HEIGHT=10    # default: $CFG_HEIGHT
 
 # # Custom create cava config
@@ -142,7 +142,7 @@ CFG_STATUS_BAR_CMD=(dzen2 -fn 'RobotoMono Nerd Font:size=12'  -ta r -h "${CFG_HE
 # # Additional params to dzen2_draw_h_stacked_bars
 # declare -a MOD_CAVA_OUT_BAR_PARAMS=(
 #   -bar_width 1
-#   -bar_padding 0
+#   -bar_padding 1
 #   -fg_colors "#fff"
 # )
 
@@ -150,7 +150,7 @@ CFG_STATUS_BAR_CMD=(dzen2 -fn 'RobotoMono Nerd Font:size=12'  -ta r -h "${CFG_HE
 # # Same like for MOD_CAVA_OUT
 #
 # MOD_CAVA_IN_SENSITIVITY=400 # default
-# MOD_CAVA_IN_FRAMERATE=40    # FPS of cava output, default 10
+# MOD_CAVA_IN_FRAMERATE=40    # FPS of cava output, default 15
 # MOD_CAVA_IN_BARS=30         # count of cava bars, default 30
 # MOD_CAVA_IN_HEIGHT=10       # default: $CFG_HEIGHT
 
