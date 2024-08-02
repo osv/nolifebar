@@ -22,6 +22,13 @@ mkShell {
     # runrime plugin
     cava
     pulseaudio # pactl
+
+    (dzen2.overrideAttrs (oldAttrs: rec {
+      patchPhase = ''
+        ${oldAttrs.patchPhase or ""}
+        sed -i 's/MAX_LINE_LEN[[:space:]]*8192/MAX_LINE_LEN   5 * 8192/' dzen.h
+      '';
+    }))
   ];
 
   shellHook = ''
