@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+# sc_ prefix for shared cava functions and vars
+
+# some global variables for using in script
+sc_init_variables() {
+  # Dynamically construct and evaluate the assignments
+  eval sc_sensitivity="\${${MOD_NAME}_SENSITIVITY:-4400}"
+  eval sc_framerate="\${${MOD_NAME}_FRAMERATE:-15}"
+  eval sc_bars="\${${MOD_NAME}_BARS:-30}"
+  eval sc_height="\${${MOD_NAME}_HEIGHT:-0}"
+  eval sc_fn_create_file="\${${MOD_NAME}_fn_create_config:-default_create_config}"
+
+  # allow override config creation function
+  if declare -f "${MOD_NAME}_fn_create_config" > /dev/null; then
+      sc_fn_create_file="${MOD_NAME}_fn_create_config"
+  else
+      sc_fn_create_file=default_create_config
+  fi
+
+  eval "if is_array ${MOD_NAME}_BAR_PARAMS; then
+    sc_additional_bar_params=(\"\${${MOD_NAME}_BAR_PARAMS[@]}\")
+  fi"
+
+  # Additional height calculation. 2 - border + padding
+  sc_height=$((sc_height > 0 ?
+                        sc_height : (CFG_HEIGHT - 2)))
+  sc_range=$((sc_height - 2)) # 4 - padding
+}
+
+sc_create_bars() {
+    local last_line=""
+    while IFS= read -r line; do
+        if [ "$last_line" == "$line" ]; then
+            continue
+        fi
+        last_line="$line"
+        local out=""
+        out=$(dzen2_draw_h_stacked_bars \
+            -bar_width 2 \
+            -bar_padding 1 \
+            "${sc_additional_bar_params[@]}" \
+            -stacks 1 \
+            -height "$sc_height" \
+            -max_value "$sc_range" \
+            -values "$line")
+
+        printf "%s\n" "$out"
+    done
+}
+
+sc_run_cava_and_print_to_file() {
+    local config="$1"
+    local file="$2"
+
+    # remove last ";" and replace /;/ /
+    cava -p "$config" \
+        | sed --unbuffered "s/\;$//; s/;/,/g" \
+        | sc_create_bars \
+        > "$file"
+}
