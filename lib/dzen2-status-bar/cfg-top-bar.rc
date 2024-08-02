@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Note: dzen max len is 8k, you cannot use huge ramp
+# #define MAX_LINE_LEN   8192
+
 # Each variable can have next prefixes:
 # CFG_ - configs by main scripts and modules
 # MOD_ - used by modules
@@ -34,7 +37,7 @@ declare -A CFG_REPLACE_MAP=(
 CFG_HEIGHT=24
 
 # Status bar command, dzen2
-CFG_STATUS_BAR_CMD="dzen2 -fn Terminus-8  -ta r -h ${CFG_HEIGHT}"
+CFG_STATUS_BAR_CMD=(dzen2 -fn 'RobotoMono Nerd Font:size=12'  -ta r -h "${CFG_HEIGHT}")
 
 # # Default colors for stack bars. Some modules might have other var to override colors
 # CFG_DEFAULT_STACK_COLORS=("<BAR1>" "<BAR2>" "<BAR3>" "<BAR4>")

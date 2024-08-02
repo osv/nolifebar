@@ -144,7 +144,7 @@ run_and_wait_for_dzen2() {
     ./bin/dzen2-merge-pipes "$template_fifo" $(IFS=' '; echo "${fifo_files[*]}") |\
         sed --unbuffered "$SED_COMMAND" |\
         debug_pipe |\
-        $CFG_STATUS_BAR_CMD |\
+        "${CFG_STATUS_BAR_CMD[@]}" |\
         process_dzen2_output &
     pid=$!
 
