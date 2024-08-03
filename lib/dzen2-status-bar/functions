@@ -165,7 +165,6 @@ dzen2_draw_stacked_bar() {
     printf "%s\n" "${output}^ib()"
 }
 
-
 dzen2_draw_h_stacked_bars() {
     # Default values
     local bar_width=4
@@ -277,4 +276,118 @@ dzen2_draw_h_stacked_bars() {
         done
     done
     printf "%s\n" "${output}^ib()^p()^p(1)"
+}
+
+dzen2_draw_flags() {
+    local label=""      # no label
+    local label_size=45 # size of label
+    local label_highlight=0
+    local color_on="#afa"
+    local color_all_off="#777"
+    local color_bg="#000"
+    local color_fg="#fff"
+    local name_size=50
+    local y_padding=2
+    local fn_main="" # will be rendered as ^fn()
+    local fn_2rows="Terminus-8"
+    local fn_2rows_y_offset=0
+    local flag_align="_CENTER"
+    local flag_x_padding=0
+
+    # mandatory params
+    local -n dictionary_short_names_ref=$1
+    shift
+    local -n dictionary_ref=$1
+    shift
+    local -n keys_to_render_ref=$1
+    shift
+
+    # override params
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -label) label="$2"; shift 2;;
+            -label_size) label_size="$2"; shift 2;;
+            -label_highlight) label_highlight="$2"; shift 2;;
+            -color_on) color_on="$2"; shift 2;;
+            -color_all_off) color_all_off="$2"; shift 2;;
+            -color_bg) color_bg="$2"; shift 2;;
+            -color_fg) color_fg="$2"; shift 2;;
+            -name_size) name_size="$2"; shift 2;;
+            -y_padding) y_padding="$2"; shift 2;;
+            -fn_main) fn_main="$2"; shift 2;;
+            -fn_2rows) fn_2rows="$2"; shift 2;;
+            -fn_2rows_y_offset) fn_2rows_y_offset="$2"; shift 2;;
+            -flag_align) flag_align="$2"; shift 2;;
+            -flag_x_padding) flag_x_padding="$2"; shift 2;;
+            *) echo "dzen2_draw_flags(): Unknown parameter: $1"; exit 1;;
+        esac
+    done
+
+    local out="^ib(1)"
+    local height=$((CFG_HEIGHT - 2 * y_padding))
+
+    local has_on_value=0
+    for key in "${keys_to_render_ref[@]}"; do
+        if [[ "${dictionary_ref[$key]}" == "ON" ]]; then
+            has_on_value=1
+            break
+        fi
+    done
+
+    # draw label if exist
+    local setup_label_area=""
+    local set_border_color="" # if at least one flag is ON, then set "ON" color as primary color
+    if ((has_on_value == 1)); then
+        if ((label_highlight == 1)); then
+            setup_label_area="^p()^fg(${color_on})^r(${label_size}x${height})^fg(${color_bg})"
+        else
+            setup_label_area="^p()^fg(${color_on})^ro(${label_size}x${height}})"
+        fi
+        set_border_color="^fg(${color_on})"
+    else
+        if [[  -n "$label" ]]; then
+            setup_label_area="^p()^fg(${color_all_off})^ro(${label_size}x${height})"
+        fi
+        set_border_color="^fg(${color_all_off})"
+    fi
+    if [[  -n "$label" ]]; then
+        # centered label
+        out+="${setup_label_area}^p(-${label_size})^ba(${label_size},_CENTER)${label}"
+    fi
+
+    # set 2 rows font
+    out+="^fn($fn_2rows)"
+
+    local index=0
+    # draw flag state
+    for key in "${keys_to_render_ref[@]}"; do
+        local flag_name="${dictionary_short_names_ref[$key]}"
+        if [[ -z "$flag_name" ]]; then
+            flag_name="$key"
+        fi
+
+        local label_cmd="^p(-$((name_size - flag_x_padding));${fn_2rows_y_offset})^ba($((name_size - flag_x_padding)),${flag_align})${flag_name}"
+        if (((index % 2) == 0)); then
+            # draw in top
+            out+="${set_border_color}^p(_TOP)^p(-3;${y_padding})"
+            if [[ "${dictionary_ref[$key]}" == "ON" ]]; then
+                out+="^r(${name_size}x$((height / 2 + 1)))^fg(${color_bg})$label_cmd"
+            else
+                out+="^ro(${name_size}x$((height / 2  +1)))$label_cmd"
+            fi
+        else
+            # draw in bottom
+            out+="${set_border_color}^p(_TOP)^p(-$((name_size + 2));${y_padding})"
+            if [[ "${dictionary_ref[$key]}" == "ON" ]]; then
+                out+="^r(${name_size}x$((height / 2))-0+$((height / 2)))^fg(${color_bg})$label_cmd"
+            else
+                out+="^ro(${name_size}x$((height / 2 ))-0+$((height / 2)))$label_cmd"
+            fi
+        fi
+        index=$((index+1))
+    done
+
+    # reset state
+    out+="^ib()^p()^fg(${color_fg})^bg(${color_bg})^fn($fn_main)"
+    printf "%s\n" "$out"
 }

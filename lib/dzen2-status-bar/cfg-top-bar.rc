@@ -25,9 +25,8 @@ declare -A CFG_REPLACE_MAP=(
     ["<FG>"]="#fff"
     ["<BG>"]="#000"
 
-    ["<ON>"]="#c3e88d"
+    ["<ON>"]="#afa"
     ["<OFF>"]="#777"
-    ["<ACTIVE>"]="#ff8b92"
 
     ["<FN_MAIN>"]="RobotoMono Nerd Font:size=12"
     ["<FN_2_ROWS>"]="Terminus-8"
@@ -40,13 +39,29 @@ declare -A CFG_REPLACE_MAP=(
 )
 
 # Some functions uses this for draw rects
-CFG_HEIGHT=26
+CFG_HEIGHT=28
 
 # Status bar command, dzen2
 CFG_STATUS_BAR_CMD=(dzen2 -fn 'RobotoMono Nerd Font:size=12' -ta r -h "${CFG_HEIGHT}")
 
 # # Default colors for stack bars. Some modules might have other var to override colors
-# CFG_DEFAULT_STACK_COLORS=("<BAR1>" "<BAR2>" "<BAR3>" "<BAR4>")
+CFG_DEFAULT_STACK_COLORS=("<BAR1>" "<BAR2>" "<BAR3>" "<BAR4>")
+
+CFG_DEFAULT_DRAW_FLAG_PARAMS=(
+  -label_size 45 # size of label
+  -label_highlight 0
+  -color_on "<ON>"
+  -color_all_off "<OFF>"
+  -color_bg "<BG>"
+  -color_fg "<FG>"
+  -name_size 50
+  -y_padding 2
+  -fn_main "<FN_MAIN>"
+  -fn_2rows "<FN_2_ROWS>"
+  -fn_2rows_y_offset 0
+  -flag_align "_CENTER"
+  -flag_x_padding 0
+)
 
 # ################################ Network
 # MOD_NETWORK_INTERVAL=1        # Must be decimal
@@ -121,7 +136,7 @@ CFG_STATUS_BAR_CMD=(dzen2 -fn 'RobotoMono Nerd Font:size=12' -ta r -h "${CFG_HEI
 # }
 
 # ############################### Cava OUT (bars)
-MOD_CAVA_OUT_FRAMERATE=15 # FPS of cava output, default 15
+MOD_CAVA_OUT_FRAMERATE=20 # FPS of cava output, default 15
 MOD_CAVA_OUT_BARS=60      # count of cava bars, default 30
 # MOD_CAVA_OUT_HEIGHT=10    # default: $CFG_HEIGHT
 
@@ -199,90 +214,29 @@ MOD_CAVA_OUT_BARS=60      # count of cava bars, default 30
 # )
 
 # ############################### OpenVPN
-
 # MOD_OPENVPN_SERVICE_PREFIX="openvpn-" # systemd service prefix
 
 # List of openvpn services, but without prefix and without ".service"
 # E.g if service called openvpn-foo.service then use "foo" in list
 MOD_OPENVPN_SERVICES=(kz-production kz-development)
 
-# draw VPN function, see global dictionary: "services_status", global array: "services"
-# First arg - fifo file for output
-# Second arg - last line from log
-MOD_OPENVPN_fn_draw() {
-  local fifo="$1"
-  local last_line="$2"
-  if [[ -n "$MOD_OPENVPN_fn_draw_pid" ]]; then
-    kill "$MOD_OPENVPN_fn_draw_pid" 2>/dev/null
-    wait "$MOD_OPENVPN_fn_draw_pid" 2>/dev/null
-  fi
+# # Override params (see dzen2_draw_flags)
+# MOD_OPENVPN_RENDER_PARAMS=(-label "OpenVPN" -label_size "100" -color_on red -y_padding 2 -fn_2rows "terminus-8" -fn_2rows_y_offset 0)
 
-  openvpn_draw "$fifo" "$last_line" 1 &
-  MOD_OPENVPN_fn_draw_pid=$!
+# Show short service name
+declare -A MOD_OPENVPN_SERVICES_NAME_MAP=(
+    ["kz-production"]="prod"
+    ["kz-development"]="dev"
+)
 
-}
-
-openvpn_draw() {
-  local fifo="$1"
-  local last_line="$2" # not used for now
-  local active="$3"
-
-  local out="^ib(1)"
-  local kzprod="${services_status[kz-production]}"
-  local kzdev="${services_status[kz-development]}"
-  local set_border_color=""
-  local vpn_label_size=45 # size for VPN block
-  local name_size=50
-  local fgcolor="<ON>"
-  if [ "$active" -eq 1 ]; then
-    fgcolor="<ON>" # fgcolor="<ACTIVE>"
-  fi
-
-  if [[ "$kzprod" == "ON" || "$kzdev" == "ON" ]]; then
-    if [ "$active" -eq 1 ]; then
-      out+="^p()^fg(${fgcolor})^r(${vpn_label_size}x$CFG_HEIGHT})^fg(<BG>)"
-    else
-      out+="^p()^fg(${fgcolor})^ro(${vpn_label_size}x$CFG_HEIGHT})"
-    fi
-    set_border_color="^fg(${fgcolor})"
-  else
-    out+="^p()^fg(<OFF>)^ro(${vpn_label_size}x${CFG_HEIGHT})"
-    set_border_color="^fg(<OFF>)"
-  fi
-  # centered label "VPN"
-  out+="^p(-${vpn_label_size})^ba(${vpn_label_size},_CENTER)VPN"
-  # setup 2 rows mode
-  out+="^fn(<FN_2_ROWS>)^p(_TOP)^p(-3)"
-
-  # draw 1st row
-  out+="${set_border_color}"
-  local prod_txt="^p(-$name_size)^ba($name_size,_CENTER)prod"
-  if [[ "$kzprod" == "ON" ]]; then
-    out+="^r(${name_size}x$((CFG_HEIGHT / 2 +1)))^fg(<BG>)$prod_txt"
-  else
-    out+="^ro(${name_size}x$((CFG_HEIGHT / 2 +1)))$prod_txt"
-  fi
-
-  # draw 2nd row
-  out+="^p(_TOP)^p(-$((name_size + 2)))"
-  out+="${set_border_color}"
-  local dev_txt="^p(-${name_size})^ba(${name_size},_CENTER)dev"
-  if [[ "$kzdev" == "ON" ]]; then
-    out+="^r(${name_size}x$((CFG_HEIGHT / 2 ))-0+$((CFG_HEIGHT / 2)))^fg(<BG>)$dev_txt"
-  else
-    out+="^ro(${name_size}x$((CFG_HEIGHT / 2 ))-0+$((CFG_HEIGHT / 2)))$dev_txt"
-  fi
-
-  # reset state
-  out+="^ib()^p()^fg(<FG>)^bg(<BG>)^fn(<FN_MAIN>)"
-  printf "%s\n" "$out" > "$fifo"
-
-  # Animate. Change activity to 0 and draw with normal FG color
-  if [ "$active" -eq 1 ]; then
-    read_sleep 0.8
-    openvpn_draw "$fifo" "$last_line" 0
-  fi
-}
+# # draw VPN function, see global dictionary: "services_status", global array: "services"
+# # First arg - fifo file for output
+# # Second arg - last line from log
+# MOD_OPENVPN_fn_draw() {
+#   local fifo="$1"
+#   local last_line="$2" # not used for now
+#   dzen2_draw_flags services_status services MOD_OPENVPN_SERVICES_NAME_MAP -label "VPN" > "$fifo"
+# }
 
 ###############################
 # Widget layout format function
