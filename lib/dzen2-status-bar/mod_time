@@ -5,11 +5,27 @@ echo "Executing Time Plugin"
 : "${MODULE_CORE_DIR:=$(dirname $0)}"
 source "$MODULE_CORE_DIR/functions"
 
-# check_dependencies ffmpeg xxx ssss convert xwininfo xinput dzen2
+show_short=0
+handle_signal() {
+ echo "Signal received: show_short=${show_short}"
+ show_short=$((show_short ? 0 : 1))
+}
+
+trap 'handle_signal' SIGUSR1
+
+draw() {
+    local time_format="$1"
+    printf "^ca(1, kill -SIGUSR1 $$)${time_format}^ca()\n" -1
+}
 
 while true; do
-    read_sleep 0.5
-    printf '%(%Y-%m-%d %H:%M %S)T\n' -1 > "$FIFO_FILE"
-    read_sleep 0.5
-    printf '%(%Y-%m-%d %H:%M:%S)T\n' -1 > "$FIFO_FILE"
+    if ((show_short == 0)); then
+        draw "%(%H:%M)T" > "$FIFO_FILE"
+        read_sleep 1
+    else
+        draw '%(%Y-%m-%d %H:%M %S)T' > "$FIFO_FILE"
+        read_sleep 0.5
+        draw '%(%Y-%m-%d %H:%M:%S)T' > "$FIFO_FILE"
+        read_sleep 0.5
+    fi
 done
