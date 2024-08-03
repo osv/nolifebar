@@ -21,11 +21,7 @@ if is_array MOD_OPENVPN_RENDER_PARAMS; then
     additional_render_params=("${MOD_OPENVPN_RENDER_PARAMS[@]}")
 fi
 
-if [ -z "${MOD_OPENVPN_SERVICES_NAME_MAP}" ]; then
-  declare -A MOD_OPENVPN_SERVICES_NAME_MAP=()
-fi
-
-# Value: ON/OFF, for using in draw fn
+# Dictionary for service: ON/OFF value, for using in draw fn
 declare -A services_status
 
 # First arg - fifo file for output
@@ -33,8 +29,6 @@ declare -A services_status
 default_draw() {
     local fifo="$1"
     local last_line="$2" # not used
-
-    # draw_and_blink "$fifo" 1
 
     # kill previous
     if [[ -n "$draw_pid" ]]; then

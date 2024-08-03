@@ -2,9 +2,9 @@
 
 CFG_HEIGHT="${CFG_HEIGHT:-24}"
 
-if [ -z "${CFG_REPLACE_MAP+x}" ]; then
-  declare -A CFG_REPLACE_MAP=()
-fi
+# if [ -z "${CFG_REPLACE_MAP+x}" ]; then
+#   declare -A CFG_REPLACE_MAP=()
+# fi
 
 if [ -z "${CFG_DEFAULT_STACK_COLORS+x}" ]; then
   CFG_DEFAULT_STACK_COLORS=('#ff8b92' '#c3e88d' '#e1acff' '#ffe585')
