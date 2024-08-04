@@ -22,27 +22,38 @@ CFG_MODULES=("mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn")
 
 # Replace text before sending to status bar:
 declare -A CFG_REPLACE_MAP=(
-    ["<FG>"]="#fff"
-    ["<BG>"]="#000"
+    # ["<FG>"]="#fff"
+    # ["<BG>"]="#000"
+    ["<FG>"]="#000"
+    ["<BG>"]="#fff"
 
     ["<ON>"]="#afa"
     ["<OFF>"]="#777"
 
     ["<FN_MAIN>"]="RobotoMono Nerd Font:size=12"
+    ["<FN_MEDIUM>"]="RobotoMono Nerd Font:size=10"
     ["<FN_2_ROWS>"]="Terminus-8"
     ["<FN_SANS_MAIN>"]="RobotoMono Nerd Font:size=12"
 
-    ["<BAR1>"]="#ff8b92"
-    ["<BAR2>"]="#c3e88d"
-    ["<BAR3>"]="#e1acff"
-    ["<BAR4>"]="#ffe585"
+    # ["<BAR1>"]="#ff8b92"
+    # ["<BAR2>"]="#c3e88d"
+    # ["<BAR3>"]="#e1acff"
+    # ["<BAR4>"]="#ffe585"
+
+    ["<BAR1>"]="#a33"
+    ["<BAR2>"]="#4b4"
+    ["<BAR3>"]="#80b"
+    ["<BAR4>"]="#24a"
 )
 
 # Some functions uses this for draw rects
 CFG_HEIGHT=28
 
 # Status bar command, dzen2
-CFG_STATUS_BAR_CMD=(dzen2 -fn 'RobotoMono Nerd Font:size=12' -ta r -h "${CFG_HEIGHT}")
+CFG_STATUS_BAR_CMD=(dzen2 -fn 'RobotoMono Nerd Font:size=12' -bg "${CFG_REPLACE_MAP['<BG>']}" -fg "${CFG_REPLACE_MAP['<FG>']}"  -ta r -h "${CFG_HEIGHT}")
+
+# Default params for stack bar
+CFG_DEFAULT_STACK_BAR_PARAMS=()
 
 # # Default colors for stack bars. Some modules might have other var to override colors
 CFG_DEFAULT_STACK_COLORS=("<BAR1>" "<BAR2>" "<BAR3>" "<BAR4>")

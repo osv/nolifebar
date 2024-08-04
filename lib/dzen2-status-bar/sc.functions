@@ -37,6 +37,7 @@ sc_create_bars() {
         last_line="$line"
         local out=""
         out=$(dzen2_draw_h_stacked_bars \
+            "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
             -bar_width 2 \
             -bar_padding 1 \
             "${sc_additional_bar_params[@]}" \

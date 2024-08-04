@@ -160,6 +160,7 @@ calculate_and_print_usage() {
     local total_stats_dzen=""
 
     total_stats_dzen=$(dzen2_draw_h_stacked_bars \
+        "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
         -bar_width 5 \
         "${additional_total_params[@]}" \
         -max_value 1000 \
@@ -168,6 +169,7 @@ calculate_and_print_usage() {
 
     local cores_stats_dzen=""
     cores_stats_dzen=$(dzen2_draw_h_stacked_bars \
+        "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
         -bar_width 3 \
         "${additional_core_params[@]}" \
         -max_value 1000 \
