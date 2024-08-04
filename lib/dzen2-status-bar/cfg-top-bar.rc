@@ -92,9 +92,9 @@ CFG_DEFAULT_DRAW_FLAG_PARAMS=(
 # ################################ Network
 # MOD_NETWORK_INTERVAL=1        # Must be decimal
 
-# MOD_NETWORK_fn_format() {
-#   printf "Down: %dKB, Up: %dKB\n" "$1" "$2"
-# }
+MOD_NETWORK_fn_format() {
+  printf "Down: %4dKB, Up: %4dKB\n" "$1" "$2"
+}
 # MOD_NETWORK_INTERFACE="[ew]*" # e.g wlp7s0
 
 # ############################### Mem
@@ -117,24 +117,18 @@ MOD_MEM_fn_format() {
   local mem_buf_and_shared=$((mem_buffers + mem_shared))
   local mem_used_without_arc=$((mem_used - zfs_arc_size))
 
-  local cpu_bars=24
+  local mem_txt_size=90
   local bar
   bar=$(dzen2_draw_stacked_bar \
-    -width $((cpu_bars * 4 + 1)) \
-    -height 5 \
+    -width "$mem_txt_size" \
+    -height 6 \
     -draw_outline \
     -values "${zfs_arc_size},${mem_used_without_arc},${mem_buf_and_shared},${mem_cached}" \
     -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
     -bg "<BORDER>" \
     -padding 1 \
     -max_value "${mem_total}")
-  # echo "$bar " >&2
-  local mem_txt_size=74
-  local arrow_offset=50
-  local mem_fmt="^p(_TOP)^fg(<FG>)^fn(<FN_MEDIUM>) MEM %3s%%^ib(1)^r(${mem_txt_size}x1-${mem_txt_size}+18)^r(1x6-${arrow_offset}+0)^r($((10+ mem_txt_size - arrow_offset))x1-$((10+ mem_txt_size - arrow_offset))+6)^p()^ib()^fn(<MAIN>)^p(49)"
-  printf "^p(_BOTTOM)^p(-$((15 + cpu_bars * 4));-6)%s${mem_fmt}\n" "$bar" "$used_percentage"
-
-  # printf "%s\n" "$bar_txt"
+  printf "^p(_TOP)^fg(<FG>)^fn(<FN_MEDIUM>)[Mem %3s%%]^p(-$((mem_txt_size));21)%s^p()^fn(<MAIN>)\n" "$used_percentage" "$bar"
 }
 
 # ############################## CPU Bar
@@ -154,10 +148,10 @@ MOD_MEM_fn_format() {
 #   -bg "#fff" -border_fg "#777"
 #   -fg_colors "#7f4b32,#73984d,#817c99,#777545"
 # )
-declare -a MOD_CPU_BARS_CORES_PARAMS=(
-  -bottom_margin 7
-  -height $((CFG_HEIGHT - 8))
-)
+# declare -a MOD_CPU_BARS_CORES_PARAMS=(
+#   -bottom_margin 7
+#   -height $((CFG_HEIGHT - 8))
+# )
 
 # MOD_CPU_BARS_INTERVAL=1 # Interval, float
 
