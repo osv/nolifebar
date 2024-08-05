@@ -36,17 +36,18 @@ declare -A CFG_REPLACE_MAP=(
     # ["<BAR3>"]="#e1acff"
     # ["<BAR4>"]="#ffe585"
 
-    ["<FG>"]="#66f"
-    ["<BG>"]="#fff"
+    ["<FG>"]="#33e"
+    ["<BG>"]="#e7e7e7"
     ["<BORDER>"]="#555"
+    ["<WIDGET_BG>"]="#ddd"
 
     ["<ON>"]="#b82"
     ["<OFF>"]="#777"
 
-    ["<FN_MAIN>"]="RobotoMono Nerd Font:size=12"
-    ["<FN_MEDIUM>"]="RobotoMono Nerd Font:size=10"
+    ["<FN_MAIN>"]="RobotoMono Nerd Font:size=14:style=Light"
+    ["<FN_MEDIUM>"]="RobotoMono Nerd Font:size=10:style=Light"
     ["<FN_2_ROWS>"]="Terminus-8"
-    ["<FN_SANS_MAIN>"]="RobotoMono Nerd Font:size=12"
+    ["<FN_SANS_MAIN>"]="RobotoMono Nerd Font:size=14:style=Light"
 
     # ["<BAR1>"]="#ff8b92"
     # ["<BAR2>"]="#c3e88d"
@@ -60,14 +61,16 @@ declare -A CFG_REPLACE_MAP=(
 )
 
 # Some functions uses this for draw rects
-CFG_HEIGHT=28
+CFG_HEIGHT=30
 
 # Status bar command, dzen2
-CFG_STATUS_BAR_CMD=(dzen2 -fn 'RobotoMono Nerd Font:size=12' -bg "${CFG_REPLACE_MAP['<BG>']}" -fg "${CFG_REPLACE_MAP['<FG>']}"  -ta r -h "${CFG_HEIGHT}")
+CFG_STATUS_BAR_CMD=(dzen2 -dock -fn 'RobotoMono Nerd Font:size=12:style=Light' -bg "${CFG_REPLACE_MAP['<BG>']}" -fg "${CFG_REPLACE_MAP['<FG>']}"  -ta r -h "${CFG_HEIGHT}")
 
 # Default params for stack bar
 CFG_DEFAULT_STACK_BAR_PARAMS=(
-  -bg '#eee'
+  -bg '<WIDGET_BG>'
+  -bottom_margin 2
+  -height "$((CFG_HEIGHT - 4))"
 )
 
 # # Default colors for stack bars. Some modules might have other var to override colors
@@ -117,18 +120,18 @@ MOD_MEM_fn_format() {
   local mem_buf_and_shared=$((mem_buffers + mem_shared))
   local mem_used_without_arc=$((mem_used - zfs_arc_size))
 
-  local mem_txt_size=90
+  local mem_txt_size=92
   local bar
   bar=$(dzen2_draw_stacked_bar \
     -width "$mem_txt_size" \
-    -height 6 \
+    -height 7 \
     -draw_outline \
     -values "${zfs_arc_size},${mem_used_without_arc},${mem_buf_and_shared},${mem_cached}" \
     -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
     -bg "<BORDER>" \
     -padding 1 \
     -max_value "${mem_total}")
-  printf "^p(_TOP)^fg(<FG>)^fn(<FN_MEDIUM>)[Mem %3s%%]^p(-$((mem_txt_size));21)%s^p()^fn(<MAIN>)\n" "$used_percentage" "$bar"
+  printf "^p(_TOP)^fg(<FG>)^fn(<FN_MEDIUM>)^ba(${mem_txt_size},_CENTER)Mem %3s%%^p(-$((mem_txt_size));20)%s^fn(<MAIN>)\n" "$used_percentage" "$bar"
 }
 
 # ############################## CPU Bar
@@ -254,8 +257,8 @@ MOD_OPENVPN_SERVICES=(kz-production kz-development)
 
 # Show short service name
 declare -A MOD_OPENVPN_SERVICES_NAME_MAP=(
-    ["kz-production"]="prod"
-    ["kz-development"]="dev"
+    ["kz-production"]="Prod"
+    ["kz-development"]="Dev"
 )
 
 # # draw VPN function, see global dictionary: "services_status", global array: "services"
