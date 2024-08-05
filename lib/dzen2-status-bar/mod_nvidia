@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+
+echo "Executing Nvidia GPU Stats Plugin"
+
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+. "$MODULE_CORE_DIR/functions"
+: "${TMP_DIR:=/tmp}"
+
+check_dependencies nvidia-smi
+
+interval="${MOD_NVIDIA_INTERVAL:-1}"
+gpu_index="${MOD_NVIDIA_GPU_INDEX:-0}"
+
+additional_render_params=()
+if is_array MOD_NVIDIA_RENDER_PARAMS; then
+    additional_render_params=("${MOD_NVIDIA_RENDER_PARAMS[@]}")
+fi
+
+# For rendering
+declare -A gpu_stat_short_names=()
+
+declare -A gpu_stat_alert_treshold=(
+    ["fan.speed"]=80
+    ["power.draw"]=50
+    ["utilization.gpu"]=30
+    ["temperature.gpu"]=70
+)
+
+for key in "${!MOD_NVIDIA_TRESHOLD[@]}"; do
+    gpu_stat_alert_treshold["$key"]="${MOD_NVIDIA_TRESHOLD[$key]}"
+done
+
+# dictionary of ON/OFF value if param > then treshold in gpu_stat_alert_treshold
+declare -A alerts=()
+
+visible_params=('fan.speed' 'temperature.gpu' 'power.draw' 'utilization.gpu' )
+
+if is_array MOD_NVIDIA_VISIBLE_PARAMS; then
+    visible_params=("${MOD_NVIDIA_VISIBLE_PARAMS[@]}")
+fi
+
+if declare -f MOD_NVIDIA_fn_draw > /dev/null; then
+    draw=MOD_NVIDIA_fn_draw
+else
+    draw=default_draw
+fi
+
+# Use printf to format the value and store it in the dictionary gpu_stat_short_names
+declare -A gpu_stat_fmt=(
+    ["name"]="%s"
+    ["fan.speed"]="Fan %3i%%"
+    ["power.draw"]="Pwr%4iW"
+    ["memory.total"]="%i"
+    ["memory.free"]="%i"
+    ["memory.used"]="%i"
+    ["utilization.gpu"]="GPU %3i%%"
+    ["temperature.gpu"]="t  %4i°C"
+)
+
+format_and_store() {
+    local key="$1"
+    local value="$2"
+    local fmt="${gpu_stat_fmt[$key]}"
+
+    if [ -n "$fmt" ]; then
+        gpu_stat_short_names[$key]=$(printf "$fmt" "$value")
+    fi
+}
+
+update_alerts() {
+    local metric="$1"
+    local value="$2"
+    local threshold=${gpu_stat_alert_treshold[$metric]}
+
+    if ((value > threshold)); then
+        alerts[$metric]="ON"
+    else
+        alerts[$metric]="OFF"
+    fi
+}
+
+# First arg - fifo file for output
+default_draw() {
+    dzen2_draw_flags \
+        gpu_stat_short_names \
+        alerts \
+        visible_params \
+        -label "GPU" \
+        "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
+        -name_size 60 \
+        -flag_align _LEFT \
+        -flag_x_padding 3 \
+        "${additional_render_params[@]}"
+}
+
+main() {
+    local fifo="$1"
+
+    # blank state
+    "$draw" > "$fifo"
+
+    nvidia-smi -l "$interval" \
+        --query-gpu=index,name,fan.speed,power.draw,memory.total,memory.free,memory.used,utilization.gpu,temperature.gpu \
+        --format=csv,noheader,nounits \
+        | sed --unbuffered 's/, /,/g' \
+        | while IFS=, read -r index name fan_speed power_draw memory_total memory_free memory_used gpu_utilization temperature
+    do
+        if ((index != gpu_index)); then continue; fi
+        power_draw="${power_draw%%.*}" # to integer: 24.15 -> 24
+
+        format_and_store "name" "$name"
+        format_and_store "fan.speed" "$fan_speed"
+        format_and_store "power.draw" "$power_draw"
+        format_and_store "memory.total" "$memory_total"
+        format_and_store "memory.free" "$memory_free"
+        format_and_store "memory.used" "$memory_used"
+        format_and_store "utilization.gpu" "$gpu_utilization"
+        format_and_store "temperature.gpu" "$temperature"
+
+        update_alerts "fan.speed" "$fan_speed"
+        update_alerts "power.draw" "$power_draw"
+        update_alerts "utilization.gpu" "$gpu_utilization"
+        update_alerts "temperature.gpu" "$temperature"
+
+        "$draw" "$name" "$fan_speed" "$power_draw" "$memory_total" "$memory_free" "$memory_used" "$gpu_utilization" "$temperature" > "$fifo"
+    done
+}
+
+main "$FIFO_FILE"

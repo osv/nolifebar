@@ -15,7 +15,7 @@
 #   $TMP_DIR - path to temp directory. Module must create temp files in this directory
 #   $MOD_NAME - upper case of current module, usuful if you want to have shared code between modules and eval
 #   $MODULE_CORE_DIR - dir to library of this project (shared bash code, modules)
-CFG_MODULES=("mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn")
+CFG_MODULES=("mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
 
 # # Uncomment to output data for dzen2 to STDOUT for debugging
 # DEBUG=true
@@ -270,6 +270,29 @@ declare -A MOD_OPENVPN_SERVICES_NAME_MAP=(
 #   dzen2_draw_flags services_status services MOD_OPENVPN_SERVICES_NAME_MAP -label "VPN" > "$fifo"
 # }
 
+# ############################### NVIDIA
+# MOD_NVIDIA_INTERVAL=1 # Update interval
+# MOD_NVIDIA_GPU_INDEX=0 # GPU device index
+
+# # Additional render params, see dzen2_draw_flags
+# MOD_NVIDIA_RENDER_PARAMS=()
+
+# # Params for show
+# MOD_NVIDIA_VISIBLE_PARAMS=('fan.speed' 'temperature.gpu' 'power.draw' 'utilization.gpu')
+
+# # Override alert tashold
+# declare -A MOD_NVIDIA_TRESHOLD=(
+#   ["fan.speed"]=80
+#   ["power.draw"]=50
+#   ["utilization.gpu"]=30
+#   ["temperature.gpu"]=70
+# )
+
+# Override render function
+# Arguments: name fan_speed power_draw memory_total memory_free memory_used gpu_utilization temperature
+# MOD_NVIDIA_fn_draw() {
+# }
+
 ###############################
 # Widget layout format function
 ###############################
@@ -280,7 +303,7 @@ fn_format_template() {
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"
   else
-      printf "{out_network} {out_cpu_bars} {out_mem} {out_openvpn} | {out_cava_out} | ^fg(<FG>) {out_cava_in} ^fg(<FG>){out_time} \n"
+      printf "{out_network} {out_cpu_bars} {out_mem}{out_nvidia} {out_openvpn} | {out_cava_out} | ^fg(<FG>) {out_cava_in} ^fg(<FG>){out_time} \n"
   fi
 
 }

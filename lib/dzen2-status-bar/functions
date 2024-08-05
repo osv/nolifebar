@@ -292,7 +292,7 @@ dzen2_draw_flags() {
     local fn_2rows="Terminus-8"
     local fn_2rows_y_offset=0
     local flag_align="_CENTER"
-    local flag_x_padding=0
+    local flag_x_padding=1
 
     # mandatory params
     local -n dictionary_short_names_ref=$1
