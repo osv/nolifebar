@@ -38,16 +38,20 @@ declare -A CFG_REPLACE_MAP=(
 
     ["<FG>"]="#33e"
     ["<BG>"]="#e7e7e7"
-    ["<BORDER>"]="#555"
+    ["<BORDER>"]="#333"
     ["<WIDGET_BG>"]="#ddd"
 
     ["<ON>"]="#b82"
     ["<OFF>"]="#777"
 
-    ["<FN_MAIN>"]="RobotoMono Nerd Font:size=14:style=Light"
-    ["<FN_MEDIUM>"]="RobotoMono Nerd Font:size=10:style=Light"
+    # ["<FN_MAIN>"]="RobotoMono Nerd Font:size=12:style=Light"
+    # ["<FN_MEDIUM>"]="RobotoMono Nerd Font:size=10:style=Light"
+    # ["<FN_2_ROWS>"]="Terminus-8"
+    # ["<FN_SANS_MAIN>"]="RobotoMono Nerd Font:size=12:style=Light"
+    ["<FN_MAIN>"]="Terminus:size=14:style=Light"
+    ["<FN_MEDIUM>"]="Terminus:size=10:style=Light"
     ["<FN_2_ROWS>"]="Terminus-8"
-    ["<FN_SANS_MAIN>"]="RobotoMono Nerd Font:size=14:style=Light"
+    ["<fn_2_ROWS>"]="RobotoMono Nerd Font:size=7:style=Light"
 
     # ["<BAR1>"]="#ff8b92"
     # ["<BAR2>"]="#c3e88d"
@@ -64,7 +68,10 @@ declare -A CFG_REPLACE_MAP=(
 CFG_HEIGHT=30
 
 # Status bar command, dzen2
-CFG_STATUS_BAR_CMD=(dzen2 -dock -fn 'RobotoMono Nerd Font:size=12:style=Light' -bg "${CFG_REPLACE_MAP['<BG>']}" -fg "${CFG_REPLACE_MAP['<FG>']}"  -ta r -h "${CFG_HEIGHT}")
+CFG_STATUS_BAR_CMD=(dzen2 -dock -fn "${CFG_REPLACE_MAP['<FN_MAIN>']}"
+                    -bg "${CFG_REPLACE_MAP['<BG>']}"
+                    -fg "${CFG_REPLACE_MAP['<FG>']}"
+                    -ta r -h "${CFG_HEIGHT}")
 
 # Default params for stack bar
 CFG_DEFAULT_STACK_BAR_PARAMS=(
@@ -103,6 +110,39 @@ MOD_NETWORK_fn_format() {
 # ############################### Mem
 # MOD_MEM_INTERVAL=2
 
+# Draw mem and bar
+# MOD_MEM_fn_format() {
+#   local used_percentage="$1"
+#   local mem_total="$2"
+#   local mem_used="$3"
+#   local mem_free="$4"
+#   local mem_available="$5"
+#   local mem_buffers="$6"
+#   local mem_cached="$7"
+#   local mem_shared="$8"
+#   local mem_sreclaimable="$9"
+#   local mem_swap_total="${10}"
+#   local mem_used_swap="${11}"
+#   local mem_swap_cache="${12}"
+#   local zfs_arc_size="${13}"
+#   local mem_buf_and_shared=$((mem_buffers + mem_shared))
+#   local mem_used_without_arc=$((mem_used - zfs_arc_size))
+
+#   local mem_txt_size=92
+#   local bar
+#   bar=$(dzen2_draw_stacked_bar \
+#     -width "$mem_txt_size" \
+#     -height 7 \
+#     -draw_outline \
+#     -values "${zfs_arc_size},${mem_used_without_arc},${mem_buf_and_shared},${mem_cached}" \
+#     -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
+#     -bg "<BORDER>" \
+#     -padding 1 \
+#     -max_value "${mem_total}")
+#   printf "^p(_TOP)^fg(<FG>)^fn(<FN_MEDIUM>)^ba(${mem_txt_size},_CENTER)Mem %3s%%^p(-$((mem_txt_size));20)%s^fn(<MAIN>)\n" "$used_percentage" "$bar"
+# }
+
+# draw mem and swap bars
 MOD_MEM_fn_format() {
   local used_percentage="$1"
   local mem_total="$2"
@@ -120,10 +160,10 @@ MOD_MEM_fn_format() {
   local mem_buf_and_shared=$((mem_buffers + mem_shared))
   local mem_used_without_arc=$((mem_used - zfs_arc_size))
 
-  local mem_txt_size=92
-  local bar
-  bar=$(dzen2_draw_stacked_bar \
-    -width "$mem_txt_size" \
+  local bar_size=104
+  local mem_bar
+  mem_bar=$(dzen2_draw_stacked_bar \
+    -width "$bar_size" \
     -height 7 \
     -draw_outline \
     -values "${zfs_arc_size},${mem_used_without_arc},${mem_buf_and_shared},${mem_cached}" \
@@ -131,7 +171,29 @@ MOD_MEM_fn_format() {
     -bg "<BORDER>" \
     -padding 1 \
     -max_value "${mem_total}")
-  printf "^p(_TOP)^fg(<FG>)^fn(<FN_MEDIUM>)^ba(${mem_txt_size},_CENTER)Mem %3s%%^p(-$((mem_txt_size));20)%s^fn(<MAIN>)\n" "$used_percentage" "$bar"
+
+  swap_bar=$(dzen2_draw_stacked_bar \
+    -width "$bar_size" \
+    -height 7 \
+    -draw_outline \
+    -values "${mem_used_swap}" \
+    -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
+    -bg "<BORDER>" \
+    -padding 1 \
+    -max_value $((mem_swap_total == 0 ? 100 : mem_swap_total)))
+
+  local swap_percentage="--"
+  if ((mem_swap_total > 0)); then
+    swap_percentage=$((100 * $mem_used_swap / $mem_swap_total))
+  fi
+
+  local out=$(printf "^p(_TOP)^p(;2)^fg(<FG>)^fn(<FN_2_ROWS>)^ba(70,_LEFT)Mem  %3d%%" "$used_percentage")
+  out+="^ib(1)^fg(<BORDER>)^r(1x7-12+1)^r(10x1-0+2)^p(2;-3)${mem_bar}^ib(1)"
+  out+="^p(-175;14)^fg(<FG>)^ba(70,_LEFT)"
+  out+=$(printf "Swap %3s%%" "$swap_percentage")
+  out+="^fg(<BORDER>)^r(1x7-12+4)^r(10x1-0+4)^p(2;-3)${swap_bar}"
+  printf "%s^p()^ib()^fn(<FN_MAIN>)\n" "$out"
+  # printf "^p(_TOP)^fg(<FG>)^fn(<FN_MEDIUM>)Mem %3s%%^ib(1)^r(1x12+2+4)^r(10x1-0+3)^p(2;-2)^ib()%s^fn(<MAIN>)\n" "$used_percentage" "$bar"
 }
 
 # ############################## CPU Bar
@@ -168,8 +230,8 @@ MOD_MEM_fn_format() {
 # }
 
 # ############################### Cava OUT (bars)
-MOD_CAVA_OUT_FRAMERATE=15 # FPS of cava output, default 15
-MOD_CAVA_OUT_BARS=70      # count of cava bars, default 30
+MOD_CAVA_OUT_FRAMERATE=30 # FPS of cava output, default 15
+MOD_CAVA_OUT_BARS=120      # count of cava bars, default 30
 # MOD_CAVA_OUT_HEIGHT=10    # default: $CFG_HEIGHT
 
 # # Custom create cava config
@@ -290,8 +352,25 @@ declare -A MOD_OPENVPN_SERVICES_NAME_MAP=(
 
 # Override render function
 # Arguments: name fan_speed power_draw memory_total memory_free memory_used gpu_utilization temperature
-# MOD_NVIDIA_fn_draw() {
-# }
+MOD_NVIDIA_fn_draw() {
+  memory_total="$4"
+  memory_used="$6"
+
+  local mem_bar
+  mem_bar=$(dzen2_draw_stacked_bar \
+    -width 104 \
+    -height 7 \
+    -draw_outline \
+    -values "$memory_used" \
+    -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
+    -bg "<BORDER>" \
+    -padding 1 \
+    -max_value "${memory_total}")
+
+  local widget=$(default_draw)
+  local out="^p(-104)${mem_bar}^p(2)^r(10x1)^r(1x20)^p(4)${widget}"
+  printf "%s\n" "$out"
+}
 
 ###############################
 # Widget layout format function
