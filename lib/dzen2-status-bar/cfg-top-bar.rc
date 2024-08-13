@@ -340,7 +340,7 @@ declare -A MOD_OPENVPN_SERVICES_NAME_MAP=(
 # MOD_NVIDIA_RENDER_PARAMS=()
 
 # # Params for show
-# MOD_NVIDIA_VISIBLE_PARAMS=('fan.speed' 'temperature.gpu' 'power.draw' 'utilization.gpu')
+# MOD_NVIDIA_VISIBLE_PARAMS=('fan.speed' 'temperature.gpu' 'power.draw' 'utilization.gpu' 'clocks.current.memory' 'clocks.current.graphics' 'utilization.decoder' 'utilization.encoder')
 
 # # Override alert tashold
 # declare -A MOD_NVIDIA_TRESHOLD=(
@@ -348,6 +348,10 @@ declare -A MOD_OPENVPN_SERVICES_NAME_MAP=(
 #   ["power.draw"]=50
 #   ["utilization.gpu"]=30
 #   ["temperature.gpu"]=70
+#   ["utilization.decoder"]=1
+#   ["utilization.encoder"]=1
+#   ["clocks.current.graphics"]=400
+#   ["clocks.current.memory"]=600
 # )
 
 # Override render function

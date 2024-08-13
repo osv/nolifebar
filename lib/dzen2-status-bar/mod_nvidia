@@ -25,6 +25,10 @@ declare -A gpu_stat_alert_treshold=(
     ["power.draw"]=50
     ["utilization.gpu"]=30
     ["temperature.gpu"]=70
+    ["utilization.decoder"]=1
+    ["utilization.encoder"]=1
+    ["clocks.current.graphics"]=400
+    ["clocks.current.memory"]=600
 )
 
 for key in "${!MOD_NVIDIA_TRESHOLD[@]}"; do
@@ -34,7 +38,11 @@ done
 # dictionary of ON/OFF value if param > then treshold in gpu_stat_alert_treshold
 declare -A alerts=()
 
-visible_params=('fan.speed' 'temperature.gpu' 'power.draw' 'utilization.gpu' )
+visible_params=('fan.speed' 'temperature.gpu'
+                'power.draw' 'utilization.gpu'
+                'clocks.current.memory' 'clocks.current.graphics'
+                'utilization.decoder' 'utilization.encoder'
+               )
 
 if is_array MOD_NVIDIA_VISIBLE_PARAMS; then
     visible_params=("${MOD_NVIDIA_VISIBLE_PARAMS[@]}")
@@ -56,6 +64,10 @@ declare -A gpu_stat_fmt=(
     ["memory.used"]="%i"
     ["utilization.gpu"]="GPU %3i%%"
     ["temperature.gpu"]="t  %4i°C"
+    ["utilization.decoder"]="Dec %3i%%"
+    ["utilization.encoder"]="Enc %3i%%"
+    ["clocks.current.graphics"]="P%5iMHz"
+    ["clocks.current.memory"]="M%5iMHz"
 )
 
 format_and_store() {
@@ -101,10 +113,12 @@ main() {
     "$draw" > "$fifo"
 
     nvidia-smi -l "$interval" \
-        --query-gpu=index,name,fan.speed,power.draw,memory.total,memory.free,memory.used,utilization.gpu,temperature.gpu \
+        --query-gpu=index,name,fan.speed,power.draw,memory.total,memory.free,memory.used,utilization.gpu,temperature.gpu,utilization.decoder,utilization.encoder,clocks.current.graphics,clocks.current.memory \
         --format=csv,noheader,nounits \
         | sed --unbuffered 's/, /,/g' \
-        | while IFS=, read -r index name fan_speed power_draw memory_total memory_free memory_used gpu_utilization temperature
+        | while IFS=, read -r index name fan_speed power_draw memory_total \
+                              memory_free memory_used gpu_utilization temperature \
+                              decoder encoder clocks_graphics clocks_memory
     do
         if ((index != gpu_index)); then continue; fi
         power_draw="${power_draw%%.*}" # to integer: 24.15 -> 24
@@ -117,13 +131,23 @@ main() {
         format_and_store "memory.used" "$memory_used"
         format_and_store "utilization.gpu" "$gpu_utilization"
         format_and_store "temperature.gpu" "$temperature"
+        format_and_store "utilization.decoder" "$decoder"
+        format_and_store "utilization.encoder" "$encoder"
+        format_and_store "clocks.current.graphics" "$clocks_graphics"
+        format_and_store "clocks.current.memory" "$clocks_memory"
 
         update_alerts "fan.speed" "$fan_speed"
         update_alerts "power.draw" "$power_draw"
         update_alerts "utilization.gpu" "$gpu_utilization"
         update_alerts "temperature.gpu" "$temperature"
+        update_alerts "utilization.decoder" "$decoder"
+        update_alerts "utilization.encoder" "$encoder"
+        update_alerts "clocks.current.graphics" "$clocks_graphics"
+        update_alerts "clocks.current.memory" "$clocks_memory"
 
-        "$draw" "$name" "$fan_speed" "$power_draw" "$memory_total" "$memory_free" "$memory_used" "$gpu_utilization" "$temperature" > "$fifo"
+        "$draw" "$name" "$fan_speed" "$power_draw" "$memory_total" \
+            "$memory_free" "$memory_used" "$gpu_utilization" "$temperature"\
+            "$decoder" "$encoder" "$clocks_graphics" "$clocks_memory" > "$fifo"
     done
 }
 
