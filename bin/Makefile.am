@@ -21,6 +21,13 @@ bin_PROGRAMS += dzen2-throttle
 dzen2_throttle_SOURCES = ../src/dzen2-throttle.c
 endif
 
+if ENABLE_DZEN2_XTITLE
+bin_PROGRAMS += dzen2-xtitle
+dzen2_xtitle_SOURCES = ../src/dzen2-xtitle.c
+dzen2_xtitle_LDADD = $(X11_LIBS)
+dzen2_xtitle_CFLAGS = $(X11_CFLAGS)
+endif
+
 bin_PROGRAMS += dzen2-workspaces
 dzen2_workspaces_SOURCES = ../src/dzen2-workspaces.c
 dzen2_workspaces_LDADD = $(X11_LIBS) $(XFT_LIBS) $(XCB_EWMH_LIBS) $(XCB_ICCCM_LIBS)

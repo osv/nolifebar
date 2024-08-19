@@ -56,6 +56,20 @@ if test "$enable_dzen2_throttle" = "yes"; then
   AC_DEFINE([ENABLE_DZEN2_THROTTLE], [1], [Define if dzen2_throttle program is enabled])
 fi
 
+# xtitle
+AC_ARG_ENABLE([dzen2-xtitle],
+  [AS_HELP_STRING([--disable-dzen2-xtitle], [Disable compilation of dzen2-xtitle program.
+                                             Prints title of current window])],
+  [enable_dzen2_xtitle=$enableval],
+  [enable_dzen2_xtitle=yes]
+)
+
+AM_CONDITIONAL([ENABLE_DZEN2_XTITLE], [test "x$enable_dzen2_xtitle" = "xyes"])
+
+if test "$enable_dzen2_xtitle" = "yes"; then
+  AC_DEFINE([ENABLE_DZEN2_XTITLE], [1], [Define if dzen2_xtitle program is enabled])
+fi
+
 # Checks for optional programs.
 AC_PATH_PROG([DZEN2], [dzen2])
 if test -z "$DZEN2"; then
@@ -86,6 +100,7 @@ echo "  dzen2-fn-xft      : $enable_dzen2_fn_xft"
 fi
 
 echo "  dzen2-throttle    : $enable_dzen2_throttle"
+echo "  dzen2-xtitle      : $enable_dzen2_xtitle"
 echo ""
 echo "Required runtime binaries/apps:"
 echo "  dzen2             : ${dzen2_status}"
