@@ -8,7 +8,7 @@ sc_init_variables() {
   eval sc_sensitivity="\${${MOD_NAME}_SENSITIVITY:-4400}"
   eval sc_framerate="\${${MOD_NAME}_FRAMERATE:-15}"
   eval sc_bars="\${${MOD_NAME}_BARS:-30}"
-  eval sc_height="\${${MOD_NAME}_HEIGHT:-0}"
+  eval sc_padding="\${${MOD_NAME}_PADDING:-1}"
   eval sc_fn_create_file="\${${MOD_NAME}_fn_create_config:-default_create_config}"
 
   # allow override config creation function
@@ -23,9 +23,7 @@ sc_init_variables() {
   fi"
 
   # Additional height calculation. 2 - border + padding
-  sc_height=$((sc_height > 0 ?
-                        sc_height : (CFG_HEIGHT - 2)))
-  sc_range=$((sc_height - 2)) # 4 - padding
+  sc_height=$((CFG_HEIGHT - 2 * sc_padding)) # 4 - padding
 }
 
 sc_create_bars() {
@@ -40,10 +38,11 @@ sc_create_bars() {
             "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
             -bar_width 2 \
             -bar_padding 1 \
+            -bottom_margin "$sc_padding" \
             "${sc_additional_bar_params[@]}" \
             -stacks 1 \
             -height "$sc_height" \
-            -max_value "$sc_range" \
+            -max_value "$sc_height" \
             -values "$line")
 
         printf "%s\n" "$out"

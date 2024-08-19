@@ -12,7 +12,7 @@ check_dependencies cava
 # shared cava code
 . "$MODULE_CORE_DIR/sc.functions"
 
-sc_init_variables # init sc_range, etc
+sc_init_variables # init sc_height, etc
 
 cava_cfg="$TMP_DIR/cava_in.cfg"
 
@@ -35,7 +35,7 @@ sensitivity = $sc_sensitivity
 method = raw
 raw_target = /dev/stdout
 data_format = ascii
-ascii_max_range = $sc_range
+ascii_max_range = $sc_height
 mono_option = average
 channels = mono
 mono_option = average

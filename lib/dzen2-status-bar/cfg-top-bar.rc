@@ -230,9 +230,9 @@ MOD_MEM_fn_format() {
 # }
 
 # ############################### Cava OUT (bars)
-MOD_CAVA_OUT_FRAMERATE=30 # FPS of cava output, default 15
+MOD_CAVA_OUT_FRAMERATE=15 # FPS of cava output, default 15
 MOD_CAVA_OUT_BARS=120      # count of cava bars, default 30
-# MOD_CAVA_OUT_HEIGHT=10    # default: $CFG_HEIGHT
+# MOD_CAVA_OUT_PADDING=1   # Vertical padding, default: 1
 
 # # Custom create cava config
 # MOD_CAVA_OUT_fn_create_config() {
@@ -246,7 +246,7 @@ MOD_CAVA_OUT_BARS=120      # count of cava bars, default 30
 # method = raw
 # raw_target = /dev/stdout
 # data_format = ascii
-# ascii_max_range = $sc_range
+# ascii_max_range = $sc_height
 # channels = mono
 # mono_option = average
 # [smoothing]
@@ -257,7 +257,6 @@ MOD_CAVA_OUT_BARS=120      # count of cava bars, default 30
 # # Additional params to dzen2_draw_h_stacked_bars
 declare -a MOD_CAVA_OUT_BAR_PARAMS=(
   -bar_width 1
-  -bar_padding 1
   -fg_colors "#66d"
 )
 
@@ -267,7 +266,7 @@ declare -a MOD_CAVA_OUT_BAR_PARAMS=(
 # MOD_CAVA_IN_SENSITIVITY=400 # default
 # MOD_CAVA_IN_FRAMERATE=40    # FPS of cava output, default 15
 # MOD_CAVA_IN_BARS=30         # count of cava bars, default 30
-# MOD_CAVA_IN_HEIGHT=10       # default: $CFG_HEIGHT
+# MOD_CAVA_IN_PADDING=1       # Vertical padding, default: 1
 
 # # Custom create cava config
 # # You might want to override source and method
@@ -288,7 +287,7 @@ declare -a MOD_CAVA_OUT_BAR_PARAMS=(
 # method = raw
 # raw_target = /dev/stdout
 # data_format = ascii
-# ascii_max_range = $sc_range
+# ascii_max_range = $sc_height
 # mono_option = average
 # channels = mono
 # mono_option = average
