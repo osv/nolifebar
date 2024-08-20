@@ -15,7 +15,7 @@
 #   $TMP_DIR - path to temp directory. Module must create temp files in this directory
 #   $MOD_NAME - upper case of current module, usuful if you want to have shared code between modules and eval
 #   $MODULE_CORE_DIR - dir to library of this project (shared bash code, modules)
-CFG_MODULES=("mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
+CFG_MODULES=("xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
 
 # # Uncomment to output data for dzen2 to STDOUT for debugging
 # DEBUG=true
@@ -231,7 +231,7 @@ MOD_MEM_fn_format() {
 
 # ############################### Cava OUT (bars)
 MOD_CAVA_OUT_FRAMERATE=15 # FPS of cava output, default 15
-MOD_CAVA_OUT_BARS=120      # count of cava bars, default 30
+MOD_CAVA_OUT_BARS=60      # count of cava bars, default 30
 # MOD_CAVA_OUT_PADDING=1   # Vertical padding, default: 1
 
 # # Custom create cava config
@@ -385,7 +385,7 @@ fn_format_template() {
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"
   else
-      printf "{out_network} {out_cpu_bars} {out_mem}{out_nvidia} {out_openvpn} | {out_cava_out} | ^fg(<FG>) {out_cava_in} ^fg(<FG>){out_time} \n"
+      printf "[{out_xtitle}] {out_network} {out_cpu_bars} {out_mem}{out_nvidia} {out_openvpn} | {out_cava_out} | ^fg(<FG>) {out_cava_in} ^fg(<FG>){out_time} \n"
   fi
 
 }

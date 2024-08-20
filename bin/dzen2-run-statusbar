@@ -8,6 +8,10 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+# Add the script directory to the PATH
+export PATH="$SCRIPT_DIR:$PATH"
+
 # Get the absolute path of the resource file
 RESOURCE_FILE=$(realpath "$1")
 export RESOURCE_FILE
@@ -141,7 +145,7 @@ run_and_wait_for_dzen2() {
     # echo "$template_fifo $(IFS=' '; echo "${fifo_files[*]}")"
     mkfifo "$template_fifo"
 
-    ./bin/dzen2-merge-pipes "$template_fifo" $(IFS=' '; echo "${fifo_files[*]}") |\
+    dzen2-merge-pipes "$template_fifo" $(IFS=' '; echo "${fifo_files[*]}") |\
         sed --unbuffered "$SED_COMMAND" |\
         debug_pipe |\
         "${CFG_STATUS_BAR_CMD[@]}" |\
