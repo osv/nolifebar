@@ -23,13 +23,16 @@ mod_draw_default() {
 mod_draw_dzen2() {
     local fifo="$1"
     dzen2-xtitle \
-        | truncate_text \
+        | truncate_text "$ellipsis" "$max_length" \
         | sed --unbuffered 's/\^/^^/g' \
         | dzen2-fn-xft "${dzen2_fonts[@]}" \
         > "$fifo"
 }
 
 truncate_text() {
+    local ellipsis="$1"
+    local max_length="$2"
+
     while IFS= read -r line; do
         local text="$line"
         local text_length="${#text}"
