@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 CFG_HEIGHT="${CFG_HEIGHT:-24}"
+CFG_BACKEND="${CFG_BACKEND:-dzen2}"
 
 # if [ -z "${CFG_REPLACE_MAP+x}" ]; then
 #   declare -A CFG_REPLACE_MAP=()
@@ -23,8 +24,39 @@ check_dependencies() {
     # If there are missing dependencies, print them and exit
     if [ ${#missing_dependencies[@]} -ne 0 ]; then
         echo >&2 "Missing executables: ${missing_dependencies[@]}"
+        echo >&2 "Exiting"
         exit 1
     fi
+}
+
+# call function for init vars and set draw function depending on CFG_BACKEND
+mod_init() {
+    if declare -f "mod_init_vars" > /dev/null; then
+        "mod_init_vars"
+    fi
+
+    if declare -f "${MOD_NAME}_init_vars" > /dev/null; then
+        "${MOD_NAME}_init_vars"
+    fi
+
+    if declare -f "${MOD_NAME}_draw_${CFG_BACKEND}" > /dev/null; then
+        draw_fn="${MOD_NAME}_draw_${CFG_BACKEND}"
+    elif declare -f "${MOD_NAME}_draw" > /dev/null; then
+        draw_fn="${MOD_NAME}_draw"
+    elif declare -f "mod_draw_${CFG_BACKEND}" > /dev/null; then
+        draw_fn="mod_draw_${CFG_BACKEND}"
+    elif declare -f "mod_draw_default" > /dev/null; then
+        draw_fn="mod_draw_default"
+    else
+        echo "CFG_BACKEND=${CFG_BACKEND}, but no draw function: ${MOD_NAME}_draw_${CFG_BACKEND}, ${MOD_NAME}_draw
+(or mod_draw_${CFG_BACKEND}, mod_draw_default in this module)
+Exiting" >&2
+        exit 1
+    fi
+}
+
+mod_draw() {
+    "$draw_fn" "$@"
 }
 
 read_sleep() {

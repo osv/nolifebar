@@ -17,6 +17,10 @@
 #   $MODULE_CORE_DIR - dir to library of this project (shared bash code, modules)
 CFG_MODULES=("xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
 
+# # Draw backend: dzen2 (default), lemonbar, text
+# # Depending on the value, the appropriate draw function will be selected
+# CFG_BACKEND=dzen2
+
 # # Uncomment to output data for dzen2 to STDOUT for debugging
 # DEBUG=true
 
@@ -373,6 +377,13 @@ MOD_NVIDIA_fn_draw() {
   local widget=$(default_draw)
   local out="^p(-104)${mem_bar}^p(2)^r(10x1)^r(1x20)^p(4)${widget}"
   printf "%s\n" "$out"
+}
+
+# ############################### XTITLE
+MOD_XTITLE_init_vars() {
+    ellipsis="…"
+    max_length="60"
+    dzen2_fonts=("Noto Sans:size=12:style=Light" "Noto Sans CJK JP:size=12:style=Light" "Noto Color Emoji:size=12:style=Light")
 }
 
 ###############################

@@ -9,11 +9,27 @@ echo "Executing XTitle Plugin"
 
 check_dependencies dzen2-xtitle dzen2-fn-xft
 
-ellipsis="${MOD_XTITLE_INTERVAL:-…}"
-max_length="${MOD_XTITLE_MAX_LENGTH:-70}"
-font_change_cmd="dzen2-fn-xft \"DejaVu Sans\" \"Noto Sans Greek\" \"Noto Sans\" \"Noto Sans CJK JP\" \"Noto Color Emoji\""
-truncate_text() {
+mod_init_vars() {
+    ellipsis="…"
+    max_length="70"
+    dzen2_fonts=("Noto Sans" "Noto Sans CJK JP" "Noto Color Emoji")
+}
 
+mod_draw_default() {
+    local fifo="$1"
+    dzen2-xtitle | truncate_text > "$fifo"
+}
+
+mod_draw_dzen2() {
+    local fifo="$1"
+    dzen2-xtitle \
+        | truncate_text \
+        | sed --unbuffered 's/\^/^^/g' \
+        | dzen2-fn-xft "${dzen2_fonts[@]}" \
+        > "$fifo"
+}
+
+truncate_text() {
     while IFS= read -r line; do
         local text="$line"
         local text_length="${#text}"
@@ -27,30 +43,5 @@ truncate_text() {
     done
 }
 
-debug_pipe() {
-    if [ "$DEBUG" = true ]; then
-        tee >(cat >&2)
-    else
-        cat
-    fi
-}
-
-main() {
-    local fifo="$1"
-
-    dzen2-xtitle \
-        | tee >(cat >&2) \
-        | truncate_text \
-        | sed --unbuffered 's/\^/^^/g' \
-        | dzen2-fn-xft "DejaVu Sans" "Noto Sans Greek" "Noto Sans" "Noto Sans CJK JP" "Noto Color Emoji" \
-        > "$fifo"
-
-    # dzen2-xtitle \
-    #     | truncate_text \
-    #     | sed --unbuffered 's/\^/^^/g' \
-    #     | $font_change_cmd \
-    #     > "$fifo"
-
-}
-
-main "$FIFO_FILE"
+mod_init
+mod_draw "$FIFO_FILE"
