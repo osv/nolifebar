@@ -12,8 +12,6 @@ check_dependencies cava pactl
 # shared cava
 . "$MODULE_CORE_DIR/sc.functions"
 
-sc_init_variables # init sc_height, etc
-
 cava_cfg="$TMP_DIR/cava_out.cfg"
 
 default_create_config() {
@@ -43,6 +41,5 @@ EOF
 }
 
 # you can override create config by creating MOD_CAVA_OUT_fn_create_config
-"$sc_fn_create_file" "$cava_cfg"
-
+mod_init
 sc_run_cava_and_print_to_file "$cava_cfg" "$FIFO_FILE"

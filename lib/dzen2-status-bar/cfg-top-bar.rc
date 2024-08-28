@@ -24,7 +24,7 @@ CFG_MODULES=("xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "op
 # # Uncomment to output data for dzen2 to STDOUT for debugging
 # DEBUG=true
 
-# Replace text before sending to status bar:
+# Replace text before sending to status bar programm:
 declare -A CFG_REPLACE_MAP=(
     # ["<FG>"]="#fff"
     # ["<BG>"]="#000"
@@ -234,81 +234,89 @@ MOD_MEM_fn_format() {
 # }
 
 # ############################### Cava OUT (bars)
-MOD_CAVA_OUT_FRAMERATE=15 # FPS of cava output, default 15
-MOD_CAVA_OUT_BARS=60      # count of cava bars, default 30
-# MOD_CAVA_OUT_PADDING=1   # Vertical padding, default: 1
+MOD_CAVA_OUT_init_vars() {
+  sc_framerate=15      # FPS of cava output, default 15
+  sc_bars=30           # count of cava bars, default 30
+  sc_padding=1         # Vertical padding, default: 1
 
-# # Custom create cava config
-# MOD_CAVA_OUT_fn_create_config() {
-#   local config="$1"
-#   cat << EOF > "$config"
-# [general]
-# bars = $sc_bars
-# sleep_timer = 1
-# framerate = $sc_framerate
-# [output]
-# method = raw
-# raw_target = /dev/stdout
-# data_format = ascii
-# ascii_max_range = $sc_height
-# channels = mono
-# mono_option = average
-# [smoothing]
-# noise_reduction = 20
-# EOF
-# }
+  # sc_fn_create_file="MOD_CAVA_OUT_custom_create_config" # override create cava config file function
 
-# # Additional params to dzen2_draw_h_stacked_bars
-declare -a MOD_CAVA_OUT_BAR_PARAMS=(
-  -bar_width 1
-  -fg_colors "#66d"
-)
+  # dzen2_draw_h_stacked_bars additional params
+  sc_additional_bar_params=(
+    -bar_width 1
+    -bar_padding 1
+    -fg_colors "#66d"
+  )
+}
 
-# ############################### Cava Input (microphone)
-# # Same like for MOD_CAVA_OUT
-#
-# MOD_CAVA_IN_SENSITIVITY=400 # default
-# MOD_CAVA_IN_FRAMERATE=40    # FPS of cava output, default 15
-# MOD_CAVA_IN_BARS=30         # count of cava bars, default 30
-# MOD_CAVA_IN_PADDING=1       # Vertical padding, default: 1
+# Custom create cava config
+MOD_CAVA_OUT_custom_create_config() {
+  local config="$1"
+  cat << EOF > "$config"
+[general]
+bars = $sc_bars
+sleep_timer = 1
+framerate = $sc_framerate
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = $sc_height
+channels = mono
+mono_option = average
+[smoothing]
+noise_reduction = 20
+EOF
+}
 
-# # Custom create cava config
-# # You might want to override source and method
-# # By default used pulse
-#  MOD_CAVA_IN_fn_create_config() {
-#     local config="$1"
-#     default_source=$(pactl info | \
-#                      grep "Default Source" | \
-#                      cut -d ' ' -f3)
-#     cat << EOF > "$config"
-# [general]
-# bars = $sc_bars
-# sleep_timer = 1
-# framerate = $sc_framerate
-# autosens = 0
-# sensitivity = $sc_sensitivity
-# [output]
-# method = raw
-# raw_target = /dev/stdout
-# data_format = ascii
-# ascii_max_range = $sc_height
-# mono_option = average
-# channels = mono
-# mono_option = average
-# [input]
-# method = pulse
-# source = "$default_source"
-# [smoothing]
-# noise_reduction = 20
-# EOF
-# }
+# ############################### Cava IN (bars)
+MOD_CAVA_IN_init_vars() {
+  sc_framerate=15      # FPS of cava output, default 15
+  sc_bars=30           # count of cava bars, default 30
+  sc_padding=1         # Vertical padding, default: 1
 
-# # Additional params to dzen2_draw_h_stacked_bars
-# declare -a MOD_CAVA_IN_BAR_PARAMS=(
-#   -bar_width 1
-#   -bar_padding 0
-#   -fg_colors "#fff"
-# )
+  # sc_fn_create_file="MOD_CAVA_IN_custom_create_config" # override create cava config file function
+
+  # dzen2_draw_h_stacked_bars additional params
+  sc_additional_bar_params=(
+    -bar_width 1
+    -bar_padding 0
+    -fg_colors "#fff"
+  )
+}
+
+# Custom create cava config
+MOD_CAVA_IN_custom_create_config() {
+    local config="$1"
+    check_dependencies pactl
+    default_source=$(pactl info | grep "Default Source" | cut -d ' ' -f3)
+
+    cat << EOF > "$config"
+[general]
+bars = $sc_bars
+sleep_timer = 1
+framerate = $sc_framerate
+autosens = 0
+sensitivity = $sc_sensitivity
+
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = $sc_height
+mono_option = average
+channels = mono
+mono_option = average
+
+[input]
+method = pulse
+source = "$default_source"
+
+[smoothing]
+noise_reduction = 15
+
+EOF
+}
 
 # ############################### OpenVPN
 # MOD_OPENVPN_SERVICE_PREFIX="openvpn-" # systemd service prefix

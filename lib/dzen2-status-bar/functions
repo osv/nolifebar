@@ -29,7 +29,8 @@ check_dependencies() {
     fi
 }
 
-# call function for init vars and set draw function depending on CFG_BACKEND
+# Call mod_init_vars, ${MOD_NAME}_init_vars, mod_init_draw if exists
+# Set draw_fn depending on CFG_BACKEND
 mod_init() {
     if declare -f "mod_init_vars" > /dev/null; then
         "mod_init_vars"
@@ -37,6 +38,10 @@ mod_init() {
 
     if declare -f "${MOD_NAME}_init_vars" > /dev/null; then
         "${MOD_NAME}_init_vars"
+    fi
+
+    if declare -f "mod_init_draw" > /dev/null; then
+        "mod_init_draw"
     fi
 
     if declare -f "${MOD_NAME}_draw_${CFG_BACKEND}" > /dev/null; then
