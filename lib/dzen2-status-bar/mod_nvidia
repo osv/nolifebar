@@ -9,66 +9,55 @@ echo "Executing Nvidia GPU Stats Plugin"
 
 check_dependencies nvidia-smi
 
-interval="${MOD_NVIDIA_INTERVAL:-1}"
-gpu_index="${MOD_NVIDIA_GPU_INDEX:-0}"
+declare -A gpu_stat_alert_treshold
+declare -A gpu_stat_fmt
 
-additional_render_params=()
-if is_array MOD_NVIDIA_RENDER_PARAMS; then
-    additional_render_params=("${MOD_NVIDIA_RENDER_PARAMS[@]}")
-fi
+mod_init_vars() {
+    interval=1
+    gpu_index=0
 
-# For rendering
-declare -A gpu_stat_short_names=()
+    additional_render_params=()
 
-declare -A gpu_stat_alert_treshold=(
-    ["fan.speed"]=80
-    ["power.draw"]=50
-    ["utilization.gpu"]=30
-    ["temperature.gpu"]=70
-    ["utilization.decoder"]=1
-    ["utilization.encoder"]=1
-    ["clocks.current.graphics"]=400
-    ["clocks.current.memory"]=600
-)
+    gpu_stat_alert_treshold=(
+        ["fan.speed"]=80
+        ["power.draw"]=50
+        ["utilization.gpu"]=30
+        ["temperature.gpu"]=70
+        ["utilization.decoder"]=1
+        ["utilization.encoder"]=1
+        ["clocks.current.graphics"]=400
+        ["clocks.current.memory"]=600
+    )
 
-for key in "${!MOD_NVIDIA_TRESHOLD[@]}"; do
-    gpu_stat_alert_treshold["$key"]="${MOD_NVIDIA_TRESHOLD[$key]}"
-done
+    visible_params=(
+                    'memory.free' 'memory.used'
+                    'fan.speed' 'temperature.gpu'
+                    'power.draw' 'utilization.gpu'
+                    'clocks.current.memory' 'clocks.current.graphics'
+                    'utilization.decoder' 'utilization.encoder'
+                   )
 
-# dictionary of ON/OFF value if param > then treshold in gpu_stat_alert_treshold
+    # define how to format metrics
+    gpu_stat_fmt=(
+        ["name"]="%s"
+        ["fan.speed"]="Fan %3i%%"
+        ["power.draw"]="Pwr%4iW"
+        ["memory.total"]="Ttl %4iM"
+        ["memory.free"]="Fre %4iM"
+        ["memory.used"]="Use %4iM"
+        ["utilization.gpu"]="GPU %3i%%"
+        ["temperature.gpu"]="t  %4i°C"
+        ["utilization.decoder"]="Dec %3i%%"
+        ["utilization.encoder"]="Enc %3i%%"
+        ["clocks.current.graphics"]="P%5iMHz"
+        ["clocks.current.memory"]="M%5iMHz"
+    )
+}
+
+# dictionary of ON/OFF value if value > treshold in gpu_stat_alert_treshold
 declare -A alerts=()
-
-visible_params=('fan.speed' 'temperature.gpu'
-                'power.draw' 'utilization.gpu'
-                'clocks.current.memory' 'clocks.current.graphics'
-                'utilization.decoder' 'utilization.encoder'
-               )
-
-if is_array MOD_NVIDIA_VISIBLE_PARAMS; then
-    visible_params=("${MOD_NVIDIA_VISIBLE_PARAMS[@]}")
-fi
-
-if declare -f MOD_NVIDIA_fn_draw > /dev/null; then
-    draw=MOD_NVIDIA_fn_draw
-else
-    draw=default_draw
-fi
-
-# Use printf to format the value and store it in the dictionary gpu_stat_short_names
-declare -A gpu_stat_fmt=(
-    ["name"]="%s"
-    ["fan.speed"]="Fan %3i%%"
-    ["power.draw"]="Pwr%4iW"
-    ["memory.total"]="%i"
-    ["memory.free"]="%i"
-    ["memory.used"]="%i"
-    ["utilization.gpu"]="GPU %3i%%"
-    ["temperature.gpu"]="t  %4i°C"
-    ["utilization.decoder"]="Dec %3i%%"
-    ["utilization.encoder"]="Enc %3i%%"
-    ["clocks.current.graphics"]="P%5iMHz"
-    ["clocks.current.memory"]="M%5iMHz"
-)
+# Formatted metrics
+declare -A gpu_stat_short_names=()
 
 format_and_store() {
     local key="$1"
@@ -85,7 +74,7 @@ update_alerts() {
     local value="$2"
     local threshold=${gpu_stat_alert_treshold[$metric]}
 
-    if ((value > threshold)); then
+    if ((threshold > 0 && value > threshold)); then
         alerts[$metric]="ON"
     else
         alerts[$metric]="OFF"
@@ -93,7 +82,7 @@ update_alerts() {
 }
 
 # First arg - fifo file for output
-default_draw() {
+mod_draw_dzen2() {
     dzen2_draw_flags \
         gpu_stat_short_names \
         alerts \
@@ -106,11 +95,11 @@ default_draw() {
         "${additional_render_params[@]}"
 }
 
-main() {
+mod_loop() {
     local fifo="$1"
 
     # blank state
-    "$draw" > "$fifo"
+    mod_draw > "$FIFO_FILE"
 
     nvidia-smi -l "$interval" \
         --query-gpu=index,name,fan.speed,power.draw,memory.total,memory.free,memory.used,utilization.gpu,temperature.gpu,utilization.decoder,utilization.encoder,clocks.current.graphics,clocks.current.memory \
@@ -138,6 +127,9 @@ main() {
 
         update_alerts "fan.speed" "$fan_speed"
         update_alerts "power.draw" "$power_draw"
+        update_alerts "memory.total" "$memory_total"
+        update_alerts "memory.free" "$memory_free"
+        update_alerts "memory.used" "$memory_used"
         update_alerts "utilization.gpu" "$gpu_utilization"
         update_alerts "temperature.gpu" "$temperature"
         update_alerts "utilization.decoder" "$decoder"
@@ -145,10 +137,11 @@ main() {
         update_alerts "clocks.current.graphics" "$clocks_graphics"
         update_alerts "clocks.current.memory" "$clocks_memory"
 
-        "$draw" "$name" "$fan_speed" "$power_draw" "$memory_total" \
+        mod_draw \
+            "$name" "$fan_speed" "$power_draw" "$memory_total" \
             "$memory_free" "$memory_used" "$gpu_utilization" "$temperature"\
-            "$decoder" "$encoder" "$clocks_graphics" "$clocks_memory" > "$fifo"
+            "$decoder" "$encoder" "$clocks_graphics" "$clocks_memory" > "$FIFO_FILE"
     done
 }
 
-main "$FIFO_FILE"
+mod_init
