@@ -10,7 +10,7 @@ echo "Executing OpenVPN Plugin"
 check_dependencies systemctl journalctl
 
 declare -A services_name_map
-# Dictionary for service: ON/OFF value, for using in draw fn
+# Dictionary for service status: ON/OFF value, for using in draw fn
 declare -A services_status
 
 mod_init_vars() {
@@ -20,6 +20,8 @@ mod_init_vars() {
     additional_render_params=() # dzen2_draw_flags
 }
 
+# First arg - fifo file for output
+# Second arg - last line from log
 mod_draw_default() {
     local fifo="$1"
     local last_line="$2" # not used
@@ -34,8 +36,6 @@ mod_draw_default() {
     printf "VPN: [%s]\n" "$result" > $fifo
 }
 
-# First arg - fifo file for output
-# Second arg - last line from log
 mod_draw_dzen2() {
     local fifo="$1"
     local last_line="$2" # not used
@@ -85,7 +85,7 @@ mod_loop() {
 
     if [ ${#services[@]} -eq 0 ]; then
         echo "No openvpn services to monitor."
-        echo "Exiting, please set MOD_OPENVPN_SERVICES=() if you want to monitor VPN status" >&2
+        echo "Exiting, please set services=() if you want to monitor VPN status" >&2
         exit
     fi
 
