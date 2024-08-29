@@ -40,6 +40,8 @@ EOF
 . Bars: %14i\n" "$sc_framerate" "$sc_bars"
 }
 
-# you can override create config by creating MOD_CAVA_OUT_fn_create_config
+mod_loop() {
+    sc_run_cava_and_print_to_file "$cava_cfg" "$FIFO_FILE"
+}
+
 mod_init
-sc_run_cava_and_print_to_file "$cava_cfg" "$FIFO_FILE"
