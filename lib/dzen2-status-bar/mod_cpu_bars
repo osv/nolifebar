@@ -8,20 +8,15 @@ echo "Executing CPU Bars Plugin"
 : "${MODULE_CORE_DIR:=$(dirname $0)}"
 . "$MODULE_CORE_DIR/functions"
 
-interval="${MOD_CPU_BARS_INTERVAL:-1}"
-additional_core_params=()
-
-if is_array MOD_CPU_BARS_CORES_PARAMS; then
-    additional_core_params=("${MOD_CPU_BARS_CORES_PARAMS[@]}")
-fi
-
-additional_total_params=()
-if is_array MOD_CPU_BARS_TOTAL_PARAMS; then
-    additional_total_params=("${MOD_CPU_BARS_TOTAL_PARAMS[@]}")
-fi
+mod_init_vars() {
+    interval=1
+    additional_core_params=()
+    additional_total_params=()
+}
 
 show_total_only=0
-default_format() {
+
+mod_draw_dzen2() {
     local total_stats_dzen="$1"
     local cores_stats_dzen="$2"
     local total_cpu_perc="$3"
@@ -54,12 +49,6 @@ handle_signal() {
 }
 
 trap 'handle_signal' SIGUSR1
-
-if declare -f MOD_CPU_BARS_fn_format > /dev/null; then
-    format_function=MOD_CPU_BARS_fn_format
-else
-    format_function=default_format
-fi
 
 declare -a previousStats
 declare -a currentStats
@@ -176,7 +165,7 @@ calculate_and_print_usage() {
         -stacks 4 \
         -values "$result_cores")
 
-    "$format_function" \
+    mod_draw \
         "$total_stats_dzen" \
         "$cores_stats_dzen" \
         "$total_cpu_perc" \
@@ -190,11 +179,15 @@ update() {
     calculate_and_print_usage > "$FIFO_FILE"
 }
 
-while true; do
-    declare -a previousStats
-    get_cpu_stats previousStats
-    read_sleep "$interval"
-    declare -a currentStats
-    get_cpu_stats currentStats
-    update
-done
+mod_loop() {
+    while true; do
+        declare -a previousStats
+        get_cpu_stats previousStats
+        read_sleep "$interval"
+        declare -a currentStats
+        get_cpu_stats currentStats
+        update
+    done
+}
+
+mod_init

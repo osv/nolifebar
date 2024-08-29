@@ -201,37 +201,25 @@ MOD_MEM_fn_format() {
 }
 
 # ############################## CPU Bar
-# # Custom params for CPU Cores charts
-# # fg_colors for bars: Low(nice),Normal(user),Kernel,Guest
-# declare -a MOD_CPU_BARS_CORES_PARAMS=(
-#   -bar_width 5 -height 22 -bottom_margin 1
-#   -stack_padding 1 -bar_padding 2
-#   -bg "#fff" -border_fg "#777"
-#   -fg_colors "#7f4b32,#73984d,#817c99,#777545"
-# )
+MOD_CPU_BARS_init_vars() {
+  interval=1
 
-# # Custom params for Total CPU Bar
-# declare -a MOD_CPU_BARS_TOTAL_PARAMS=(
-#   -bar_width 5 -height 22 -bottom_margin 1
-#   -stack_padding 1 -bar_padding 2
-#   -bg "#fff" -border_fg "#777"
-#   -fg_colors "#7f4b32,#73984d,#817c99,#777545"
-# )
-# declare -a MOD_CPU_BARS_CORES_PARAMS=(
-#   -bottom_margin 7
-#   -height $((CFG_HEIGHT - 8))
-# )
-
-# MOD_CPU_BARS_INTERVAL=1 # Interval, float
-
-# # Example of format function
-# MOD_CPU_BARS_fn_format() {
-#     local total_stats_dzen="$1"
-#     local cores_stats_dzen="$2"
-#     local total_cpu_perc="$3"
-
-#     printf "CPU %s\n" "$cores_stats_dzen"
-# }
+  # # Custom params for CPU Cores charts
+  # # fg_colors for bars: Low(nice),Normal(user),Kernel,Guest
+  # additional_core_params=(
+  #   -bar_width 5 -height 22 -bottom_margin 1
+  #   -stack_padding 1 -bar_padding 2
+  #   -bg "#fff" -border_fg "#777"
+  #   -fg_colors "#7f4b32,#73984d,#817c99,#777545"
+  # )
+  # # Custom params for Total CPU Bar
+  # additional_total_params=(
+  #   -bar_width 5 -height 22 -bottom_margin 1
+  #   -stack_padding 1 -bar_padding 2
+  #   -bg "#fff" -border_fg "#777"
+  #   -fg_colors "#7f4b32,#73984d,#817c99,#777545"
+  # )
+}
 
 # ############################### Cava OUT (bars)
 MOD_CAVA_OUT_init_vars() {
