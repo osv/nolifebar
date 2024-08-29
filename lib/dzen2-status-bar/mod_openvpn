@@ -20,6 +20,20 @@ mod_init_vars() {
     additional_render_params=() # dzen2_draw_flags
 }
 
+mod_draw_default() {
+    local fifo="$1"
+    local last_line="$2" # not used
+
+    local result=""
+    for service in "${services[@]}"; do
+        service_name="${services_name_map[$service]:-$service}"
+        service_status="${services_status[$service]}"
+        result+=" $service_name: $service_status"
+    done
+
+    printf "VPN: [%s]\n" "$result" > $fifo
+}
+
 # First arg - fifo file for output
 # Second arg - last line from log
 mod_draw_dzen2() {
