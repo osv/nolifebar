@@ -112,10 +112,12 @@ MOD_NETWORK_fn_format() {
 # MOD_NETWORK_INTERFACE="[ew]*" # e.g wlp7s0
 
 # ############################### Mem
-# MOD_MEM_INTERVAL=2
+MOD_MEM_init_vars() {
+  interval=2
+}
 
 # Draw mem and bar
-# MOD_MEM_fn_format() {
+# MOD_MEM_draw_dzen2() {
 #   local used_percentage="$1"
 #   local mem_total="$2"
 #   local mem_used="$3"
@@ -147,7 +149,7 @@ MOD_NETWORK_fn_format() {
 # }
 
 # draw mem and swap bars
-MOD_MEM_fn_format() {
+MOD_MEM_draw_dzen2() {
   local used_percentage="$1"
   local mem_total="$2"
   local mem_used="$3"
@@ -197,7 +199,6 @@ MOD_MEM_fn_format() {
   out+=$(printf "Swap %3s%%" "$swap_percentage")
   out+="^fg(<BORDER>)^r(1x7-12+4)^r(10x1-0+4)^p(2;-3)${swap_bar}"
   printf "%s^p()^ib()^fn(<FN_MAIN>)\n" "$out"
-  # printf "^p(_TOP)^fg(<FG>)^fn(<FN_MEDIUM>)Mem %3s%%^ib(1)^r(1x12+2+4)^r(10x1-0+3)^p(2;-2)^ib()%s^fn(<MAIN>)\n" "$used_percentage" "$bar"
 }
 
 # ############################## CPU Bar

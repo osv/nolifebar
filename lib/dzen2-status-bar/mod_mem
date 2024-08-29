@@ -6,9 +6,11 @@ echo "Executing Memory Plugin"
 source "$MODULE_CORE_DIR/functions"
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 
-interval="${MOD_MEM_INTERVAL:-2}"
+mod_init_vars() {
+    interval=2
+}
 
-default_format() {
+mod_draw_default() {
     local used_percentage="$1"
     local mem_total="$2"
     local mem_used="$3"
@@ -26,13 +28,7 @@ default_format() {
     printf "%d%%\n" "$used_percentage"
 }
 
-if declare -f MOD_MEM_fn_format > /dev/null; then
-    format_function=MOD_MEM_fn_format
-else
-    format_function=default_format
-fi
-
-print_memory_info() {
+mod_loop() {
     while true; do
         local mem_total=0
         local mem_free=0
@@ -101,7 +97,7 @@ print_memory_info() {
 
         local used_percentage=$((mem_used * 100 / mem_total))
 
-        "$format_function" \
+        mod_draw \
             "$used_percentage" \
             "${mem_total}" \
             "${mem_used}" \
@@ -114,10 +110,10 @@ print_memory_info() {
             "${mem_swap_total}" \
             "${mem_used_swap}" \
             "${mem_swap_cache}" \
-            "${zfs_arc_size}"
+            "${zfs_arc_size}" > "$FIFO_FILE"
 
         read_sleep "$interval"
     done
 }
 
-print_memory_info > "$FIFO_FILE"
+mod_init
