@@ -104,12 +104,14 @@ CFG_DEFAULT_DRAW_FLAG_PARAMS=(
 )
 
 # ################################ Network
-# MOD_NETWORK_INTERVAL=1        # Must be decimal
+MOD_NETWORK_init_vars() {
+  interval=1
+  interface="[ew]*"  # e.g wlp7s0
+}
 
-MOD_NETWORK_fn_format() {
+MOD_NETWORK_draw() {
   printf "Down: %4dKB, Up: %4dKB\n" "$1" "$2"
 }
-# MOD_NETWORK_INTERFACE="[ew]*" # e.g wlp7s0
 
 # ############################### Mem
 MOD_MEM_init_vars() {

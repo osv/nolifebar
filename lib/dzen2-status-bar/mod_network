@@ -6,22 +6,20 @@ echo "Executing Network Plugin"
 source "$MODULE_CORE_DIR/functions"
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 
-# Use environment variable INTERVAL with a default of 1 if not set
-interval="${MOD_NETWORK_INTERVAL:-1}"
-interface="${MOD_NETWORK_INTERFACE:-[ew]*}"
-echo "Interface: $interface"
+mod_init_vars() {
+    interval=1
+    interface="[ew]*"
+}
 
-default_format() {
+mod_init_draw() {
+    echo "Use interface: $interface"
+}
+
+mod_draw_default() {
     printf "Received: %dKB, Transmitted: %dKB\n" "$1" "$2"
 }
 
-if declare -f MOD_NETWORK_fn_format > /dev/null; then
-    format_function=MOD_NETWORK_fn_format
-else
-    format_function=default_format
-fi
-
-# Function to get network data in KB
+# Function to get network data in KB, returns (received transmitted)
 get_network_data() {
     local interfaces=("/sys/class/net/$interface/statistics")
     local rx_bytes=0
@@ -49,18 +47,22 @@ get_network_data() {
     printf "%d %d" "$rx_kb" "$tx_kb"
 }
 
-# Initial data
-read -r initial_rx initial_tx < <(get_network_data)
+mod_loop() {
+    # Initial data
+    read -r initial_rx initial_tx < <(get_network_data)
 
-while true; do
-    read -r current_rx current_tx < <(get_network_data)
+    while true; do
+        read -r current_rx current_tx < <(get_network_data)
 
-    rx_diff=$(((current_rx - initial_rx) / interval))
-    tx_diff=$(((current_tx - initial_tx) / interval))
+        rx_diff=$(((current_rx - initial_rx) / interval))
+        tx_diff=$(((current_tx - initial_tx) / interval))
 
-    initial_rx=$current_rx
-    initial_tx=$current_tx
+        initial_rx=$current_rx
+        initial_tx=$current_tx
 
-    "$format_function" "$rx_diff" "$tx_diff" > "$FIFO_FILE"
-    read_sleep "$interval"
-done
+        mod_draw "$rx_diff" "$tx_diff" > "$FIFO_FILE"
+        read_sleep "$interval"
+    done
+}
+
+mod_init
