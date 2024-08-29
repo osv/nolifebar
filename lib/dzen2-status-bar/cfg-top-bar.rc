@@ -310,29 +310,15 @@ EOF
 }
 
 # ############################### OpenVPN
-# MOD_OPENVPN_SERVICE_PREFIX="openvpn-" # systemd service prefix
-
-# List of openvpn services, but without prefix and without ".service"
-# E.g if service called openvpn-foo.service then use "foo" in list
-MOD_OPENVPN_SERVICES=(kz-production kz-development)
-
-# # Override params (see dzen2_draw_flags)
-# MOD_OPENVPN_RENDER_PARAMS=(-label "OpenVPN" -label_size "100" -color_on red -y_padding 2 -fn_2rows "terminus-8" -fn_2rows_y_offset 0)
-
-# Show short service name
-declare -A MOD_OPENVPN_SERVICES_NAME_MAP=(
-    ["kz-production"]="Prod"
-    ["kz-development"]="Dev"
-)
-
-# # draw VPN function, see global dictionary: "services_status", global array: "services"
-# # First arg - fifo file for output
-# # Second arg - last line from log
-# MOD_OPENVPN_fn_draw() {
-#   local fifo="$1"
-#   local last_line="$2" # not used for now
-#   dzen2_draw_flags services_status services MOD_OPENVPN_SERVICES_NAME_MAP -label "VPN" > "$fifo"
-# }
+MOD_OPENVPN_init_vars() {
+  service_prefix="openvpn-" # systemd openvpn prefix
+  services=(kz-production kz-development) # openvpn systemd services
+  services_name_map=(
+       ["kz-production"]="Prod"
+       ["kz-development"]="Dev"
+  )
+  # additional_render_params=(-label "OpenVPN" -label_size "100" -color_on red -y_padding 2 -fn_2rows "terminus-8" -fn_2rows_y_offset 0)
+}
 
 # ############################### NVIDIA
 MOD_NVIDIA_init_vars() {

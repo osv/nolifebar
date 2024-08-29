@@ -9,24 +9,20 @@ echo "Executing OpenVPN Plugin"
 
 check_dependencies systemctl journalctl
 
-service_prefix="${MOD_OPENVPN_SERVICE_PREFIX:-openvpn-}"
-
-services=()
-if is_array MOD_OPENVPN_SERVICES; then
-    services=("${MOD_OPENVPN_SERVICES[@]}")
-fi
-
-additional_render_params=()
-if is_array MOD_OPENVPN_RENDER_PARAMS; then
-    additional_render_params=("${MOD_OPENVPN_RENDER_PARAMS[@]}")
-fi
-
+declare -A services_name_map
 # Dictionary for service: ON/OFF value, for using in draw fn
 declare -A services_status
 
+mod_init_vars() {
+    service_prefix="openvpn-" # systemd openvpn prefix
+    services=() # openvpn systemd services
+    services_name_map=()
+    additional_render_params=() # dzen2_draw_flags
+}
+
 # First arg - fifo file for output
 # Second arg - last line from log
-default_draw() {
+mod_draw_dzen2() {
     local fifo="$1"
     local last_line="$2" # not used
 
@@ -36,17 +32,17 @@ default_draw() {
       wait "$draw_pid" 2>/dev/null
     fi
 
-    draw_and_blink "$fifo" &
+    dzen2_draw_and_blink "$fifo" &
     draw_pid=$!
 }
 
-draw_and_blink() {
+dzen2_draw_and_blink() {
     local fifo="$1"
 
     local i=5
     while ((i)); do
         dzen2_draw_flags \
-            MOD_OPENVPN_SERVICES_NAME_MAP \
+            services_name_map \
             services_status \
             services \
             -label "VPN" \
@@ -58,7 +54,7 @@ draw_and_blink() {
         read_sleep 0.25
 
         dzen2_draw_flags \
-            MOD_OPENVPN_SERVICES_NAME_MAP \
+            services_name_map \
             services_status \
             services \
             -label "VPN" \
@@ -70,14 +66,8 @@ draw_and_blink() {
     done
 }
 
-if declare -f MOD_OPENVPN_fn_draw > /dev/null; then
-    draw=MOD_OPENVPN_fn_draw
-else
-    draw=default_draw
-fi
-
-main() {
-    local fifo="$1"
+mod_loop() {
+    local fifo="$FIFO_FILE"
 
     if [ ${#services[@]} -eq 0 ]; then
         echo "No openvpn services to monitor."
@@ -92,7 +82,7 @@ main() {
         services_status["$service"]="OFF"
     done
 
-    "$draw" "$fifo"
+    mod_draw "$fifo"
 
     printf "Checking status of services:\n"
     for service in "${services[@]}"; do
@@ -105,7 +95,7 @@ main() {
         printf "Update: %-16s %4s\n" "$service" "$status"
     done
 
-    "$draw" "$fifo"
+    mod_draw "$fifo"
 
     # cut msg output all except message
     "${journalctl_cmd[@]}" | while IFS= read -r line; do
@@ -124,8 +114,8 @@ main() {
             services_status["$service"]="ON"
             printf "Update: %-16s %4s\n" "$service" "${services_status[$service]}"
         fi
-        "$draw" "$fifo" "$line"
+        mod_draw "$fifo" "$line"
     done
 }
 
-main "$FIFO_FILE"
+mod_init
