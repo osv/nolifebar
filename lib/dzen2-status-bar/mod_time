@@ -13,19 +13,23 @@ handle_signal() {
 
 trap 'handle_signal' SIGUSR1
 
-draw() {
+mod_draw_dzen2() {
     local time_format="$1"
     printf "^ca(1, kill -SIGUSR1 $$)${time_format}^ca()\n" -1
 }
 
-while true; do
-    if ((show_short == 0)); then
-        draw "%(%H:%M)T" > "$FIFO_FILE"
-        read_sleep 1
-    else
-        draw '%(%Y-%m-%d %H:%M %S)T' > "$FIFO_FILE"
-        read_sleep 0.5
-        draw '%(%Y-%m-%d %H:%M:%S)T' > "$FIFO_FILE"
-        read_sleep 0.5
-    fi
-done
+mod_loop() {
+    while true; do
+        if ((show_short == 0)); then
+            mod_draw "%(%H:%M)T" > "$FIFO_FILE"
+            read_sleep 1
+        else
+            mod_draw '%(%Y-%m-%d %H:%M %S)T' > "$FIFO_FILE"
+            read_sleep 0.5
+            mod_draw '%(%Y-%m-%d %H:%M:%S)T' > "$FIFO_FILE"
+            read_sleep 0.5
+        fi
+    done
+}
+
+mod_init

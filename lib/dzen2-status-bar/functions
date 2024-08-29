@@ -31,6 +31,7 @@ check_dependencies() {
 
 # Call mod_init_vars, ${MOD_NAME}_init_vars, mod_init_draw if exists
 # Set draw_fn depending on CFG_BACKEND
+# call mod_loop if exist
 mod_init() {
     if declare -f "mod_init_vars" > /dev/null; then
         "mod_init_vars"
@@ -57,6 +58,10 @@ mod_init() {
 (or mod_draw_${CFG_BACKEND}, mod_draw_default in this module)
 Exiting" >&2
         exit 1
+    fi
+
+    if declare -f "mod_loop" > /dev/null; then
+        "mod_loop"
     fi
 }
 
