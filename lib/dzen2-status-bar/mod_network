@@ -13,6 +13,8 @@ mod_init_vars() {
 
 mod_init_draw() {
     echo "Use interface: $interface"
+    interfaces=("/sys/class/net/$interface/statistics")
+
 }
 
 mod_draw_default() {
@@ -21,7 +23,9 @@ mod_draw_default() {
 
 # Function to get network data in KB, returns (received transmitted)
 get_network_data() {
-    local interfaces=("/sys/class/net/$interface/statistics")
+    local rx_var="$1"
+    local tx_var="$2"
+
     local rx_bytes=0
     local tx_bytes=0
 
@@ -44,15 +48,20 @@ get_network_data() {
     rx_kb=$((rx_bytes / 1024))
     tx_kb=$((tx_bytes / 1024))
 
-    printf "%d %d" "$rx_kb" "$tx_kb"
+    # Use eval to assign to the variables passed by reference
+    eval "$rx_var=$rx_kb"
+    eval "$tx_var=$tx_kb"
 }
 
 mod_loop() {
-    # Initial data
-    read -r initial_rx initial_tx < <(get_network_data)
+    local initial_rx=0
+    local initial_tx=0
+    get_network_data initial_rx initial_tx
 
     while true; do
-        read -r current_rx current_tx < <(get_network_data)
+        local current_rx=0
+        local current_tx=0
+        get_network_data current_rx current_tx
 
         rx_diff=$(((current_rx - initial_rx) / interval))
         tx_diff=$(((current_tx - initial_tx) / interval))

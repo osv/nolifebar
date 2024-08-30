@@ -71,10 +71,11 @@ mod_draw() {
     "$draw_fn" "$@"
 }
 
+# https://blog.dhampir.no/content/sleeping-without-a-subprocess-in-bash-and-how-to-sleep-forever
 read_sleep() {
-    # Usage: read_sleep 1
-    #        read_sleep 0.2
-    read -rt "$1" <> <(:) || :
+    local IFS
+    [[ -n "${_snore_fd:-}" ]] || exec {_snore_fd}<> <(:)
+    read ${1:+-t "$1"} -u $_snore_fd || :
 }
 
 build_sed_replace_command() {
@@ -96,6 +97,8 @@ is_array() {
 
 # Function to extract the value of a given parameter
 extract_param_value() {
+    local ref_var="$1"
+    shift
     local param_name="$1"
     shift
     local params=("$@")
@@ -108,8 +111,7 @@ extract_param_value() {
             break
         fi
     done
-
-    echo "$param_value"
+    eval "$ref_var=\"$param_value\""
 }
 
 #######################################################
@@ -117,6 +119,8 @@ extract_param_value() {
 #######################################################
 
 dzen2_draw_stacked_bar() {
+    local ref_var="$1"
+    shift
     # Default values
     local width=100
     local height=4
@@ -173,15 +177,15 @@ dzen2_draw_stacked_bar() {
     local total_padding=$((padding * (num_values - 1)))
     local available_width=$((width - total_padding))
 
-    local output="^ib(1)"
+    local res="^ib(1)"
 
     local rendered_width=0
     if [[ -n "$draw_outline" ]]; then
         available_width=$((available_width - 1))
         rendered_width=$((rendered_width + 1))
-        output="${output}^p(1,0)" # 1px left padding
+        res="${res}^p(1,0)" # 1px left padding
     else
-        output="${output}^fg($bg)^r(${width}x${height})^p(-${width},0)"
+        res="${res}^fg($bg)^r(${width}x${height})^p(-${width},0)"
     fi
 
     for ((i = 0; i < num_values; i++)); do
@@ -190,7 +194,7 @@ dzen2_draw_stacked_bar() {
         local bar_width=$((value * available_width / max_value))
 
         if ((bar_width > 0)); then
-            output="${output}^fg(${fg_color})^r(${bar_width}x${height}})^p(${padding},0)"
+            res="${res}^fg(${fg_color})^r(${bar_width}x${height}})^p(${padding},0)"
             rendered_width=$((rendered_width + bar_width + padding))
         fi
     done
@@ -198,18 +202,20 @@ dzen2_draw_stacked_bar() {
     if [[ -n "$draw_outline" ]]; then
         rendered_width=$((rendered_width))
         # set X pos back of rendered width and render outline rect on top
-        output="${output}^p(-${rendered_width},0)^fg($bg)^ro(${width}x${height})"
+        res="${res}^p(-${rendered_width},0)^fg($bg)^ro(${width}x${height})"
     else
         offset=$((available_width - rendered_width + 1))
         if ((offset > 0)); then
-            output="${output}^fg($bg)^p($((offset > 0 ? offset : 0))x8)"
+            res="${res}^fg($bg)^p($((offset > 0 ? offset : 0))x8)"
         fi
     fi
 
-    printf "%s\n" "${output}^ib()"
+    eval "$ref_var=\"${res}^ib()\""
 }
 
 dzen2_draw_h_stacked_bars() {
+    local ref_var="$1"
+    shift
     # Default values
     local bar_width=4
     local height=$((CFG_HEIGHT - 2))
@@ -282,8 +288,8 @@ dzen2_draw_h_stacked_bars() {
     local total_h_padding=$((bar_padding * (num_bars - 1)))
 
     local widget_width=$((num_bars * bar_width + total_h_padding + 2)) # 2 - borders
-    local output="^p(_BOTTOM)^p(-3)^ib(1)^fg(${bg})^r(${widget_width}x${height}+0-$((height + bottom_margin)))" # bg rect
-    output="${output}^fg(${border_fg})^ro(${widget_width}x${height}-${widget_width}+0)^p(-${widget_width})" # border
+    local res="^p(_BOTTOM)^p(-3)^ib(1)^fg(${bg})^r(${widget_width}x${height}+0-$((height + bottom_margin)))" # bg rect
+    res="${res}^fg(${border_fg})^ro(${widget_width}x${height}-${widget_width}+0)^p(-${widget_width})" # border
 
     # Iterate values. Step is count of stacks per bar
     for ((i = 0; i < num_values; i+=stacks)); do
@@ -309,20 +315,23 @@ dzen2_draw_h_stacked_bars() {
                 # For first bar, use 1px (border)
                 local x_offset=$((i == 0 ? 1 : bar_padding))
                 local y_offset=$((stack_height + bottom_margin + 1))
-                output="${output}^p(_BOTTOM)^p(-3)^fg(${fg_color})^r(${bar_width}x${stack_height}+${x_offset}-${y_offset})"
+                res="${res}^p(_BOTTOM)^p(-3)^fg(${fg_color})^r(${bar_width}x${stack_height}+${x_offset}-${y_offset})"
             else
-                output="${output}^fg(${fg_color})^r(${bar_width}x${stack_height}-${bar_width}-$((stack_height + stack_padding )))"
+                res="${res}^fg(${fg_color})^r(${bar_width}x${stack_height}-${bar_width}-$((stack_height + stack_padding )))"
             fi
 
             if ((stack_height == 0)); then
-                output="${output}^p(0;+${stack_padding})"
+                res="${res}^p(0;+${stack_padding})"
             fi
         done
     done
-    printf "%s\n" "${output}^ib()^p()^p(1)"
+    res+="^ib()^p()^p(1)"
+    eval "$ref_var=\"$res\""
 }
 
 dzen2_draw_flags() {
+    local ref_var="$1"
+    shift
     local label=""      # no label
     local label_size=45 # size of label
     local label_highlight=0
@@ -367,7 +376,7 @@ dzen2_draw_flags() {
         esac
     done
 
-    local out="^ib(1)"
+    local res="^ib(1)"
     local height=$((CFG_HEIGHT - 2 * y_padding))
 
     local has_on_value=0
@@ -396,11 +405,11 @@ dzen2_draw_flags() {
     fi
     if [[  -n "$label" ]]; then
         # centered label
-        out+="${setup_label_area}^p(-${label_size})^ba(${label_size},_CENTER)${label}"
+        res+="${setup_label_area}^p(-${label_size})^ba(${label_size},_CENTER)${label}"
     fi
 
     # set 2 rows font
-    out+="^fn($fn_2rows)"
+    res+="^fn($fn_2rows)"
 
     local index=0
     # draw flag state
@@ -413,25 +422,25 @@ dzen2_draw_flags() {
         local label_cmd="^p(-$((name_size - flag_x_padding));${fn_2rows_y_offset})^ba($((name_size - flag_x_padding)),${flag_align})${flag_name}"
         if (((index % 2) == 0)); then
             # draw in top
-            out+="${set_border_color}^p(_TOP)^p(-3;${y_padding})"
+            res+="${set_border_color}^p(_TOP)^p(-3;${y_padding})"
             if [[ "${dictionary_ref[$key]}" == "ON" ]]; then
-                out+="^r(${name_size}x$((height / 2 + 1)))^fg(${color_bg})$label_cmd"
+                res+="^r(${name_size}x$((height / 2 + 1)))^fg(${color_bg})$label_cmd"
             else
-                out+="^ro(${name_size}x$((height / 2  +1)))$label_cmd"
+                res+="^ro(${name_size}x$((height / 2  +1)))$label_cmd"
             fi
         else
             # draw in bottom
-            out+="${set_border_color}^p(_TOP)^p(-$((name_size + 2));${y_padding})"
+            res+="${set_border_color}^p(_TOP)^p(-$((name_size + 2));${y_padding})"
             if [[ "${dictionary_ref[$key]}" == "ON" ]]; then
-                out+="^r(${name_size}x$((height / 2))-0+$((height / 2)))^fg(${color_bg})$label_cmd"
+                res+="^r(${name_size}x$((height / 2))-0+$((height / 2)))^fg(${color_bg})$label_cmd"
             else
-                out+="^ro(${name_size}x$((height / 2 ))-0+$((height / 2)))$label_cmd"
+                res+="^ro(${name_size}x$((height / 2 ))-0+$((height / 2)))$label_cmd"
             fi
         fi
         index=$((index+1))
     done
 
     # reset state
-    out+="^ib()^p()^fg(${color_fg})^bg(${color_bg})^fn($fn_main)"
-    printf "%s\n" "$out"
+    res+="^ib()^p()^fg(${color_fg})^bg(${color_bg})^fn($fn_main)"
+    eval "$ref_var=\"$res\""
 }

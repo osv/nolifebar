@@ -55,26 +55,28 @@ dzen2_draw_and_blink() {
 
     local i=5
     while ((i)); do
-        dzen2_draw_flags \
+        local out
+        dzen2_draw_flags out \
             services_name_map \
             services_status \
             services \
             -label "VPN" \
             "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
             "${additional_render_params[@]}" \
-            -label_highlight 1 \
-            > "$fifo"
+            -label_highlight 1
+        printf "%s\n" "$out" > "$fifo"
 
         read_sleep 0.25
 
-        dzen2_draw_flags \
+        dzen2_draw_flags out\
             services_name_map \
             services_status \
             services \
             -label "VPN" \
             "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
-            "${additional_render_params[@]}" \
-            > "$fifo"
+            "${additional_render_params[@]}"
+        printf "%s\n" "$out" > "$fifo"
+
         read_sleep 0.25
         i=$((i - 1))
     done

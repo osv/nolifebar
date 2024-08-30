@@ -65,7 +65,8 @@ format_and_store() {
     local fmt="${gpu_stat_fmt[$key]}"
 
     if [ -n "$fmt" ]; then
-        gpu_stat_short_names[$key]=$(printf "$fmt" "$value")
+        local res
+        printf -v gpu_stat_short_names["$key"] "$fmt" "$value"
     fi
 }
 
@@ -83,7 +84,8 @@ update_alerts() {
 
 # First arg - fifo file for output
 mod_draw_dzen2() {
-    dzen2_draw_flags \
+    local output=""
+    dzen2_draw_flags output \
         gpu_stat_short_names \
         alerts \
         visible_params \
@@ -93,6 +95,7 @@ mod_draw_dzen2() {
         -flag_align _LEFT \
         -flag_x_padding 3 \
         "${additional_render_params[@]}"
+    printf "%s\n" "$output"
 }
 
 mod_loop() {
@@ -111,7 +114,6 @@ mod_loop() {
     do
         if ((index != gpu_index)); then continue; fi
         power_draw="${power_draw%%.*}" # to integer: 24.15 -> 24
-
         format_and_store "name" "$name"
         format_and_store "fan.speed" "$fan_speed"
         format_and_store "power.draw" "$power_draw"
@@ -141,6 +143,8 @@ mod_loop() {
             "$name" "$fan_speed" "$power_draw" "$memory_total" \
             "$memory_free" "$memory_used" "$gpu_utilization" "$temperature"\
             "$decoder" "$encoder" "$clocks_graphics" "$clocks_memory" > "$FIFO_FILE"
+
+
     done
 }
 

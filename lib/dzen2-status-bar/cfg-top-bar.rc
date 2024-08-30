@@ -170,7 +170,7 @@ MOD_MEM_draw_dzen2() {
 
   local bar_size=104
   local mem_bar
-  mem_bar=$(dzen2_draw_stacked_bar \
+  dzen2_draw_stacked_bar mem_bar \
     -width "$bar_size" \
     -height 7 \
     -draw_outline \
@@ -178,9 +178,9 @@ MOD_MEM_draw_dzen2() {
     -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
     -bg "<BORDER>" \
     -padding 1 \
-    -max_value "${mem_total}")
+    -max_value "${mem_total}"
 
-  swap_bar=$(dzen2_draw_stacked_bar \
+  dzen2_draw_stacked_bar swap_bar \
     -width "$bar_size" \
     -height 7 \
     -draw_outline \
@@ -188,7 +188,7 @@ MOD_MEM_draw_dzen2() {
     -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
     -bg "<BORDER>" \
     -padding 1 \
-    -max_value $((mem_swap_total == 0 ? 100 : mem_swap_total)))
+    -max_value $((mem_swap_total == 0 ? 100 : mem_swap_total))
 
   local swap_percentage="--"
   if ((mem_swap_total > 0)); then
@@ -368,7 +368,7 @@ MOD_NVIDIA_draw_dzen2() {
   memory_used="$6"
 
   local mem_bar
-  mem_bar=$(dzen2_draw_stacked_bar \
+  dzen2_draw_stacked_bar mem_bar \
     -width 104 \
     -height 7 \
     -draw_outline \
@@ -376,9 +376,20 @@ MOD_NVIDIA_draw_dzen2() {
     -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
     -bg "<BORDER>" \
     -padding 1 \
-    -max_value "${memory_total}")
+    -max_value "${memory_total}"
 
-  local widget=$(mod_draw_dzen2)
+  local widget
+  dzen2_draw_flags widget \
+    gpu_stat_short_names \
+    alerts \
+    visible_params \
+    -label "GPU" \
+    "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
+    -name_size 60 \
+    -flag_align _LEFT \
+    -flag_x_padding 3 \
+    "${additional_render_params[@]}"
+
   local out="^p(-104)${mem_bar}^p(2)^r(10x1)^r(1x20)^p(4)${widget}"
   printf "%s\n" "$out"
 }

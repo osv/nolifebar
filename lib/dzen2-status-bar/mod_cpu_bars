@@ -24,19 +24,19 @@ mod_draw_dzen2() {
     local total_user_perc="$5"
     local total_system_perc="$6"
     local total_virt_perc="$7"
-
     local txt=""
     if ((show_total_only)); then
-        colors=$(extract_param_value "-fg_colors" "${additional_total_params[@]}")
+        local colors=()
+        #extract_param_value "-fg_colors" "${additional_total_params[@]}")
+        extract_param_value colors "-fg_colors" "${additional_total_params[@]}"
         if [ -z "$colors" ]; then
             colors=("${CFG_DEFAULT_STACK_COLORS[@]}")
         else
             IFS=',' read -r -a colors <<< "$colors"
         fi
-        txt=$(printf "CPU: ^fg(${colors[0]})Low %d%%^fg(${colors[1]})  Normal %d%%^fg(${colors[2]})  System %d%%^fg(${colors[3]})  Guest %d%%\n" \
-            "$total_nice_perc" "$total_user_perc" "$total_system_perc" "$total_virt_perc")
+        txt="CPU: ^fg(${colors[0]})Low $total_nice_perc%^fg(${colors[1]})  Normal $total_user_perc%^fg(${colors[2]})  System $total_system_perc%^fg(${colors[3]})  Guest $total_virt_perc%"
     else
-        txt=$(printf "CPU %s%% %s^p(3)%s\n" "$total_cpu_perc" "$total_stats_dzen" "$cores_stats_dzen")
+        txt="CPU $total_cpu_perc% $total_stats_dzen^p(3)$cores_stats_dzen"
     fi
     # 1 - left click toggle show total cpu only
     printf "^ca(1, kill -SIGUSR1 $$)%s^ca()\n" "$txt"
@@ -148,22 +148,21 @@ calculate_and_print_usage() {
 
     local total_stats_dzen=""
 
-    total_stats_dzen=$(dzen2_draw_h_stacked_bars \
+    dzen2_draw_h_stacked_bars total_stats_dzen \
         "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
         -bar_width 5 \
         "${additional_total_params[@]}" \
         -max_value 1000 \
         -stacks 4 \
-        -values "$result_total")
-
+        -values "$result_total"
     local cores_stats_dzen=""
-    cores_stats_dzen=$(dzen2_draw_h_stacked_bars \
+    dzen2_draw_h_stacked_bars cores_stats_dzen \
         "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
         -bar_width 3 \
         "${additional_core_params[@]}" \
         -max_value 1000 \
         -stacks 4 \
-        -values "$result_cores")
+        -values "$result_cores"
 
     mod_draw \
         "$total_stats_dzen" \
