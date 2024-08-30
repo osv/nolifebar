@@ -50,4 +50,4 @@ mod_loop() {
     mod_draw "$FIFO_FILE"
 }
 
-mod_init
+mod_run

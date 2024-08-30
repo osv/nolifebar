@@ -44,4 +44,4 @@ mod_loop() {
     sc_run_cava_and_print_to_file "$cava_cfg" "$FIFO_FILE"
 }
 
-mod_init
+mod_run

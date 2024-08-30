@@ -116,4 +116,4 @@ mod_loop() {
     done
 }
 
-mod_init
+mod_run
