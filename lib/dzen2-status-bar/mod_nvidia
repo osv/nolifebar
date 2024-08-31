@@ -11,6 +11,8 @@ check_dependencies nvidia-smi
 
 declare -A gpu_stat_alert_treshold
 declare -A gpu_stat_fmt
+declare -A alerts=() # dictionary of ON/OFF value if value > treshold in gpu_stat_alert_treshold
+declare -A gpu_stat_formatted=() # Formatted metrics
 
 mod_init_vars() {
     interval=1
@@ -19,14 +21,14 @@ mod_init_vars() {
     additional_render_params=()
 
     gpu_stat_alert_treshold=(
-        ["fan.speed"]=80
-        ["power.draw"]=50
-        ["utilization.gpu"]=30
+        ["fan.speed"]=10        # I want to know when fan is on
+        ["power.draw"]=30       # power draw is importent for me
+        ["utilization.gpu"]=70
         ["temperature.gpu"]=70
         ["utilization.decoder"]=1
         ["utilization.encoder"]=1
-        ["clocks.current.graphics"]=400
-        ["clocks.current.memory"]=600
+        ["clocks.current.graphics"]=1000
+        ["clocks.current.memory"]=1000
     )
 
     visible_params=(
@@ -53,11 +55,6 @@ mod_init_vars() {
         ["clocks.current.memory"]="M%5iMHz"
     )
 }
-
-# dictionary of ON/OFF value if value > treshold in gpu_stat_alert_treshold
-declare -A alerts=()
-# Formatted metrics
-declare -A gpu_stat_formatted=()
 
 format_and_store() {
     local key="$1"
