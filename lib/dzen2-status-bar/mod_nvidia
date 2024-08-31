@@ -57,7 +57,7 @@ mod_init_vars() {
 # dictionary of ON/OFF value if value > treshold in gpu_stat_alert_treshold
 declare -A alerts=()
 # Formatted metrics
-declare -A gpu_stat_short_names=()
+declare -A gpu_stat_formatted=()
 
 format_and_store() {
     local key="$1"
@@ -65,8 +65,7 @@ format_and_store() {
     local fmt="${gpu_stat_fmt[$key]}"
 
     if [ -n "$fmt" ]; then
-        local res
-        printf -v gpu_stat_short_names["$key"] "$fmt" "$value"
+        printf -v gpu_stat_formatted["$key"] "$fmt" "$value"
     fi
 }
 
@@ -86,7 +85,7 @@ update_alerts() {
 mod_draw_dzen2() {
     local output=""
     dzen2_draw_flags output \
-        gpu_stat_short_names \
+        gpu_stat_formatted \
         alerts \
         visible_params \
         -label "GPU" \
@@ -114,30 +113,24 @@ mod_loop() {
     do
         if ((index != gpu_index)); then continue; fi
         power_draw="${power_draw%%.*}" # to integer: 24.15 -> 24
-        format_and_store "name" "$name"
-        format_and_store "fan.speed" "$fan_speed"
-        format_and_store "power.draw" "$power_draw"
-        format_and_store "memory.total" "$memory_total"
-        format_and_store "memory.free" "$memory_free"
-        format_and_store "memory.used" "$memory_used"
-        format_and_store "utilization.gpu" "$gpu_utilization"
-        format_and_store "temperature.gpu" "$temperature"
-        format_and_store "utilization.decoder" "$decoder"
-        format_and_store "utilization.encoder" "$encoder"
-        format_and_store "clocks.current.graphics" "$clocks_graphics"
-        format_and_store "clocks.current.memory" "$clocks_memory"
 
-        update_alerts "fan.speed" "$fan_speed"
-        update_alerts "power.draw" "$power_draw"
-        update_alerts "memory.total" "$memory_total"
-        update_alerts "memory.free" "$memory_free"
-        update_alerts "memory.used" "$memory_used"
-        update_alerts "utilization.gpu" "$gpu_utilization"
-        update_alerts "temperature.gpu" "$temperature"
-        update_alerts "utilization.decoder" "$decoder"
-        update_alerts "utilization.encoder" "$encoder"
-        update_alerts "clocks.current.graphics" "$clocks_graphics"
-        update_alerts "clocks.current.memory" "$clocks_memory"
+        gpu_stat_formatted["name"]="$name"
+        gpu_stat_formatted["fan.speed"]="$fan_speed"
+        gpu_stat_formatted["power.draw"]="$power_draw"
+        gpu_stat_formatted["memory.total"]="$memory_total"
+        gpu_stat_formatted["memory.free"]="$memory_free"
+        gpu_stat_formatted["memory.used"]="$memory_used"
+        gpu_stat_formatted["utilization.gpu"]="$gpu_utilization"
+        gpu_stat_formatted["temperature.gpu"]="$temperature"
+        gpu_stat_formatted["utilization.decoder"]="$decoder"
+        gpu_stat_formatted["utilization.encoder"]="$encoder"
+        gpu_stat_formatted["clocks.current.graphics"]="$clocks_graphics"
+        gpu_stat_formatted["clocks.current.memory"]="$clocks_memory"
+
+        # Check for alert before format
+        update_threshold alerts gpu_stat_formatted gpu_stat_alert_treshold
+
+        apply_dictionary_value_format gpu_stat_formatted gpu_stat_fmt
 
         mod_draw \
             "$name" "$fan_speed" "$power_draw" "$memory_total" \

@@ -399,7 +399,7 @@ MOD_NVIDIA_draw_dzen2() {
 
   local widget
   dzen2_draw_flags widget \
-    gpu_stat_short_names \
+    gpu_stat_formatted \
     alerts \
     visible_params \
     -label "GPU" \
