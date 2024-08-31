@@ -95,6 +95,37 @@ is_array() {
     [[ $var_decl =~ "declare -a" ]]
 }
 
+apply_dictionary_value_format() {
+    local -n target_kv_ref="$1"
+    local -n format_kv_ref="$2"
+
+    for key in "${!target_kv_ref[@]}"; do
+        local value="${target_kv_ref[$key]}"
+        local fmt="${format_kv_ref[$key]}"
+        if [ -n "$fmt" ]; then
+            printf -v target_kv_ref["$key"] "$fmt" "$value"
+        fi
+    done
+}
+
+update_threshold() {
+    local -n result_kv_ref="$1"
+    local -n data_kv_ref="$2"
+    local -n threshold_kv_ref="$3"
+
+    for key in "${!threshold_kv_ref[@]}"; do
+        local threshold="${threshold_kv_ref[$key]}"
+        local value="${data_kv_ref[$key]}"
+        if [ -n "$threshold" ]; then
+            if ((threshold > 0 && value > threshold)); then
+                result_kv_ref["$key"]="ON"
+            else
+                result_kv_ref["$key"]="OFF"
+            fi
+        fi
+    done
+}
+
 # Function to extract the value of a given parameter
 extract_param_value() {
     local ref_var="$1"
@@ -125,8 +156,8 @@ function create_log_scale() {
     local min_log=$(echo "l($min_value)/l(10)" | bc -l)
     local max_log=$(echo "l($max_value)/l(10)" | bc -l)
 
-    for ((i=0; i<=points; i++)); do
-        local scale_value=$(echo "e(($min_log + $i * ($max_log - $min_log) / $points) * l(10))" | bc -l)
+    for ((i=0; i<points; i++)); do
+        local scale_value=$(echo "e(($min_log + $i * ($max_log - $min_log) / ($points - 1)) * l(10))" | bc -l)
         printf -v scale_points_ref[$i] "%.0f" "$scale_value"
     done
 }
@@ -144,16 +175,16 @@ function find_scale_point() {
             return
         fi
     done
-    res_ref=$((${#scale_points_ref[@]} - 1))
+    res_ref=$((${#scale_points_ref[@]}))
 }
 
 ceil_division() {
-    local -n result="$1"
+    local -n result_ref="$1"
     local numerator=$2
     local denominator=$3
-    result=$((numerator / denominator))
+    result_ref=$((numerator / denominator))
     if ((numerator % denominator != 0)); then
-        result=$((result + 1))
+        result_ref=$((result_ref + 1))
     fi
 }
 
@@ -378,10 +409,11 @@ dzen2_draw_h_stacked_bars() {
 # local b=(10 9 8 7 6 5 4 3 2 1 0 0 1 2 3 4 5 6 7 8 9 10)
 # local output
 # dzen2_draw_centered_bars output \
-#     a \
-#     b \
-#     -height 26 \
-#     -max_value 10
+#   a \
+#   b \
+#   -height 26 \
+#   -stack_padding 2\
+#   -max_value 10
 dzen2_draw_centered_bars() {
     local -n ref_var="$1"
     shift
@@ -452,8 +484,8 @@ dzen2_draw_centered_bars() {
     local stack_padding_offset
     ceil_division stack_padding_offset $stack_padding 2
     for ((i = 0; i < num_values; i++)); do
-        local low="$((ref_values_low[i] * (available_height ) / max_value ))"
-        local hi="$((ref_values_hi[i] * available_height / max_value ))"
+        local low="$((ref_values_low[i] * (available_height - stack_padding_offset) / max_value ))"
+        local hi="$((ref_values_hi[i] * (available_height - stack_padding_offset) / max_value ))"
         if ((low > 0)); then
             local y_offset # Use ceil for low/2 value and floor for hi/2 value
             ceil_division y_offset $low 2
