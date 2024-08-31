@@ -19,7 +19,8 @@ mkShell {
 
     pkg-config
 
-    # runrime plugin
+    # runrimes for plugins
+    bc
     cava
     pulseaudio # pactl
 

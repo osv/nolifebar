@@ -6,25 +6,118 @@ echo "Executing Network Plugin"
 source "$MODULE_CORE_DIR/functions"
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 
+check_dependencies bc awk
+
 mod_init_vars() {
-    interval=1
-    interface="[ew]*"
+    interval=2                # must be integer
+    interface="[ew]*"         # interface, e.g wlp7s0, by default all ethernet + wifi.
+
+    history_size=20           # history size for char
+    rx_min_log_scale=3        # received min value for logarithmic scale histoy, KB
+    rx_max_log_scale=20000    # received max
+    tx_min_log_scale=2        # transmitted min value for logarithmic scale histoy
+    tx_max_log_scale=20000    # transmitted max
+    chart_stack_padding=1     # padding between rx/tx bars in chars
+    chart_height=$((CFG_HEIGHT - 4)) # height of chart with paddings
+    additional_chart_params=(-bar_width 1)
+
+    ping_interval=7           # 0 - disable
+    ping_host="github.com"
 }
 
-mod_init_draw() {
-    echo "Use interface: $interface"
-    interfaces=("/sys/class/net/$interface/statistics")
+# Stored history
+rx_history_values=()
+tx_history_values=()
+# Stored logarithmic scale history
+rx_log_history_values=()
+tx_log_history_values=()
 
+mod_init_draw() {
+    for ((i=0; i < 2 * history_size; i++)); do
+        rx_history_values+=(0)
+        tx_history_values+=(0)
+        rx_log_history_values+=(0)
+        tx_log_history_values+=(0)
+    done
+    log_scale_max_value=$(((chart_height / 2) - chart_stack_padding))
+    printf "Log scale: %s points\n" "$log_scale_max_value"
+    rx_scales=()
+    create_log_scale rx_scales "$rx_min_log_scale" "$rx_max_log_scale" "$log_scale_max_value" # TODO: do not use 12 but calc based on height
+    tx_scales=()
+    create_log_scale tx_scales "$tx_min_log_scale" "$tx_max_log_scale" "$log_scale_max_value" # TODO: do not use 12 but calc based on height
+
+    echo "Using interface: $interface"
+    interfaces=("/sys/class/net/$interface/statistics")
+}
+
+mod_draw_dzen2_log_scaled_bar() {
+    local -n ref_var="$1"
+    local rx="$2"
+    local tx="$3"
+
+    local output
+    dzen2_draw_centered_bars output \
+        rx_log_history_values \
+        tx_log_history_values \
+        "${CFG_DEFAULT_CENTERED_BARS_PARAMS[@]}" \
+        "${additional_chart_params[@]}" \
+        -height "$chart_height" \
+        -max_value "$log_scale_max_value" \
+        -stack_padding chart_stack_padding
+
+    ref_var="$output"
+}
+
+mod_draw_dzen2() {
+    local rx="$1"
+    local tx="$2"
+    local ping="$3"
+
+    local log_scaled_history_bar
+    mod_draw_dzen2_log_scaled_bar \
+        log_scaled_history_bar
+    printf "Down: %4dKB, Up: %4dKB %s\n" "$rx" "$tx" "$log_scaled_history_bar"
 }
 
 mod_draw_default() {
-    printf "Received: %dKB, Transmitted: %dKB\n" "$1" "$2"
+    local rx="$1"
+    local tx="$2"
+    local ping="$3"
+    printf "Down: %4dKB, Up: %4dKB, Ping: 3ms\n" "$rx" "$tx" "$ping"
+}
+
+run_ping_cmd() {
+    local file_name="$1"
+
+    if ((ping_interval <= 0)); then
+        return
+    fi
+
+    printf "Starting ping cmd\n. Interval: %ss\n. Host: %s\n" "$ping_interval" "$ping_host"
+    while true; do
+
+        ping "$ping_host" -i "$ping_interval" \
+            | while read -r line; do
+            # Extract the part after "time="
+            ping_time="${line#*time=}"
+            # Extract the part before "." to get just the number
+            ping_time="${ping_time%%.*}"
+            # Truncate the file and write the line
+            printf "%s\n" "$ping_time" > "$file_name"
+        done
+
+        local delay=30
+        printf "Ping failed, restarting ping cmd in %ss\n" "$delay"
+        # network failure? lets sleep for some time and try again
+        printf "N/A\n" > "$file_name"
+        read_sleep "$delay"
+    done
 }
 
 # Function to get network data in KB, returns (received transmitted)
 get_network_data() {
-    local rx_var="$1"
-    local tx_var="$2"
+    local -n rx_var_ref="$1"
+    local -n tx_var_ref="$2"
 
     local rx_bytes=0
     local tx_bytes=0
@@ -48,28 +141,60 @@ get_network_data() {
     rx_kb=$((rx_bytes / 1024))
     tx_kb=$((tx_bytes / 1024))
 
-    # Use eval to assign to the variables passed by reference
-    eval "$rx_var=$rx_kb"
-    eval "$tx_var=$tx_kb"
+    rx_var_ref="$rx_kb"
+    tx_var_ref="$tx_kb"
 }
+
+cleanup() {
+    if kill -0 "$global_subshell_ping_pid" 2>/dev/null; then
+        kill "$global_subshell_ping_pid" 2>/dev/null
+    fi
+}
+
+trap "cleanup" EXIT
 
 mod_loop() {
     local initial_rx=0
     local initial_tx=0
+
+    local ping_value_file="$TMP_DIR/network_ping_value"
+    touch "$ping_value_file"
+    run_ping_cmd "$ping_value_file" & # Run in background ping command
+    global_subshell_ping_pid=$!
+
     get_network_data initial_rx initial_tx
 
+    local ping_value="NA"
     while true; do
         local current_rx=0
         local current_tx=0
         get_network_data current_rx current_tx
 
-        rx_diff=$(((current_rx - initial_rx) / interval))
-        tx_diff=$(((current_tx - initial_tx) / interval))
+        rx=$(((current_rx - initial_rx) / interval))
+        tx=$(((current_tx - initial_tx) / interval))
+
+        rx_history_values+=("$rx")
+        tx_history_values+=("$tx")
+        local tx_scaled
+        local rx_scaled
+        find_scale_point rx_scaled rx_scales "$rx"
+        find_scale_point tx_scaled tx_scales "$tx"
+        rx_log_history_values+=("$rx_scaled")
+        tx_log_history_values+=("$tx_scaled")
+        rx_history_values=("${rx_history_values[@]:1}")
+        tx_history_values=("${tx_history_values[@]:1}")
+        rx_log_history_values=("${rx_log_history_values[@]:1}")
+        tx_log_history_values=("${tx_log_history_values[@]:1}")
 
         initial_rx=$current_rx
         initial_tx=$current_tx
 
-        mod_draw "$rx_diff" "$tx_diff" > "$FIFO_FILE"
+        # Non-blocking read from FIFO
+        if read -t 0.1 -r line < "$ping_value_file"; then
+            ping_value=$line
+        fi
+
+        mod_draw "$rx" "$tx" "$ping_value" > "$FIFO_FILE"
         read_sleep "$interval"
     done
 }
