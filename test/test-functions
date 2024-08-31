@@ -66,12 +66,13 @@ test_update_threshold() {
     # Declare the result, data, and threshold dictionaries
     declare -A result_kv=()
     declare -A data_kv=(
-        ["sensor1"]="50"
-        ["sensor2"]="30"
-        ["sensor3"]="80"
+        ["sensor1"]="51"
+        ["sensor2"]="49"
+        ["sensor3"]="anc"
+        ["sensor4"]="10"
     )
     declare -A threshold_kv=(
-        ["sensor1"]="40"
+        ["sensor1"]="50"
         ["sensor2"]="50"
         ["sensor3"]="75"
     )
@@ -82,7 +83,7 @@ test_update_threshold() {
     # Expected output
     local expected_sensor1="ON"
     local expected_sensor2="OFF"
-    local expected_sensor3="ON"
+    local expected_sensor3="OFF"
 
     # Assertions
     if [[ "${result_kv["sensor1"]}" == "$expected_sensor1" ]] && \

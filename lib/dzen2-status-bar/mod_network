@@ -8,14 +8,19 @@ source "$MODULE_CORE_DIR/functions"
 
 check_dependencies bc awk
 
+declare -A metric_alert_treshold
+declare -A metric_alerts # ON/OFF if value > treshold in metric_alert_treshold
+declare -A metric_fmt # how to format value
+declare -A metric_formatted # Formatted metrics
+
 mod_init_vars() {
     interval=2                # must be integer
     interface="[ew]*"         # interface, e.g wlp7s0, by default all ethernet + wifi.
 
     history_size=20           # history size for char
-    rx_min_log_scale=3        # received min value for logarithmic scale histoy, KB
+    rx_min_log_scale=3        # received min value for logarithmic scale history, KB
     rx_max_log_scale=20000    # received max
-    tx_min_log_scale=2        # transmitted min value for logarithmic scale histoy
+    tx_min_log_scale=2        # transmitted min value for logarithmic scale history, KB
     tx_max_log_scale=20000    # transmitted max
     chart_stack_padding=1     # padding between rx/tx bars in chars
     chart_height=$((CFG_HEIGHT - 4)) # height of chart with paddings
@@ -23,6 +28,18 @@ mod_init_vars() {
 
     ping_interval=7           # 0 - disable
     ping_host="github.com"
+
+    visible_metrics=('rx' 'tx' 'ping')
+    metric_alert_treshold=(
+        ['rx']=1000 # KB
+        ['tx']=1000 # KB
+        ['ping']=300
+    )
+    metric_fmt=(
+        ['tx']="U %5sKB"
+        ['rx']="D %5sKB"
+        ['ping']="Ping %3s"
+    )
 }
 
 # Stored history
@@ -76,7 +93,20 @@ mod_draw_dzen2() {
     local log_scaled_history_bar
     mod_draw_dzen2_log_scaled_bar \
         log_scaled_history_bar
-    printf "Down: %4dKB, Up: %4dKB %s\n" "$rx" "$tx" "$log_scaled_history_bar"
+
+    local metrics
+    dzen2_draw_flags metrics \
+        metric_formatted \
+        metric_alerts \
+        visible_metrics \
+        -label "NET" \
+        "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
+        -name_size 60 \
+        -flag_align _LEFT \
+        -flag_x_padding 3 \
+        "${additional_render_params[@]}"
+
+    printf "%s^p(1)%s\n" "$log_scaled_history_bar" "$metrics"
 }
 
 mod_draw_default() {
@@ -100,8 +130,10 @@ run_ping_cmd() {
             | while read -r line; do
             # Extract the part after "time="
             ping_time="${line#*time=}"
-            # Extract the part before "." to get just the number
+            # Extract the part before "." to get just the number, eg. 12.3 ms
             ping_time="${ping_time%%.*}"
+            # Extract the part before " " to get just the number, e.g 12 ms
+            ping_time="${ping_time%% *}"
             # Truncate the file and write the line
             printf "%s\n" "$ping_time" > "$file_name"
         done
@@ -193,6 +225,13 @@ mod_loop() {
         if read -t 0.1 -r line < "$ping_value_file"; then
             ping_value=$line
         fi
+
+        metric_formatted["tx"]="$tx"
+        metric_formatted["rx"]="$rx"
+        metric_formatted["ping"]="$ping_value"
+        # Check for alert before format
+        update_threshold metric_alerts metric_formatted metric_alert_treshold
+        apply_dictionary_value_format metric_formatted metric_fmt
 
         mod_draw "$rx" "$tx" "$ping_value" > "$FIFO_FILE"
         read_sleep "$interval"

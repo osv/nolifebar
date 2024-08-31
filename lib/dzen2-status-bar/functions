@@ -63,7 +63,7 @@ Exiting" >&2
     if declare -f "mod_loop" > /dev/null; then
         "mod_loop"
     else
-        echo "function mod_loop() is not declared, existing" >&2
+        echo "function mod_loop() is not declared" >&2
     fi
 }
 
@@ -116,12 +116,10 @@ update_threshold() {
     for key in "${!threshold_kv_ref[@]}"; do
         local threshold="${threshold_kv_ref[$key]}"
         local value="${data_kv_ref[$key]}"
-        if [ -n "$threshold" ]; then
-            if ((threshold > 0 && value > threshold)); then
-                result_kv_ref["$key"]="ON"
-            else
-                result_kv_ref["$key"]="OFF"
-            fi
+        if [[ -n "$threshold" && "$value" =~ ^-?[0-9]+$ && "$value" -gt "$threshold" ]]; then
+            result_kv_ref["$key"]="ON"
+        else
+            result_kv_ref["$key"]="OFF"
         fi
     done
 }
