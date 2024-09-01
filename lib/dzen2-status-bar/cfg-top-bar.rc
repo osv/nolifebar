@@ -116,10 +116,10 @@ MOD_NETWORK_init_vars() {
     interface="[ew]*"         # interface, e.g wlp7s0, by default all ethernet + wifi.
 
     history_size=20           # history size for char
-    rx_min_log_scale=3        # received min value for logarithmic scale histoy, KB
-    rx_max_log_scale=20000    # received max
+    rx_min_log_scale=2        # received min value for logarithmic scale histoy, KB
+    rx_max_log_scale=10000    # received max
     tx_min_log_scale=2        # transmitted min value for logarithmic scale histoy
-    tx_max_log_scale=20000    # transmitted max
+    tx_max_log_scale=10000    # transmitted max
     chart_stack_padding=1     # padding between rx/tx bars in chars
     chart_height=$((CFG_HEIGHT - 4)) # height of chart with paddings
     additional_chart_params=(-bar_width 1)
