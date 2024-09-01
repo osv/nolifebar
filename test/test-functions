@@ -27,8 +27,9 @@ increment_test_count() {
 test_apply_dictionary_value_format() {
     increment_test_count
 
-    # Declare target and format dictionaries
-    declare -A target_kv=(
+    # Declare target, source and format dictionaries
+    declare -A target_kv=()
+    declare -A source_kv=(
         ["apple"]="5"
         ["carrot"]="2"
         ["banana"]="7"
@@ -40,7 +41,7 @@ test_apply_dictionary_value_format() {
     )
 
     # Apply the formatting
-    apply_dictionary_value_format target_kv format_kv
+    apply_dictionary_value_format target_kv source_kv format_kv
 
     # Expected output
     local expected_apple="Number of apples: 5"

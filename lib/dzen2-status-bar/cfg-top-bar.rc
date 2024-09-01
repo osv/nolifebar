@@ -129,7 +129,7 @@ MOD_NETWORK_init_vars() {
 }
 
 # MOD_NETWORK_draw() {
-#   printf "Down: %4dKB, Up: %4dKB\n" "$1" "$2"
+#   printf "Down: %4dKB, Up: %4dKB, Ping: 3ms\n" "${metric_values['rx']}" "${metric_values['tx']}" "${metric_values['ping']}"
 # }
 
 # ############################### Mem
@@ -350,7 +350,7 @@ MOD_NVIDIA_init_vars() {
   # additional dzen2_draw_flags params
   additional_render_params=()
 
-  gpu_stat_alert_treshold=(
+  gpu_metrics_alert_treshold=(
     ["fan.speed"]=10        # I want to know when fan is on
     ["power.draw"]=30       # power draw is importent for me
     ["utilization.gpu"]=70
@@ -368,7 +368,7 @@ MOD_NVIDIA_init_vars() {
                  )
 
   # define how to format metrics
-  gpu_stat_fmt=(
+  gpu_metrics_fmt=(
     ["name"]="%s"
     ["fan.speed"]="Fan %3i%%"
     ["power.draw"]="Pwr%4iW"
@@ -402,7 +402,7 @@ MOD_NVIDIA_draw_dzen2() {
 
   local widget
   dzen2_draw_flags widget \
-    gpu_stat_formatted \
+    gpu_metrics_formatted \
     alerts \
     visible_params \
     -label "GPU" \

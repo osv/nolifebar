@@ -97,13 +97,16 @@ is_array() {
 
 apply_dictionary_value_format() {
     local -n target_kv_ref="$1"
-    local -n format_kv_ref="$2"
+    local -n source_kv_ref="$2"
+    local -n format_kv_ref="$3"
 
-    for key in "${!target_kv_ref[@]}"; do
-        local value="${target_kv_ref[$key]}"
+    for key in "${!source_kv_ref[@]}"; do
+        local value="${source_kv_ref[$key]}"
         local fmt="${format_kv_ref[$key]}"
         if [ -n "$fmt" ]; then
             printf -v target_kv_ref["$key"] "$fmt" "$value"
+        else
+            target_kv_ref["$key"]="$value"
         fi
     done
 }
