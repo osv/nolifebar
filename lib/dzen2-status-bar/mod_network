@@ -30,18 +30,29 @@ mod_init_vars() {
     ping_host="github.com"
     ping_params=(-W 2)        # Additional params to ping command, interface (-I)?
 
-    # TODO wifi
+    monitor_ssid_interface="" # name of wifi interface to monitor conection, if empty - use first from /proc/net/wireless
+    monitor_ssid_enable=1     # 0 - disable not check for wifi ssid
 
-    visible_metrics=('rx' 'tx' 'ping')
+    visible_metrics=('rx' 'tx' 'ping'
+                     'wifi_active_interface'
+                     'wifi_signal_level'
+                     'wifi_ssid'
+                     'wifi_status'
+                    )
     metric_alert_treshold=(
         ['rx']=1000 # KB
         ['tx']=1000 # KB
         ['ping']=300
+        ['wifi_signal_level']=81
     )
     metric_fmt=(
         ['tx']="U %5sKB"
         ['rx']="D %5sKB"
         ['ping']="Ping %3s"
+        ['wifi_active_interface']="Iw %s"
+        ['wifi_signal_level']="Lvl -%sdb"
+        ['wifi_ssid']="id %s"
+        ['wifi_status']="Wifi %s"
     )
 }
 
@@ -68,6 +79,9 @@ mod_init_draw() {
 
     echo "Using interface: $interface"
     interfaces=("/sys/class/net/$interface/statistics")
+
+    if ((ping_interval)); then check_dependencies ping; fi
+    if ((monitor_ssid_enable)); then check_dependencies iwgetid iwevent; fi
 }
 
 mod_draw_dzen2_log_scaled_bar() {
@@ -119,12 +133,91 @@ mod_draw_default() {
     printf "Down: %4dKB, Up: %4dKB, Ping: 3ms\n" "$rx" "$tx" "$ping"
 }
 
+get_wireless_interface_and_signal() {
+    local -n interface_ref="$1"
+    local -n signal_ref="$2"
+    local interface="$3"
+
+    # Check if /proc/net/wireless exists
+    # Static variable to track if the file check message has been printed
+    local -g file_check_done
+    if [ ! -f /proc/net/wireless ]; then
+        if [ -z "$file_check_done" ]; then
+            printf "File /proc/net/wireless does not exist or is not accessible.\n" >&2
+            file_check_done=1
+        fi
+        return 1
+    fi
+
+    # If interface is not provided, find the first wireless interface
+    if [ -z "$interface" ]; then
+        while IFS= read -r line; do
+            # Check if the first word ends with a colon
+            if [[ "$line" =~ ^[[:alnum:]]+[:] ]]; then
+                # Extract the interface name before the first colon
+                interface="${line%%:*}"
+                # Trim any leading or trailing whitespace
+                interface=$(echo "$interface" | xargs)
+                break
+            fi
+        done < /proc/net/wireless
+
+        if [ -z "$interface" ]; then
+            return 1
+        fi
+    fi
+    interface_ref="$interface"
+
+    # Now that we have the interface, find its signal level
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^"$interface:" ]]; then
+            # Split the line into an array by spaces
+            IFS=' ' read -r -a fields <<< "$line"
+
+            # Signal level is the 4th field (index 3 in array)
+            signal_level="${fields[3]}"
+
+            # Remove any decimal part if present
+            signal_level="${signal_level%.*}"
+            # negate value, "-" will be added at format time
+            signal_ref=$((-signal_level))
+            return 0
+        fi
+    done < /proc/net/wireless
+
+    return 1
+}
+
+get_wifi_ssid() {
+    local -n ssid_ref="$1"
+    ssid_ref=$(iwgetid -r "$monitor_ssid_interface")
+}
+
+run_wifi_ssid_monitor_cmd() {
+    local file_name="$1"
+    printf "%s\n" "--" > "$file_name"
+    if ((!monitor_ssid_enable)); then return; fi
+
+    printf "Starting iwevent cmd (wifi event monitor)\n"
+
+    iwgetid -r ${monitor_ssid_interface:+$monitor_ssid_interface} > "$file_name"
+    while true; do
+        iwevent 2>/dev/null \
+            | grep 'New Access Point/Cell address' \
+            | while read -r line; do
+            iwgetid -r ${monitor_ssid_interface:+$monitor_ssid_interface} > "$file_name"
+        done
+
+        printf "Poll wifi event failure, restarting iwevent cmd in %ss\n" "$delay"
+        read_sleep 30
+    done
+}
+
 run_ping_cmd() {
     local file_name="$1"
 
-    if ((ping_interval <= 0)); then
-        return
-    fi
+    printf "%s\n" "--" > "$file_name"
+    if ((ping_interval <= 0)); then return; fi
 
     printf "Starting ping cmd\n. Interval: %ss\n. Host: %s\n" "$ping_interval" "$ping_host"
     while true; do
@@ -186,6 +279,9 @@ cleanup() {
     if kill -0 "$global_subshell_ping_pid" 2>/dev/null; then
         kill "$global_subshell_ping_pid" 2>/dev/null
     fi
+    if kill -0 "$global_subshell_ssid_pid" 2>/dev/null; then
+        kill "$global_subshell_ssid_pid" 2>/dev/null
+    fi
 }
 
 trap "cleanup" EXIT
@@ -195,13 +291,15 @@ mod_loop() {
     local initial_tx=0
 
     local ping_value_file="$TMP_DIR/network_ping_value"
-    touch "$ping_value_file"
     run_ping_cmd "$ping_value_file" & # Run in background ping command
     global_subshell_ping_pid=$!
 
+    local wifi_ssid_value_file="$TMP_DIR/network_ssid_value"
+    run_wifi_ssid_monitor_cmd "$wifi_ssid_value_file" & # run in background monitor for ssid change
+    global_subshell_ssid_pid=$!
+
     get_network_data initial_rx initial_tx
 
-    local ping_value="NA"
     while true; do
         local current_rx=0
         local current_tx=0
@@ -226,14 +324,28 @@ mod_loop() {
         initial_rx=$current_rx
         initial_tx=$current_tx
 
-        # Non-blocking read from FIFO
-        if read -t 0.1 -r line < "$ping_value_file"; then
-            ping_value=$line
-        fi
+        local ping_value="--"
+        if read -t 0.1 -r line < "$ping_value_file"; then ping_value="$line"; fi
+        local ssid_value="-"
+        if read -t 0.1 -r line < "$wifi_ssid_value_file"; then ssid_value="$line"; fi
+
+        local active_wifi_interface="--"
+        local signal_level="-"
+        get_wireless_interface_and_signal active_wifi_interface signal_level "$monitor_ssid_interface"
 
         metric_formatted["tx"]="$tx"
         metric_formatted["rx"]="$rx"
         metric_formatted["ping"]="$ping_value"
+        metric_formatted["wifi_active_interface"]="$active_wifi_interface"
+        metric_formatted["wifi_signal_level"]="$signal_level"
+        metric_formatted['wifi_ssid']="$ssid_value"
+
+        if [ "$active_wifi_interface" == "--" ]; then
+            metric_formatted['wifi_status']="Off"
+        else
+            metric_formatted['wifi_status']="On"
+        fi
+
         # Check for alert before format
         update_threshold metric_alerts metric_formatted metric_alert_treshold
         apply_dictionary_value_format metric_formatted metric_fmt

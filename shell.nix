@@ -23,6 +23,7 @@ mkShell {
     bc
     cava
     pulseaudio # pactl
+    wirelesstools # iwgetid iwevent
 
     (dzen2.overrideAttrs (oldAttrs: rec {
       patchPhase = ''
