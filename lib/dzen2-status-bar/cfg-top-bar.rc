@@ -214,10 +214,13 @@ MOD_MEM_draw_dzen2() {
     swap_percentage=$((100 * $mem_used_swap / $mem_swap_total))
   fi
 
-  local out=$(printf "^p(_TOP)^p(;2)^fg(<FG>)^fn(<FN_2_ROWS>)^ba(70,_LEFT)Mem  %3d%%" "$used_percentage")
+  local fmt
+  printf -v fmt "^p(_TOP)^p(;2)^fg(<FG>)^fn(<FN_2_ROWS>)^ba(70,_LEFT)Mem  %3d%%" "$used_percentage"
+  local out="$fmt"
   out+="^ib(1)^fg(<BORDER>)^r(1x7-12+1)^r(10x1-0+2)^p(2;-3)${mem_bar}^ib(1)"
   out+="^p(-175;14)^fg(<FG>)^ba(70,_LEFT)"
-  out+=$(printf "Swap %3s%%" "$swap_percentage")
+  printf -v fmt "Swap %3s%%" "$swap_percentage"
+  out+="$fmt"
   out+="^fg(<BORDER>)^r(1x7-12+4)^r(10x1-0+4)^p(2;-3)${swap_bar}"
   printf "%s^p()^ib()^fn(<FN_MAIN>)\n" "$out"
 }
