@@ -45,8 +45,7 @@ mod_draw_dzen2() {
 handle_signal() {
   echo "Signal received: show_total_only=${show_total_only}"
   show_total_only=$((show_total_only ? 0 : 1))
-  # FIXME: Why update in current shell freezed read_sleep? I can update in background as temp solution
-  { update; } &
+  update
 }
 
 trap 'handle_signal' SIGUSR1
