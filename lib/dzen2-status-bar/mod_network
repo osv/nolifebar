@@ -33,12 +33,16 @@ mod_init_vars() {
     monitor_ssid_interface="" # name of wifi interface to monitor conection, if empty - use first from /proc/net/wireless
     monitor_ssid_enable=1     # 0 - disable not check for wifi ssid
 
-    visible_metrics=('rx' 'tx' 'ping'
-                     'wifi_active_interface'
+    check_torrent_lock_file="$HOME/.config/qBittorrent/lockfile" # if defined check for running torrent
+
+    visible_metrics=('rx' 'tx'
+                     'ping' 'torrent_running'
                      'wifi_signal_level'
                      'wifi_ssid'
+                     'wifi_active_interface'
                      'wifi_status'
                     )
+
     metric_alert_treshold=(
         ['rx']=1000 # KB
         ['tx']=1000 # KB
@@ -53,6 +57,7 @@ mod_init_vars() {
         ['wifi_signal_level']="Lvl -%sdb"
         ['wifi_ssid']="id %s"
         ['wifi_status']="Wifi %s"
+        ['torrent_running']="Torrnt %s"
     )
 }
 
@@ -156,8 +161,6 @@ get_wireless_interface_and_signal() {
             if [[ "$line" =~ ^[[:alnum:]]+[:] ]]; then
                 # Extract the interface name before the first colon
                 interface="${line%%:*}"
-                # Trim any leading or trailing whitespace
-                interface=$(echo "$interface" | xargs)
                 break
             fi
         done < /proc/net/wireless
@@ -324,26 +327,36 @@ mod_loop() {
         initial_rx=$current_rx
         initial_tx=$current_tx
 
-        local ping_value="--"
-        if read -t 0.1 -r line < "$ping_value_file"; then ping_value="$line"; fi
-        local ssid_value="-"
-        if read -t 0.1 -r line < "$wifi_ssid_value_file"; then ssid_value="$line"; fi
+        metric_formatted["tx"]="$tx"
+        metric_formatted["rx"]="$rx"
 
+        # Get ping from background running command
+        metric_formatted["ping"]="--"
+        if read -t 0.1 -r line < "$ping_value_file"; then metric_formatted["ping"]="$line"; fi
+
+        # Get wifi ssid from background running command
+        metric_formatted['wifi_ssid']="-"
+        if read -t 0.1 -r line < "$wifi_ssid_value_file"; then metric_formatted['wifi_ssid']="$line"; fi
+
+        # read files for wifi interface and signal level
         local active_wifi_interface="--"
         local signal_level="-"
         get_wireless_interface_and_signal active_wifi_interface signal_level "$monitor_ssid_interface"
-
-        metric_formatted["tx"]="$tx"
-        metric_formatted["rx"]="$rx"
-        metric_formatted["ping"]="$ping_value"
         metric_formatted["wifi_active_interface"]="$active_wifi_interface"
         metric_formatted["wifi_signal_level"]="$signal_level"
-        metric_formatted['wifi_ssid']="$ssid_value"
-
         if [ "$active_wifi_interface" == "--" ]; then
             metric_formatted['wifi_status']="Off"
         else
             metric_formatted['wifi_status']="On"
+        fi
+
+        # Check for running torrent
+        if [ -n "$check_torrent_lock_file" ]; then
+            if [ -f "$check_torrent_lock_file" ]; then
+                metric_formatted['torrent_running']="On"
+            else
+                metric_formatted['torrent_running']="--"
+            fi
         fi
 
         # Check for alert before format
