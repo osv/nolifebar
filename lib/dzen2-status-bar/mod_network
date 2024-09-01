@@ -14,20 +14,23 @@ declare -A metric_fmt # how to format value
 declare -A metric_formatted # Formatted metrics
 
 mod_init_vars() {
-    interval=2                # must be integer
-    interface="[ew]*"         # interface, e.g wlp7s0, by default all ethernet + wifi.
+    interval=2                # delay for rx/tx check
+    interface="[ew]*"         # Interface, e.g wlp7s0, by default all ethernet + wifi.
 
-    history_size=20           # history size for char
-    rx_min_log_scale=3        # received min value for logarithmic scale history, KB
-    rx_max_log_scale=20000    # received max
-    tx_min_log_scale=2        # transmitted min value for logarithmic scale history, KB
-    tx_max_log_scale=20000    # transmitted max
-    chart_stack_padding=1     # padding between rx/tx bars in chars
-    chart_height=$((CFG_HEIGHT - 4)) # height of chart with paddings
+    history_size=20           # History size for char
+    rx_min_log_scale=3        # Received min value for logarithmic scale history, KB
+    rx_max_log_scale=20000    # Received max
+    tx_min_log_scale=2        # Transmitted min value for logarithmic scale history, KB
+    tx_max_log_scale=20000    # Transmitted max
+    chart_stack_padding=1     # Padding between rx/tx bars in chars
+    chart_height=$((CFG_HEIGHT - 4)) # Height of chart with paddings
     additional_chart_params=(-bar_width 1)
 
     ping_interval=7           # 0 - disable
     ping_host="github.com"
+    ping_params=(-W 2)        # Additional params to ping command, interface (-I)?
+
+    # TODO wifi
 
     visible_metrics=('rx' 'tx' 'ping')
     metric_alert_treshold=(
@@ -126,7 +129,9 @@ run_ping_cmd() {
     printf "Starting ping cmd\n. Interval: %ss\n. Host: %s\n" "$ping_interval" "$ping_host"
     while true; do
 
-        ping "$ping_host" -i "$ping_interval" \
+        ping "$ping_host" \
+            -i "$ping_interval" \
+            "${ping_params[@]}" \
             | while read -r line; do
             # Extract the part after "time="
             ping_time="${line#*time=}"
