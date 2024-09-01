@@ -28,7 +28,7 @@ mod_init_vars() {
     additional_chart_params=(-bar_width 1)
 
     ping_interval=7           # 0 - disable
-    ping_host="github.com"
+    ping_host="github.com"    # ip or host
     ping_params=(-W 2)        # Additional params to ping command, interface (-I)?
 
     monitor_ssid_interface="" # name of wifi interface to monitor conection, if empty - use first from /proc/net/wireless
@@ -83,11 +83,13 @@ mod_init_draw() {
     tx_scales=()
     create_log_scale tx_scales "$tx_min_log_scale" "$tx_max_log_scale" "$log_scale_max_value" # TODO: do not use 12 but calc based on height
 
-    echo "Using interface: $interface"
+    printf "Using interface for TX RX: %s\n" "$interface"
     interfaces=("/sys/class/net/$interface/statistics")
 
     if ((ping_interval)); then check_dependencies ping; fi
     if ((monitor_ssid_enable)); then check_dependencies iwgetid iwevent; fi
+
+    printf "Using wifi interface: %s\n" "${monitor_ssid_interface:-First active}"
 }
 
 mod_draw_dzen2_log_scaled_bar() {
@@ -236,7 +238,7 @@ run_ping_cmd() {
         local delay=30
         printf "Ping failed, restarting ping cmd in %ss\n" "$delay"
         # network failure? lets sleep for some time and try again
-        printf "N/A\n" > "$file_name"
+        printf "--\n" > "$file_name"
         read_sleep "$delay"
     done
 }
