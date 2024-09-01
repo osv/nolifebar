@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+
+CFG_MODULES=()
+
+CFG_BACKEND=dzen2
+
+# # Uncomment to output data for dzen2 to STDOUT for debugging
+# DEBUG=true
+
+# Replace text before sending to status bar programm:
+declare -A CFG_REPLACE_MAP=(
+    ["<FN_MAIN>"]="Terminus:size=14:style=Light"
+)
+
+# Some functions uses this for draw rects
+CFG_HEIGHT=30
+
+# Status bar command, dzen2
+CFG_STATUS_BAR_CMD=(dzen2 -dock -fn "${CFG_REPLACE_MAP['<FN_MAIN>']}"
+                    -ta r -h "${CFG_HEIGHT}")
+
+# ############################### OpenVPN
+MOD_OPENVPN_init_vars() {
+  service_prefix="openvpn-" # systemd openvpn prefix
+  services=(kz-production kz-development) # openvpn systemd services
+  services_name_map=(
+       ["kz-production"]="Prod"
+       ["kz-development"]="Dev"
+  )
+  # additional_render_params=(-label "OpenVPN" -label_size "100" -color_on red -y_padding 2 -fn_2rows "terminus-8" -fn_2rows_y_offset 0)
+}
+
+###############################
+# Widget layout format function
+###############################
+
+fn_format_template() {
+local a=(0 1 2 3 4 5 6 7 8 9 10 10 9 8 7 6 5 4 3 2 1 0)
+local b=(10 9 8 7 6 5 4 3 2 1 0 0 1 2 3 4 5 6 7 8 9 10)
+local output=""
+local widget
+dzen2_draw_centered_bars widget \
+    a \
+    b \
+    -max_value 10
+output+=" centered: >$widget<"
+
+dzen2_draw_centered_bars widget \
+    a \
+    b \
+    -max_value 10 \
+    -stack_padding 3 \
+    -bar_padding 3
+output+="| pad 3: >$widget<"
+
+dzen2_draw_centered_bars widget \
+    a \
+    b \
+    -stack_padding 0 \
+    -bar_padding 0 \
+    -bar_width 2 \
+    -max_value 10
+output+=" | no pad: >$widget"
+
+dzen2_draw_centered_bars widget \
+    b \
+    a \
+    -stack_padding 0 \
+    -bar_padding 0 \
+    -bar_width 2 \
+    -max_value 10
+output+="$widget<"
+
+
+a=(0 0 0 0 0 0 0 0 0 0 )
+b=(0 0 0 0 0 0 0 0 0 0 )
+local widget
+dzen2_draw_centered_bars widget \
+    a \
+    b \
+    -height 26 \
+    -stack_padding 2\
+    -max_value 10
+output+=" | blank: >$widget"
+
+a=(0 0 9 9 0 0 0 0 0 0 )
+b=(0 0 0 0 0 0 9 9 0 0 )
+local widget
+dzen2_draw_centered_bars widget \
+    a \
+    b \
+    -height 26 \
+    -stack_padding 0\
+    -max_value 9
+output+=" $widget<"
+
+# example with 1 stacked bars
+dzen2_draw_h_stacked_bars widget \
+    "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
+    -bar_width 5 \
+    -max_value 8 \
+    -stacks 1 \
+    -values "1,2,3,4,5,6,7,8,0,0,8,7,6,5,4,3,2,1"
+output+="| stk1 >$widget<"
+
+# example with 4 stacked bars
+local hbar_values=(4 0 0 0
+                   0 4 0 0
+                   0 0 4 0
+
+                   0 0 0 0
+                   1 1 1 1
+
+                   0 0 0 0
+                   2 2 1 0
+                   0 2 1 2
+
+                   0 0 0 0
+                   2 3 3 0
+                   3 0 3 2
+                   1 0 6 1
+
+                   0 0 0 0
+                   2 2 2 2
+                   2 2 4 0
+                   4 4 0 0
+                   8 0 0 0
+
+                   0 0 0 0
+                   4 0 4 0
+                   3 0 3 0
+                   2 0 2 0
+                   1 0 1 0
+                   )
+local hbar=""
+IFS=, hbar="${hbar_values[*]}"
+dzen2_draw_h_stacked_bars widget \
+    "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
+    -bar_width 5 \
+    -max_value 8 \
+    -stacks 4 \
+    -values "$hbar"
+output+=" stk4 >$widget"
+# no padding
+dzen2_draw_h_stacked_bars widget \
+    "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
+    -bar_width 5 \
+    -max_value 8 \
+    -stacks 4 \
+    -values "$hbar" \
+    -stack_padding 0 \
+    -bar_padding 0
+output+=" $widget<"
+
+dzen2_draw_stacked_bar widget \
+    -width "30" \
+    -height 7 \
+    -draw_outline \
+    -values "15,0,0" \
+    -padding 1 \
+    -max_value "30"
+output+="| hor >$widget"
+dzen2_draw_stacked_bar widget \
+    -width "30" \
+    -height 7 \
+    -draw_outline \
+    -values "15,15,0" \
+    -padding 1 \
+    -max_value "30"
+output+=" $widget"
+dzen2_draw_stacked_bar widget \
+    -width "30" \
+    -height 7 \
+    -draw_outline \
+    -values "10,10,10" \
+    -padding 1 \
+    -max_value "30"
+output+=" $widget"
+
+dzen2_draw_stacked_bar widget \
+    -width "30" \
+    -height 7 \
+    -draw_outline \
+    -values "5,5,5" \
+    -padding 1 \
+    -max_value "30"
+output+=" $widget"
+
+printf "BEGIN%sEND\n" "$output"
+}
