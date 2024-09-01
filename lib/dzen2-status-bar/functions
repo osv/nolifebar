@@ -198,7 +198,7 @@ dzen2_draw_stacked_bar() {
     local height=4
     local max_value=100
     local values=()
-    local fg_colors=("${DEFAULT_STACK_COLORS[@]}")
+    local fg_colors=("${CFG_DEFAULT_STACK_COLORS[@]}")
     local padding=1
     local bg="#CCCCCC"
     local draw_outline=""
@@ -485,7 +485,8 @@ dzen2_draw_centered_bars() {
     done
 
     local num_values=${#ref_values_hi[@]}
-    local widget_width=$((num_values * (bar_width + bar_padding) + 2)) # 2 - borders
+    local widget_width=$((num_values * (bar_width + bar_padding) + 2 - bar_padding)) # 2 - borders
+
     local res="^ib(1)^fg(${bg})^r(${widget_width}x${height})" # bg rect
     res+="^fg(${border_fg})^ro(${widget_width}x${height}-$widget_width)^p(-$((widget_width)))" # border
 
@@ -499,6 +500,7 @@ dzen2_draw_centered_bars() {
     local skip_x=0 # for reducing not needed commands, optimization
     local shoud_reset_y=0 # for reducing not needed commands, optimization
     for ((i = 0; i < num_values; i++)); do
+        local next_bar_x_offset=$((i == 0 ? 1 : bar_padding)) # for first var - border width
         local low="$((ref_values_low[i] * (available_height - stack_padding_offset) / max_value ))"
         local hi="$((ref_values_hi[i] * (available_height - stack_padding_offset) / max_value ))"
         if ((low > 0)); then
@@ -507,12 +509,12 @@ dzen2_draw_centered_bars() {
 
             local y_offset # Use ceil for low/2 value and floor for hi/2 value
             ceil_division y_offset $low 2
-            res+="^fg($low_color)^r(${bar_width}x${low}+${bar_padding}+$((stack_padding_offset + y_offset)))"
+            res+="^fg($low_color)^r(${bar_width}x${low}+${next_bar_x_offset}+$((stack_padding_offset + y_offset)))"
 
             shoud_reset_y=0
             skip_x=0
         else
-            skip_x=$((skip_x + bar_width + bar_padding))
+            skip_x=$((skip_x + bar_width + next_bar_x_offset))
         fi
         if ((hi > 0)); then
             if ((shoud_reset_y>0)); then res+="^p()"; fi
@@ -526,7 +528,7 @@ dzen2_draw_centered_bars() {
             shoud_reset_y=1
         fi
     done
-    res+="^p($((skip_x + 2)))" # 2: border + 1px additional offset
+    res+="^p($((skip_x + 1)))" # 1 - border
     res+="^ib()^p()"
     ref_var="$res"
 }
