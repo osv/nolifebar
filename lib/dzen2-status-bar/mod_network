@@ -36,12 +36,10 @@ mod_init_vars() {
 
     check_torrent_lock_file="$HOME/.config/qBittorrent/lockfile" # if defined check for running torrent
 
-    visible_metrics=('rx' 'tx'
-                     'ping' 'torrent_running'
-                     'wifi_signal_level'
-                     'wifi_ssid'
-                     'wifi_active_interface'
-                     'wifi_status'
+    visible_metrics=('rx'          'tx'
+                     'ping'        'torrent_running'
+                     'wifi_ssid'   'wifi_signal_level'
+                     'wifi_status' 'wifi_active_interface'
                     )
 
     metric_alert_treshold=(
@@ -202,8 +200,9 @@ run_wifi_ssid_monitor_cmd() {
     iwgetid -r ${monitor_ssid_interface:+$monitor_ssid_interface} > "$file_name"
     while true; do
         iwevent 2>/dev/null \
-            | grep 'New Access Point/Cell address' \
+            | grep --line-buffered 'New Access Point/Cell address' \
             | while read -r line; do
+            read_sleep 2 # some delay before fetch ssid
             iwgetid -r ${monitor_ssid_interface:+$monitor_ssid_interface} > "$file_name"
         done
 
