@@ -412,7 +412,7 @@ dzen2_draw_h_stacked_bars() {
             fi
         done
     done
-    res+="^p($((skip_x + 1)))"
+    res+="^p($((skip_x + 4)))" # 1px - border, 3ox - margin
     res+="^ib()^p()"
     eval "$ref_var=\"$res\""
 }
@@ -531,7 +531,7 @@ dzen2_draw_centered_bars() {
             shoud_reset_y=1
         fi
     done
-    res+="^p($((skip_x + 1)))" # 1 - border
+    res+="^p($((skip_x + 4)))" # 1px - border, 3px - margin
     res+="^ib()^p()"
     ref_var="$res"
 }
@@ -644,10 +644,10 @@ dzen2_draw_flags() {
                 res+="^ro(${name_size}x$((height / 2 ))-0+$((height / 2)))$label_cmd"
             fi
         fi
-        index=$((index+1))
+        index=$((index+1)) # 1px - border
     done
 
     # reset state
-    res+="^ib()^p()^fg(${color_fg})^bg(${color_bg})^fn($fn_main)"
+    res+="^ib()^p()^p(3)^fg(${color_fg})^bg(${color_bg})^fn($fn_main)" # 3px - margin
     eval "$ref_var=\"$res\""
 }
