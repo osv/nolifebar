@@ -11,6 +11,24 @@ if [ -z "${CFG_DEFAULT_STACK_COLORS+x}" ]; then
   CFG_DEFAULT_STACK_COLORS=('#ff8b92' '#c3e88d' '#e1acff' '#ffe585')
 fi
 
+# Generate the color variables, e.g BOLD_INTENSE_GREEN
+generate_color_variables() {
+    local color_names=("BLACK" "RED" "GREEN" "YELLOW" "BLUE" "MAGENTA" "CYAN" "WHITE")
+    local color_codes=(30 31 32 33 34 35 36 37)
+    for i in "${!color_names[@]}"; do
+        eval "${color_names[$i]}=\"\x1b[${color_codes[$i]}m\""
+        eval "BOLD_${color_names[$i]}=\"\x1b[1;${color_codes[$i]}m\""
+        eval "UNDERLINE_${color_names[$i]}=\"\x1b[4;${color_codes[$i]}m\""
+        eval "BACKGROUND_${color_names[$i]}=\"\x1b[$((40 + i))m\""
+        eval "INTENSE_${color_names[$i]}=\"\x1b[$((90 + i))m\""
+        eval "BOLD_INTENSE_${color_names[$i]}=\"\x1b[1;$((90 + i))m\""
+        eval "BACKGROUND_INTENSE_${color_names[$i]}=\"\x1b[0;$((100 + i))m\""
+    done
+    RESET="\x1b[0m"
+}
+generate_color_variables
+
+
 check_dependencies() {
     local missing_dependencies=()
 

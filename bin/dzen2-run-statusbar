@@ -43,7 +43,7 @@ color_index=0
 declare -a fifo_files
 
 # Define a list of color codes
-colors=("32" "33" "34" "35" "36")
+colors=("32" "33" "34" "35" "36" "92" "93" "94" "95" "96")
 # Function to get or assign a color for a program
 get_color() {
     local program_name="$1"
@@ -121,12 +121,58 @@ load_modules() {
     done
 }
 
-debug_pipe() {
-    if [ "$DEBUG" = true ]; then
-        tee >(cat >&2)
+# Function to process input and print FPS if env var DEBUG_FPS=true
+debug_pipe_or_print_fps() {
+  local count=0
+
+  highlight_backend_commands() {
+    if [ "$CFG_BACKEND" = "dzen2" ]; then
+      sed -E "
+        s/\^(r|ro|c|co)\(([^)]*)\)/${BOLD_YELLOW}^\1(${RESET}${INTENSE_YELLOW}\2${RESET}${BOLD_YELLOW})${RESET}/g;
+        s/\^(p|pa|ba)\(([^)]*)\)/${BOLD_CYAN}^\1(${RESET}${INTENSE_CYAN}\2${RESET}${BOLD_CYAN})${RESET}/g;
+        s/\^(ib|i|fg|bg|fn)\(([^)]*)\)/${BOLD_MAGENTA}^\1(${RESET}${GREEN}\2${RESET}${BOLD_MAGENTA})${RESET}/g;
+        s/\^ca\(([^)]*)\)/${BOLD_RED}^ca(${RESET}${UNDERLINE_RED}\1${RESET}${BOLD_RED})${RESET}/g
+    "
     else
-        cat
+      # TODO: Other backends, xmobar, lemonbar
+      cat
     fi
+  }
+
+  if [ "$DEBUG" = true ]; then
+      tee >(cat | highlight_backend_commands >&2)
+      return
+  fi
+
+  if [ "$DEBUG_FPS" != true ]; then
+      cat
+      return
+  fi
+
+  timestamp() {
+      local -n result="$1"
+      local epoch="${EPOCHREALTIME}"
+      result="${epoch/./}"
+  }
+
+  local start_time
+  timestamp start_time
+  local last_print_time="$start_time"
+  while IFS= read -r line; do
+    printf "%s\n" "$line"
+    count=$((count + 1))
+
+    local current_time
+    timestamp current_time
+    local elapsed_time=$((current_time - last_print_time))
+
+    if ((elapsed_time >= 5000000)); then
+      local fps=$(((count * 1000)/ ((elapsed_time) / 1000)))
+      printf "FPS: %s\n" "$fps" >&2
+      count=0
+      last_print_time=$current_time
+    fi
+  done
 }
 
 format_dzen2_template() {
@@ -147,7 +193,7 @@ run_and_wait_for_dzen2() {
 
     dzen2-merge-pipes "$template_fifo" $(IFS=' '; echo "${fifo_files[*]}") |\
         sed --unbuffered "$SED_COMMAND" |\
-        debug_pipe |\
+        debug_pipe_or_print_fps |\
         "${CFG_STATUS_BAR_CMD[@]}" |\
         process_dzen2_output &
     pid=$!

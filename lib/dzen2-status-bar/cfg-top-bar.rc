@@ -432,8 +432,8 @@ fn_format_template() {
   state="$1"
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"
-  else
-      printf "[{out_xtitle}] {out_network} {out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} | {out_cava_out} | ^fg(<FG>) {out_cava_in} ^fg(<FG>){out_time} \n"
+ else
+      printf "[{out_xtitle}] {out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} {out_cava_out}{out_cava_in} ^fg(<FG>){out_time} \n"
   fi
 
 }
