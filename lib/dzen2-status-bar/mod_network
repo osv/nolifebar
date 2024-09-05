@@ -237,7 +237,7 @@ run_ping_cmd() {
         local delay=30
         printf "Ping failed, restarting ping cmd in %ss\n" "$delay"
         # network failure? lets sleep for some time and try again
-        printf "--\n" > "$file_name"
+        printf "%s\n" "--" > "$file_name"
         read_sleep "$delay"
     done
 }
