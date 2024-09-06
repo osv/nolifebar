@@ -45,7 +45,7 @@ mod_draw_dzen2() {
 handle_signal() {
   echo "Signal received: show_total_only=${show_total_only}"
   show_total_only=$((show_total_only ? 0 : 1))
-  update
+  update &
 }
 
 trap 'handle_signal' SIGUSR1
