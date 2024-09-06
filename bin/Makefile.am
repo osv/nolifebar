@@ -33,5 +33,5 @@ nolifebar_workspaces_SOURCES = ../src/nolifebar-workspaces.c
 nolifebar_workspaces_LDADD = $(X11_LIBS) $(XFT_LIBS) $(XCB_EWMH_LIBS) $(XCB_ICCCM_LIBS)
 nolifebar_workspaces_CFLAGS = $(X11_CFLAGS) $(XFT_CFLAGS) $(XCB_EWMH_CFLAGS) $(XCB_ICCCM_CFLAGS)
 
-bin_SCRIPTS = nolifebar-run-statusbar
+bin_SCRIPTS = nolifebar-start
 EXTRA_DIST = $(bin_SCRIPTS)
