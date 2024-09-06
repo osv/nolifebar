@@ -63,7 +63,7 @@ declare -A CFG_REPLACE_MAP=(
     # ["<BAR4>"]="#ffe585"
 
     ["<BAR1>"]="#a33"
-    ["<BAR2>"]="#4b3"
+    ["<BAR2>"]="#281"
     ["<BAR3>"]="#80b"
     ["<BAR4>"]="#66b"
 )
@@ -115,14 +115,17 @@ MOD_NETWORK_init_vars() {
     interval=2                # must be integer
     interface="[ew]*"         # interface, e.g wlp7s0, by default all ethernet + wifi.
 
-    history_size=20           # history size for char
+    history_size=30           # history size for char
     rx_min_log_scale=2        # received min value for logarithmic scale histoy, KB
     rx_max_log_scale=10000    # received max
     tx_min_log_scale=2        # transmitted min value for logarithmic scale histoy
     tx_max_log_scale=10000    # transmitted max
     chart_stack_padding=1     # padding between rx/tx bars in chars
     chart_height=$((CFG_HEIGHT - 4)) # height of chart with paddings
-    additional_chart_params=(-bar_width 1)
+    additional_chart_params=(
+      -bar_width 1
+      -bar_padding 0
+    )
 
     ping_interval=7           # 0 - disable
     ping_host="github.com"
@@ -248,8 +251,8 @@ MOD_CPU_BARS_init_vars() {
 
 # ############################### Cava OUT (bars)
 MOD_CAVA_OUT_init_vars() {
-  sc_framerate=15      # FPS of cava output, default 15
-  sc_bars=30           # count of cava bars, default 30
+  sc_framerate=30      # FPS of cava output, default 15
+  sc_bars=80           # count of cava bars, default 30
   sc_padding=1         # Vertical padding, default: 1
 
   # sc_fn_create_file="MOD_CAVA_OUT_custom_create_config" # override create cava config file function
@@ -258,7 +261,7 @@ MOD_CAVA_OUT_init_vars() {
   sc_additional_bar_params=(
     -bar_width 1
     -bar_padding 1
-    -fg_colors "#66d"
+    -fg_colors "<BAR4>"
   )
 }
 
@@ -293,8 +296,8 @@ MOD_CAVA_IN_init_vars() {
   # dzen2_draw_h_stacked_bars additional params
   sc_additional_bar_params=(
     -bar_width 1
-    -bar_padding 0
-    -fg_colors "#fff"
+    -bar_padding 1
+    -fg_colors "<BAR1>"
   )
 }
 
@@ -344,7 +347,7 @@ MOD_OPENVPN_init_vars() {
 
 # ############################### NVIDIA
 MOD_NVIDIA_init_vars() {
-  interval=1
+  interval=4
   gpu_index=0
 
   # additional dzen2_draw_flags params
