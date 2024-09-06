@@ -1,5 +1,10 @@
 .direnv
-bin
+
+bin/dzen2-fn-xft
+bin/dzen2-throttle
+bin/dzen2-workspaces
+bin/dzen2-xtitle
+bin/dzen2-merge-pipes
 
 # Ignore build and configuration artifacts
 /aclocal.m4

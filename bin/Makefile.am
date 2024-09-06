@@ -33,5 +33,5 @@ dzen2_workspaces_SOURCES = ../src/dzen2-workspaces.c
 dzen2_workspaces_LDADD = $(X11_LIBS) $(XFT_LIBS) $(XCB_EWMH_LIBS) $(XCB_ICCCM_LIBS)
 dzen2_workspaces_CFLAGS = $(X11_CFLAGS) $(XFT_CFLAGS) $(XCB_EWMH_CFLAGS) $(XCB_ICCCM_CFLAGS)
 
-bin_SCRIPTS = dzen2-run-statusbar dzen2-match-and-prepend.bash
+bin_SCRIPTS = dzen2-run-statusbar
 EXTRA_DIST = $(bin_SCRIPTS)
