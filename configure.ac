@@ -1,4 +1,4 @@
-AC_INIT([dzen2-status-bar], [1.0], [olexandr.syd@email.com])
+AC_INIT([nolifebar-status-bar], [1.0], [olexandr.syd@email.com])
 AM_INIT_AUTOMAKE([subdir-objects])
 
 # Checks for programs.
@@ -13,61 +13,61 @@ PKG_CHECK_MODULES([XCB_EWMH], [xcb-ewmh])
 PKG_CHECK_MODULES([XCB_ICCCM], [xcb-icccm])
 
 
-# merge pipe
-AC_ARG_ENABLE([dzen2-merge-pipes],
-  [AS_HELP_STRING([--disable-dzen2-merge-pipes], [Disable compilation of dzen2-merge-pipes program.
+# multiplexer
+AC_ARG_ENABLE([nolifebar-multiplexer],
+  [AS_HELP_STRING([--disable-nolifebar-multiplexer], [Disable compilation of nolifebar-multiplexer program.
                                                  This program enables you to merge multiple named pipes and format the final output using STDIN])],
-  [enable_dzen2_merge_pipes=$enableval],
-  [enable_dzen2_merge_pipes=yes]
+  [enable_nolifebar_multiplexer=$enableval],
+  [enable_nolifebar_multiplexer=yes]
 )
 
-AM_CONDITIONAL([ENABLE_DZEN2_MERGE_PIPES], [test "x$enable_dzen2_merge_pipes" = "xyes"])
+AM_CONDITIONAL([ENABLE_NOLIFEBAR_MULTIPLEXER], [test "x$enable_nolifebar_multiplexer" = "xyes"])
 
-if test "$enable_dzen2_merge_pipes" = "yes"; then
-  AC_DEFINE([ENABLE_DZEN2_MERGE_PIPES], [1], [Define if dzen2_merge_pipes program is enabled])
+if test "$enable_nolifebar_multiplexer" = "yes"; then
+  AC_DEFINE([ENABLE_NOLIFEBAR_MULTIPLEXER], [1], [Define if nolifebar_multiplexer program is enabled])
 fi
 
 
 # fn-xft
-AC_ARG_ENABLE([dzen2-fn-xft],
-  [AS_HELP_STRING([--disable-dzen2-fn-xft], [Disable compilation of dzen2-fn-xft program.
-                                             This program enables you to use multiple fonts in dzen2 (fallback)])],
-  [enable_dzen2_fn_xft=$enableval],
-  [enable_dzen2_fn_xft=yes]
+AC_ARG_ENABLE([nolifebar-fn-xft],
+  [AS_HELP_STRING([--disable-nolifebar-fn-xft], [Disable compilation of nolifebar-fn-xft program.
+                                             This program enables you to use multiple fonts in nolifebar (fallback)])],
+  [enable_nolifebar_fn_xft=$enableval],
+  [enable_nolifebar_fn_xft=yes]
 )
 
-AM_CONDITIONAL([ENABLE_DZEN2_FN_XFT], [test "x$enable_dzen2_fn_xft" = "xyes"])
+AM_CONDITIONAL([ENABLE_NOLIFEBAR_FN_XFT], [test "x$enable_nolifebar_fn_xft" = "xyes"])
 
-if test "$enable_dzen2_fn_xft" = "yes"; then
-  AC_DEFINE([ENABLE_DZEN2_FN_XFT], [1], [Define if dzen2-fn-xft program is enabled])
+if test "$enable_nolifebar_fn_xft" = "yes"; then
+  AC_DEFINE([ENABLE_NOLIFEBAR_FN_XFT], [1], [Define if nolifebar-fn-xft program is enabled])
 fi
 
 # throttle
-AC_ARG_ENABLE([dzen2-throttle],
-  [AS_HELP_STRING([--disable-dzen2-throttle], [Disable compilation of dzen2-throttle program.
+AC_ARG_ENABLE([nolifebar-throttle],
+  [AS_HELP_STRING([--disable-nolifebar-throttle], [Disable compilation of nolifebar-throttle program.
                                              Throttles STDIN])],
-  [enable_dzen2_throttle=$enableval],
-  [enable_dzen2_throttle=yes]
+  [enable_nolifebar_throttle=$enableval],
+  [enable_nolifebar_throttle=yes]
 )
 
-AM_CONDITIONAL([ENABLE_DZEN2_THROTTLE], [test "x$enable_dzen2_throttle" = "xyes"])
+AM_CONDITIONAL([ENABLE_NOLIFEBAR_THROTTLE], [test "x$enable_nolifebar_throttle" = "xyes"])
 
-if test "$enable_dzen2_throttle" = "yes"; then
-  AC_DEFINE([ENABLE_DZEN2_THROTTLE], [1], [Define if dzen2_throttle program is enabled])
+if test "$enable_nolifebar_throttle" = "yes"; then
+  AC_DEFINE([ENABLE_NOLIFEBAR_THROTTLE], [1], [Define if nolifebar_throttle program is enabled])
 fi
 
 # xtitle
-AC_ARG_ENABLE([dzen2-xtitle],
-  [AS_HELP_STRING([--disable-dzen2-xtitle], [Disable compilation of dzen2-xtitle program.
+AC_ARG_ENABLE([nolifebar-xtitle],
+  [AS_HELP_STRING([--disable-nolifebar-xtitle], [Disable compilation of nolifebar-xtitle program.
                                              Prints title of current window])],
-  [enable_dzen2_xtitle=$enableval],
-  [enable_dzen2_xtitle=yes]
+  [enable_nolifebar_xtitle=$enableval],
+  [enable_nolifebar_xtitle=yes]
 )
 
-AM_CONDITIONAL([ENABLE_DZEN2_XTITLE], [test "x$enable_dzen2_xtitle" = "xyes"])
+AM_CONDITIONAL([ENABLE_NOLIFEBAR_XTITLE], [test "x$enable_nolifebar_xtitle" = "xyes"])
 
-if test "$enable_dzen2_xtitle" = "yes"; then
-  AC_DEFINE([ENABLE_DZEN2_XTITLE], [1], [Define if dzen2_xtitle program is enabled])
+if test "$enable_nolifebar_xtitle" = "yes"; then
+  AC_DEFINE([ENABLE_NOLIFEBAR_XTITLE], [1], [Define if nolifebar_xtitle program is enabled])
 fi
 
 # Checks for optional programs.
@@ -81,7 +81,7 @@ fi
 
 AC_CONFIG_FILES([Makefile
                  bin/Makefile
-                 lib/dzen2-status-bar/Makefile])
+                 lib/nolifebar/Makefile])
 
 # Generate the configuration script.
 AC_OUTPUT
@@ -91,17 +91,17 @@ echo ""
 echo "Configuration Summary:"
 echo "==========================="
 echo "Will be compiled binaries: "
-echo "  dzen2-merge-pipes : $enable_dzen2_merge_pipes"
+echo "  nolifebar-multiplexer : $enable_nolifebar_merge_pipes"
 
-if test "$enable_dzen2_fn_xft" = "yes"; then
-echo "  dzen2-fn-xft      : $enable_dzen2_fn_xft (You can test it: 'make test-dzen2-fn-xft')"
+if test "$enable_nolifebar_fn_xft" = "yes"; then
+echo "  nolifebar-fn-xft      : $enable_nolifebar_fn_xft (You can test it: 'make test-nolifebar-fn-xft')"
 else
-echo "  dzen2-fn-xft      : $enable_dzen2_fn_xft"
+echo "  nolifebar-fn-xft      : $enable_nolifebar_fn_xft"
 fi
 
-echo "  dzen2-throttle    : $enable_dzen2_throttle"
-echo "  dzen2-xtitle      : $enable_dzen2_xtitle"
+echo "  nolifebar-throttle    : $enable_nolifebar_throttle"
+echo "  nolifebar-xtitle      : $enable_nolifebar_xtitle"
 echo ""
 echo "Required runtime binaries/apps:"
-echo "  dzen2             : ${dzen2_status}"
+echo "  dzen2                 : ${dzen2_status}"
 echo "==========================="

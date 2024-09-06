@@ -15,7 +15,7 @@ export PATH="$SCRIPT_DIR:$PATH"
 # Get the absolute path of the resource file
 RESOURCE_FILE=$(realpath "$1")
 export RESOURCE_FILE
-TMP_DIR=/tmp/dzen2rs-$(basename "$RESOURCE_FILE")
+TMP_DIR=/tmp/nolifebar--$(basename "$RESOURCE_FILE")
 mkdir -p "$TMP_DIR"
 export TMP_DIR
 template_fifo="$TMP_DIR/template.fifo"
@@ -24,7 +24,7 @@ template_fifo="$TMP_DIR/template.fifo"
 RESOURCE_DIR=$(dirname "$RESOURCE_FILE")
 
 # Get the directory of the main script
-MODULE_CORE_DIR=$(realpath $(dirname "$(realpath "$0")")/../lib/dzen2-status-bar)
+MODULE_CORE_DIR=$(realpath $(dirname "$(realpath "$0")")/../lib/nolifebar)
 export MODULE_CORE_DIR
 source "$MODULE_CORE_DIR/functions"
 
@@ -175,30 +175,30 @@ debug_pipe_or_print_fps() {
   done
 }
 
-format_dzen2_template() {
+format_nolifebar_template() {
     local latest_output="$1"
     fn_format_template "$latest_output" > "$template_fifo"
 
 }
 
-process_dzen2_output() {
+process_nolifebar_output() {
     while IFS= read -r line; do
-        format_dzen2_template "$line"
+        format_nolifebar_template "$line"
     done
 }
 
-run_and_wait_for_dzen2() {
+run_and_wait_for_nolifebar() {
     # echo "$template_fifo $(IFS=' '; echo "${fifo_files[*]}")"
     mkfifo "$template_fifo"
 
-    dzen2-merge-pipes "$template_fifo" $(IFS=' '; echo "${fifo_files[*]}") |\
+    nolifebar-multiplexer "$template_fifo" $(IFS=' '; echo "${fifo_files[*]}") |\
         sed --unbuffered "$SED_COMMAND" |\
         debug_pipe_or_print_fps |\
         "${CFG_STATUS_BAR_CMD[@]}" |\
-        process_dzen2_output &
+        process_nolifebar_output &
     pid=$!
 
-    format_dzen2_template
+    format_nolifebar_template
 
     wait $pid
 }
@@ -206,5 +206,6 @@ run_and_wait_for_dzen2() {
 trap cleanup_on_exit EXIT
 
 load_modules "${CFG_MODULES[@]}"
+
 SED_COMMAND=$(build_sed_replace_command)
-run_and_wait_for_dzen2
+run_and_wait_for_nolifebar

@@ -1,4 +1,4 @@
-SUBDIRS = bin lib/dzen2-status-bar
+SUBDIRS = bin lib/nolifebar
 
-test-dzen2-fn-xft:
-	$(MAKE) -C bin test-dzen2-fn-xft
+test-nolifebar-fn-xft:
+	$(MAKE) -C bin test-nolifebar-fn-xft

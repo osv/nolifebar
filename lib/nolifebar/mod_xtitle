@@ -7,7 +7,7 @@ echo "Executing XTitle Plugin"
 . "$MODULE_CORE_DIR/functions"
 : "${TMP_DIR:=/tmp}"
 
-check_dependencies dzen2-xtitle dzen2-fn-xft
+check_dependencies nolifebar-xtitle nolifebar-fn-xft
 
 mod_init_vars() {
     ellipsis="…"
@@ -17,15 +17,15 @@ mod_init_vars() {
 
 mod_draw_default() {
     local fifo="$1"
-    dzen2-xtitle | truncate_text > "$fifo"
+    nolifebar-xtitle | truncate_text > "$fifo"
 }
 
 mod_draw_dzen2() {
     local fifo="$1"
-    dzen2-xtitle \
+    nolifebar-xtitle \
         | truncate_text "$ellipsis" "$max_length" \
         | sed --unbuffered 's/\^/^^/g' \
-        | dzen2-fn-xft "${dzen2_fonts[@]}" \
+        | nolifebar-fn-xft "${dzen2_fonts[@]}" \
         > "$fifo"
 }
 
