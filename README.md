@@ -1,5 +1,3 @@
-# NoLifeBar
-
 A Unix way and easy-to-use tool for generating status bars.
 
 # BUILD
@@ -9,3 +7,7 @@ A Unix way and easy-to-use tool for generating status bars.
     make
     
 # INSTALL
+
+    autoreconf --install
+    ./configure
+    make

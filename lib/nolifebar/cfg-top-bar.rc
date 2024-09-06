@@ -6,6 +6,7 @@
 # Each variable can have next prefixes:
 # CFG_ - configs by main scripts and modules
 # MOD_ - used by modules
+# MAIN_ - used by main script
 
 # Modules that will be loaded by main script
 # Each module will evaluate this file
@@ -431,7 +432,7 @@ MOD_XTITLE_init_vars() {
 ###############################
 
 state=""
-fn_format_template() {
+MAIN_format_template() {
   state="$1"
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"

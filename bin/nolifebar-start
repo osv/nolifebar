@@ -9,6 +9,7 @@ if [ -z "$1" ]; then
 fi
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+echo "SCRIPT_DIR $SCRIPT_DIR"
 # Add the script directory to the PATH
 export PATH="$SCRIPT_DIR:$PATH"
 
@@ -26,13 +27,14 @@ RESOURCE_DIR=$(dirname "$RESOURCE_FILE")
 # Get the directory of the main script
 MODULE_CORE_DIR=$(realpath $(dirname "$(realpath "$0")")/../lib/nolifebar)
 export MODULE_CORE_DIR
+echo "MODULE_CORE_DIR $MODULE_CORE_DIR"
 source "$MODULE_CORE_DIR/functions"
 
 # Load the resource file
 source "$RESOURCE_FILE"
 
-if ! declare -F fn_format_template > /dev/null; then
-    echo "Function fn_format_template is not declared"
+if ! declare -F MAIN_format_template > /dev/null; then
+    echo "Function MAIN_format_template is not declared"
     exit 1
 fi
 
@@ -177,7 +179,7 @@ debug_pipe_or_print_fps() {
 
 format_nolifebar_template() {
     local latest_output="$1"
-    fn_format_template "$latest_output" > "$template_fifo"
+    MAIN_format_template "$latest_output" > "$template_fifo"
 
 }
 
