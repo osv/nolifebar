@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. "./lib/dzen2-status-bar/functions"
+. "./lib/nolifebar/functions"
 
 # ANSI color codes
 RED='\033[0;31m'

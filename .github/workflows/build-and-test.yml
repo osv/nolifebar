@@ -1,0 +1,49 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the repository
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    # Step 2: Install dependencies for autotools and the libraries (X11, XFT, XCB, etc.)
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          autoconf \
+          automake \
+          libtool \
+          pkg-config \
+          libx11-dev \
+          libxft-dev \
+          libxcb1-dev \
+          libxcb-ewmh-dev \
+          libxcb-icccm4-dev
+
+    # Step 3: Generate the configure script
+    - name: Generate configure script
+      run: autoreconf -vif
+
+    # Step 4: Run configure
+    - name: Configure the project
+      run: ./configure
+
+    # Step 5: Build the project
+    - name: Build the project
+      run: make
+
+    # Step 6: Run the tests (assuming tests are defined in your Makefile)
+    - name: Run tests
+      run: make test

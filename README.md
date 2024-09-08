@@ -1,5 +1,8 @@
 A Unix way and easy-to-use tool for generating status bars.
 
+![Build Status](https://github.com/osv/nolifebar/actions/workflows/build-and-test.yml/badge.svg)
+![GitHub License](https://img.shields.io/github/license/osv/nolifebar)
+
 # BUILD
 
     autoreconf --install
@@ -9,5 +12,6 @@ A Unix way and easy-to-use tool for generating status bars.
 # INSTALL
 
     autoreconf --install
-    ./configure
+    ./configure --prefix=/usr/local
     make
+    sudo make install
