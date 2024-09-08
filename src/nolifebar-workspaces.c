@@ -69,6 +69,7 @@ void print_workspaces(xcb_ewmh_connection_t *ewmh, xcb_window_t root) {
                 for (uint32_t i = 0; i < window_list.windows_len; i++) {
                     uint32_t desktop_index = get_desktop_from_window(ewmh, window_list.windows[i]);
                     if (desktop_index < num_desktops) {
+                        // Count of windows
                         window_count_per_desktop[desktop_index]++;
 
                         // Check if the window is urgent
@@ -99,7 +100,6 @@ void print_workspaces(xcb_ewmh_connection_t *ewmh, xcb_window_t root) {
                 }
             }
 
-            // Clean up resources that need freeing
             if (window_count_per_desktop) free(window_count_per_desktop);
             if (desktop_has_urgent_window) free(desktop_has_urgent_window);
             xcb_ewmh_get_windows_reply_wipe(&window_list);
@@ -113,9 +113,6 @@ void print_workspaces(xcb_ewmh_connection_t *ewmh, xcb_window_t root) {
 
 // Handles property change events, checks if the urgency of a window has changed
 void handle_property_notify(xcb_ewmh_connection_t *ewmh, xcb_property_notify_event_t *event) {
-    xcb_window_t window = event->window;
-    bool urgent = get_wm_urgency(ewmh->connection, window);
-
     // Reprint workspaces to reflect the change in urgency
     print_workspaces(ewmh, event->window);
 }
