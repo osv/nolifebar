@@ -24,6 +24,12 @@
 #include <xcb/xcb_icccm.h>
 #include <stdbool.h>
 
+#ifndef BUFFER_SIZE
+#define BUFFER_SIZE 16384
+#endif
+
+char prev_output[BUFFER_SIZE] = {0};  // Buffer to store previous status
+
 // Function to check if a window has the "urgent" flag
 bool get_wm_urgency(xcb_connection_t* c, xcb_window_t w) {
     xcb_icccm_wm_hints_t hints;
@@ -49,6 +55,8 @@ void print_workspaces(xcb_ewmh_connection_t *ewmh, xcb_window_t root) {
 
     uint32_t *window_count_per_desktop = NULL;
     uint8_t *desktop_has_urgent_window = NULL;
+    char current_output[BUFFER_SIZE] = {0};  // Buffer for current status
+    size_t current_output_size = 0;          // Track current size of the buffer
 
     // Get the number of desktops
     if (!xcb_ewmh_get_number_of_desktops_reply(ewmh, xcb_ewmh_get_number_of_desktops(ewmh, 0), &num_desktops, NULL)) return;
@@ -87,12 +95,23 @@ void print_workspaces(xcb_ewmh_connection_t *ewmh, xcb_window_t root) {
                 char *name = names.strings;
                 for (unsigned int i = 0, ws_index = 0; i < names.strings_len; i++) {
                     if (name[i] == '\0') {
-                        printf("%i %s %s %u %s\n",
-                               ws_index + 1,
-                               (ws_index == current_desktop) ? "A" : "-",
-                               desktop_has_urgent_window[ws_index] ? "U" : "-",
-                               window_count_per_desktop[ws_index],
-                               name);
+                        // Update current_size after each snprintf to track remaining space
+                        current_output_size +=
+                            snprintf(current_output + current_output_size, sizeof(current_output) - current_output_size,
+                                     "%i %s %s %u %s\n",
+                                     ws_index + 1,
+                                     (ws_index == current_desktop) ? "A" : "-",
+                                     desktop_has_urgent_window[ws_index] ? "U" : "-",
+                                     window_count_per_desktop[ws_index],
+                                     name);
+                        if (current_output_size >= BUFFER_SIZE) {
+                            fprintf(stderr, "Buffer overflow detected, size of buffer: %i\n", BUFFER_SIZE);
+                            free(window_count_per_desktop);
+                            free(desktop_has_urgent_window);
+                            xcb_ewmh_get_windows_reply_wipe(&window_list);
+                            xcb_ewmh_get_utf8_strings_reply_wipe(&names);
+                            return;
+                        }
                         name += strlen(name) + 1;
                         ws_index++;
                         if (ws_index + 1> num_desktops) break;
@@ -100,22 +119,19 @@ void print_workspaces(xcb_ewmh_connection_t *ewmh, xcb_window_t root) {
                 }
             }
 
-            if (window_count_per_desktop) free(window_count_per_desktop);
-            if (desktop_has_urgent_window) free(desktop_has_urgent_window);
+            free(window_count_per_desktop);
+            free(desktop_has_urgent_window);
             xcb_ewmh_get_windows_reply_wipe(&window_list);
         }
 
         // Clean up desktop names
         xcb_ewmh_get_utf8_strings_reply_wipe(&names);
     }
-    printf("\n");
+    if (strcmp(prev_output, current_output) != 0) {
+        printf("%s\n", current_output);
+        strcpy(prev_output, current_output);  // Update the previous status
+    }
     fflush(stdout);
-}
-
-// Handles property change events, checks if the urgency of a window has changed
-void handle_property_notify(xcb_ewmh_connection_t *ewmh, xcb_property_notify_event_t *event) {
-    // Reprint workspaces to reflect the change in urgency
-    print_workspaces(ewmh, event->window);
 }
 
 int main() {
@@ -145,7 +161,7 @@ int main() {
         switch (event->response_type & ~0x80) {
             case XCB_PROPERTY_NOTIFY: {
                 xcb_property_notify_event_t *property_event = (xcb_property_notify_event_t *)event;
-                handle_property_notify(&ewmh, property_event);
+                print_workspaces(&ewmh, property_event->window);
                 break;
             }
         }
