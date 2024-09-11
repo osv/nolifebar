@@ -85,17 +85,17 @@ void print_workspaces(xcb_ewmh_connection_t *ewmh, xcb_window_t root) {
 
                 // Print the desktop names, window counts, and urgency status
                 char *name = names.strings;
-                for (unsigned int i = 0, ws_index = 1; i < names.strings_len; i++) {
+                for (unsigned int i = 0, ws_index = 0; i < names.strings_len; i++) {
                     if (name[i] == '\0') {
                         printf("%i %s %s %u %s\n",
-                               ws_index,
+                               ws_index + 1,
                                (ws_index == current_desktop) ? "A" : "-",
                                desktop_has_urgent_window[ws_index] ? "U" : "-",
                                window_count_per_desktop[ws_index],
                                name);
                         name += strlen(name) + 1;
                         ws_index++;
-                        if (ws_index > num_desktops) break;
+                        if (ws_index + 1> num_desktops) break;
                     }
                 }
             }
@@ -109,6 +109,7 @@ void print_workspaces(xcb_ewmh_connection_t *ewmh, xcb_window_t root) {
         xcb_ewmh_get_utf8_strings_reply_wipe(&names);
     }
     printf("\n");
+    fflush(stdout);
 }
 
 // Handles property change events, checks if the urgency of a window has changed
