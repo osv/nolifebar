@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+
+echo "Executing XWorkspaces Plugin"
+
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+. "$MODULE_CORE_DIR/functions"
+: "${TMP_DIR:=/tmp}"
+
+check_dependencies nolifebar-xtitle nolifebar-fn-xft
+
+# Declare arrays to store the data
+indexes=()
+actives=()
+urgents=()
+names=()
+counts=()
+
+mod_init_vars() {
+    show_index=1                # Show workspace number
+    case "$CFG_BACKEND" in
+    dzen2)
+        print_action_cmd="^ca(1, xdotool set_desktop %i)%s^ca()"      # optional, how to select workspace 
+        print_action_cmd_prev="^ca(4, xdotool set_desktop %i)%s^ca()" # optional, wheel up action
+        print_action_cmd_next="^ca(5, xdotool set_desktop %i)%s^ca()" # optional, wheel down action
+        print_no_windows="^fg(#444)^bg(#000) %s "                     # optional, no windows, if blank do not draw empty workspaces 
+        print_with_windows="^fg(#ccc)^bg(#000) %s "                   # not active workspace with windows
+        print_current_wrapped="^p(0;-3)%s^p()"                        # current workspace, including urgent
+        print_current="^fg(#fff)^bg(#330) %s "                        # current workspace, if not urgent
+        print_urgent="^fg(#334)^bg(#f22) %s "                         # workspace with urgent hint
+        print_wrapped="%s^fg()^bg()"                                  # final wrapper
+        ;;
+    *)
+        print_action_cmd=""
+        print_action_cmd_prev=""
+        print_action_cmd_next=""
+        print_no_windows=" %s "
+        print_with_windows=" %s "
+        print_current_wrapped="[%s]"
+        print_current="%s"
+        print_urgent="%s!"
+        print_wrapped="%s"
+        ;;
+    esac
+}
+
+mod_draw_default() {
+    local out=""
+    local current_desktop=0
+    local count=${#indexes[@]}
+    for ((i=0; i<count; i++)); do
+        local name="${names[$i]}"
+        local index="${indexes[$i]}"
+        local tmp=""
+        if ((show_index)); then name="$index:${name}"; fi
+        tmp="$name"
+        if [[ "${actives[$i]}" == "A" && -n "$print_current_wrapped" ]]; then
+            current_desktop="$i"
+            name="$tmp"
+            printf -v tmp "$print_current_wrapped" "$name"
+        fi
+        
+        if [[ "${urgents[$i]}" == "U" ]]; then
+            printf -v name "$print_urgent" "$tmp"
+        elif [[ "${actives[$i]}" == "A" ]]; then
+            printf -v name "$print_current" "$tmp"
+        elif ((counts[i] > 0)); then
+            printf -v name "$print_with_windows" "$tmp"
+        elif ((counts[i] == 0)); then
+            printf -v name "$print_no_windows" "$tmp"
+        fi
+        if [[ -n "$print_action_cmd" ]]; then
+            printf -v tmp "$print_action_cmd" "$i" "$name"
+            name="$tmp"
+        fi
+        out+="$name"
+    done
+    local tmp
+    if [[ -n "$print_action_cmd_prev" ]]; then
+        printf -v tmp "$print_action_cmd_prev" $((current_desktop > 0 ? current_desktop - 1 : count - 1)) "$out"
+        out="$tmp"
+    fi        
+    if [[ -n "$print_action_cmd_next" ]]; then
+        printf -v tmp "$print_action_cmd_next" $((((current_desktop + 2) > count) ? 0 : current_desktop + 1)) "$out"
+        out="$tmp"
+    fi        
+    printf "${print_wrapped}\n" "$out"
+}
+
+
+mod_loop() {
+
+    nolifebar-workspaces | while IFS=" " read -r idx act urg count nm; do
+        # Check for an empty new line (end of data)
+        if [[ -z "$idx" ]]; then
+            # Call the processing function
+            mod_draw > "$FIFO_FILE"
+
+            # Reset arrays for next data block if needed
+            indexes=()
+            actives=()
+            urgents=()
+            names=()
+            counts=()
+        else
+            # Populate the arrays with the current line's data
+            indexes+=("$idx")
+            actives+=("$act")
+            urgents+=("$urg")
+            counts+=("$count")
+            names+=("$nm")
+        fi
+    done
+}
+
+mod_run
