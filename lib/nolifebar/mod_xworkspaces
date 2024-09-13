@@ -25,7 +25,7 @@ mod_init_vars() {
         print_action_cmd_next="^ca(5, xdotool set_desktop %i)%s^ca()" # optional, wheel down action
         print_no_windows="^fg(#444)^bg(#000) %s "                     # optional, no windows, if blank do not draw empty workspaces 
         print_with_windows="^fg(#ccc)^bg(#000) %s "                   # not active workspace with windows
-        print_current_wrapped="^p(0;-3)%s^p()"                        # current workspace, including urgent
+        print_current_wrapped="^p(0;-3)%s^p()"                        # optional, current workspace, including urgent
         print_current="^fg(#fff)^bg(#330) %s "                        # current workspace, if not urgent
         print_urgent="^fg(#334)^bg(#f22) %s "                         # workspace with urgent hint
         print_wrapped="%s^fg()^bg()"                                  # final wrapper
@@ -54,11 +54,6 @@ mod_draw_default() {
         local tmp=""
         if ((show_index)); then name="$index:${name}"; fi
         tmp="$name"
-        if [[ "${actives[$i]}" == "A" && -n "$print_current_wrapped" ]]; then
-            current_desktop="$i"
-            name="$tmp"
-            printf -v tmp "$print_current_wrapped" "$name"
-        fi
         
         if [[ "${urgents[$i]}" == "U" ]]; then
             printf -v name "$print_urgent" "$tmp"
@@ -69,12 +64,21 @@ mod_draw_default() {
         elif ((counts[i] == 0)); then
             printf -v name "$print_no_windows" "$tmp"
         fi
+
         if [[ -n "$print_action_cmd" ]]; then
             printf -v tmp "$print_action_cmd" "$i" "$name"
             name="$tmp"
         fi
+
+        if [[ "${actives[$i]}" == "A" && -n "$print_current_wrapped" ]]; then
+            current_desktop="$i"
+            printf -v tmp "$print_current_wrapped" "$name"
+            name="$tmp"
+        fi
+
         out+="$name"
     done
+
     local tmp
     if [[ -n "$print_action_cmd_prev" ]]; then
         printf -v tmp "$print_action_cmd_prev" $((current_desktop > 0 ? current_desktop - 1 : count - 1)) "$out"
@@ -84,6 +88,7 @@ mod_draw_default() {
         printf -v tmp "$print_action_cmd_next" $((((current_desktop + 2) > count) ? 0 : current_desktop + 1)) "$out"
         out="$tmp"
     fi        
+
     printf "${print_wrapped}\n" "$out"
 }
 

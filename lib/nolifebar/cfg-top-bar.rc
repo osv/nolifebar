@@ -16,7 +16,7 @@
 #   $TMP_DIR - path to temp directory. Module must create temp files in this directory
 #   $MOD_NAME - upper case of current module, usuful if you want to have shared code between modules and eval
 #   $MODULE_CORE_DIR - dir to library of this project (shared bash code, modules)
-CFG_MODULES=("xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
+CFG_MODULES=("xworkspaces" "xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
 
 # # Draw backend: dzen2 (default), lemonbar, text
 # # Depending on the value, the appropriate draw function will be selected
@@ -437,7 +437,7 @@ MAIN_format_template() {
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"
  else
-      printf "[{out_xtitle}] {out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} {out_cava_out}{out_cava_in} ^fg(<FG>){out_time} \n"
+      printf "{out_xworkspaces} {out_xtitle}{out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} {out_cava_out}{out_cava_in} ^fg(<FG>){out_time} \n"
   fi
 
 }
