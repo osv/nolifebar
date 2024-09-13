@@ -26,6 +26,7 @@ jobs:
           automake \
           libtool \
           pkg-config \
+          libpulse-dev \
           libx11-dev \
           libxft-dev \
           libxcb1-dev \
