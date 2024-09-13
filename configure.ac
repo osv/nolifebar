@@ -12,7 +12,6 @@ PKG_CHECK_MODULES([XCB], [xcb])
 PKG_CHECK_MODULES([XCB_EWMH], [xcb-ewmh])
 PKG_CHECK_MODULES([XCB_ICCCM], [xcb-icccm])
 
-
 # multiplexer
 AC_ARG_ENABLE([nolifebar-multiplexer],
   [AS_HELP_STRING([--disable-nolifebar-multiplexer], [Disable compilation of nolifebar-multiplexer program.
@@ -70,6 +69,24 @@ if test "$enable_nolifebar_xtitle" = "yes"; then
   AC_DEFINE([ENABLE_NOLIFEBAR_XTITLE], [1], [Define if nolifebar_xtitle program is enabled])
 fi
 
+
+# pa-status
+AC_ARG_ENABLE([nolifebar-pa-status],
+    AS_HELP_STRING([--enable-nolifebar-pa-status], [Enable building the myapp program with PulseAudio support (default: yes)]),
+    [enable_nolifebar_pa_status="$enableval"],
+    [enable_nolifebar_pa_status="yes"])  # Default is set to "yes"
+
+if test "x$enable_nolifebar_pa_status" = "xyes"; then
+    # Check for PulseAudio library using pkg-config
+    PKG_CHECK_MODULES([PULSE], [libpulse], [
+        AC_DEFINE([HAVE_PULSE], [1], [Define if PulseAudio is available for myapp])
+    ], [
+        AC_MSG_ERROR([--enable-nolifebar_pa_status was specified, but libpulse was not found])
+    ])
+fi
+
+AM_CONDITIONAL([BUILD_NOLIFEBAR_PA_STATUS], [test "x$enable_nolifebar_pa_status" = "xyes"])
+
 # Checks for optional programs.
 AC_PATH_PROG([DZEN2], [dzen2])
 if test -z "$DZEN2"; then
@@ -101,6 +118,7 @@ fi
 
 echo "  nolifebar-throttle    : $enable_nolifebar_throttle"
 echo "  nolifebar-xtitle      : $enable_nolifebar_xtitle"
+echo "  nolifebar-pa-status   : $enable_nolifebar_pa_status"
 echo ""
 echo "Required runtime binaries/apps:"
 echo "  dzen2                 : ${dzen2_status}"

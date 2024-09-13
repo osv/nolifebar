@@ -17,6 +17,8 @@ mkShell {
     xorg.xcbutilerrors
     xorg.xcbutilrenderutil
 
+    libpulseaudio.dev
+
     pkg-config
 
     # runrimes for plugins

@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+echo "Executing Pulseaudio Plugin"
+
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+. "$MODULE_CORE_DIR/functions"
+: "${TMP_DIR:=/tmp}"
+
+check_dependencies nolifebar-pa-status
+
+mod_init_vars() {
+    sink_name="default"         # pulse audio sink name to monitor
+}
+
+mod_draw_default() {
+    local volume="$1"
+    local muted="$2"
+    local sink="$3"
+    if [[ "$muted" == "yes" ]]; then
+        volume="MUTED"
+    fi
+    printf "Vol: %s%%\n" "$volume"
+}
+
+mod_loop() {
+    {
+        nolifebar-pa-status "$sink_name" 2>&3 \
+            | while IFS=" " read -r \
+            vol_column volume \
+            mute_column muted \
+            sink_column sink; do
+            mod_draw "$volume" "$muted" "$sink" > "$FIFO_FILE"
+        done;
+    } 3>&1
+}
+
+mod_run
