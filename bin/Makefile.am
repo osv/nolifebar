@@ -31,7 +31,7 @@ endif
 if BUILD_NOLIFEBAR_PA_STATUS
 bin_PROGRAMS += nolifebar-pa-status
 nolifebar_pa_status_SOURCES = ../src/nolifebar-pa-status.c
-nolifebar_pa_status_LDADD = $(PULSE_LIBS)
+nolifebar_pa_status_LDADD = $(PULSE_LIBS) -lm
 nolifebar_pa_status_CFLAGS = $(PULSE_CFLAGS)
 endif
 

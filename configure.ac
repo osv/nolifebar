@@ -5,6 +5,7 @@ AM_INIT_AUTOMAKE([subdir-objects])
 AC_PROG_CC
 
 # Checks for libraries.
+AC_CHECK_LIB([m], [round])
 PKG_CHECK_MODULES([X11], [x11])
 PKG_CHECK_MODULES([XFT], [xft])
 
@@ -108,7 +109,7 @@ echo ""
 echo "Configuration Summary:"
 echo "==========================="
 echo "Will be compiled binaries: "
-echo "  nolifebar-multiplexer : $enable_nolifebar_merge_pipes"
+echo "  nolifebar-multiplexer : $enable_nolifebar_multiplexer"
 
 if test "$enable_nolifebar_fn_xft" = "yes"; then
 echo "  nolifebar-fn-xft      : $enable_nolifebar_fn_xft (You can test it: 'make test-nolifebar-fn-xft')"

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #define ERROR_PREFIX "[nolifebar-pa-status] "
 #define LOG_ERROR(fmt, ...) fprintf(stderr, ERROR_PREFIX fmt, ##__VA_ARGS__)
@@ -31,7 +32,7 @@ void sink_info_callback(pa_context *c, const pa_sink_info *i, int eol, void *use
         return;
     }
 
-    int volume_percent = (i->volume.values[0] * 100) / PA_VOLUME_NORM;
+    int volume_percent = round((i->volume.values[0] * 100.0) / PA_VOLUME_NORM);
     printf("Volume: %d Muted: %s Sink: %s\n",
            volume_percent,
            i->mute ? "yes" : "no",
