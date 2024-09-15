@@ -35,15 +35,19 @@ nolifebar_pa_status_LDADD = $(PULSE_LIBS) -lm
 nolifebar_pa_status_CFLAGS = $(PULSE_CFLAGS)
 endif
 
+if ENABLE_NOLIFEBAR_KBD
 bin_PROGRAMS += nolifebar-kbd
 nolifebar_kbd_SOURCES = ../src/nolifebar-kbd.c
 nolifebar_kbd_LDADD = $(X11_LIBS)
 nolifebar_kbd_CFLAGS = $(X11_CFLAGS)
+endif
 
-bin_PROGRAMS += nolifebar-workspaces
-nolifebar_workspaces_SOURCES = ../src/nolifebar-workspaces.c
-nolifebar_workspaces_LDADD = $(X11_LIBS) $(XFT_LIBS) $(XCB_EWMH_LIBS) $(XCB_ICCCM_LIBS)
-nolifebar_workspaces_CFLAGS = $(X11_CFLAGS) $(XFT_CFLAGS) $(XCB_EWMH_CFLAGS) $(XCB_ICCCM_CFLAGS)
+if ENABLE_NOLIFEBAR_XWORKSPACES
+bin_PROGRAMS += nolifebar-xworkspaces
+nolifebar_xworkspaces_SOURCES = ../src/nolifebar-xworkspaces.c
+nolifebar_xworkspaces_LDADD = $(X11_LIBS) $(XFT_LIBS) $(XCB_EWMH_LIBS) $(XCB_ICCCM_LIBS)
+nolifebar_xworkspaces_CFLAGS = $(X11_CFLAGS) $(XFT_CFLAGS) $(XCB_EWMH_CFLAGS) $(XCB_ICCCM_CFLAGS)
+endif
 
 bin_SCRIPTS = nolifebar-start
 EXTRA_DIST = $(bin_SCRIPTS)
