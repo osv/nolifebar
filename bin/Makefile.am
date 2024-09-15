@@ -28,12 +28,17 @@ nolifebar_xtitle_LDADD = $(X11_LIBS)
 nolifebar_xtitle_CFLAGS = $(X11_CFLAGS)
 endif
 
-if BUILD_NOLIFEBAR_PA_STATUS
+if ENABLE_NOLIFEBAR_PA_STATUS
 bin_PROGRAMS += nolifebar-pa-status
 nolifebar_pa_status_SOURCES = ../src/nolifebar-pa-status.c
 nolifebar_pa_status_LDADD = $(PULSE_LIBS) -lm
 nolifebar_pa_status_CFLAGS = $(PULSE_CFLAGS)
 endif
+
+bin_PROGRAMS += nolifebar-kbd
+nolifebar_kbd_SOURCES = ../src/nolifebar-kbd.c
+nolifebar_kbd_LDADD = $(X11_LIBS)
+nolifebar_kbd_CFLAGS = $(X11_CFLAGS)
 
 bin_PROGRAMS += nolifebar-workspaces
 nolifebar_workspaces_SOURCES = ../src/nolifebar-workspaces.c
