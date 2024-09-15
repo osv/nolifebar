@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "Executing Time Plugin"
+printf "Executing Time Plugin\n"
 
 : "${MODULE_CORE_DIR:=$(dirname $0)}"
 source "$MODULE_CORE_DIR/functions"

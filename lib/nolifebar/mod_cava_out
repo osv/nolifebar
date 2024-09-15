@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "Executing CAVA Output Plugin"
+printf "Executing CAVA Output Plugin\n"
 
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 : "${MODULE_CORE_DIR:=$(dirname $0)}"

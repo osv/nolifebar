@@ -2,7 +2,7 @@
 
 set -e
 
-echo "Executing CPU Bars Plugin"
+printf "Executing CPU Bars Plugin\n"
 
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 : "${MODULE_CORE_DIR:=$(dirname $0)}"

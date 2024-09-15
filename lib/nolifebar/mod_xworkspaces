@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "Executing XWorkspaces Plugin"
+printf "Executing XWorkspaces Plugin\n"
 
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 : "${MODULE_CORE_DIR:=$(dirname $0)}"
@@ -95,7 +95,7 @@ mod_draw_default() {
 
 mod_loop() {
 
-    nolifebar-workspaces | while IFS=" " read -r idx act urg count nm; do
+    nolifebar-xworkspaces | while IFS=" " read -r idx act urg count nm; do
         # Check for an empty new line (end of data)
         if [[ -z "$idx" ]]; then
             # Call the processing function

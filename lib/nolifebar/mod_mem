@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "Executing Memory Plugin"
+printf "Executing Memory Plugin\n"
 
 : "${MODULE_CORE_DIR:=$(dirname $0)}"
 source "$MODULE_CORE_DIR/functions"

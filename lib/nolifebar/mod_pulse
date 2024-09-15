@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "Executing Pulseaudio Plugin"
+printf "Executing Pulseaudio Plugin\n"
 
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 : "${MODULE_CORE_DIR:=$(dirname $0)}"
