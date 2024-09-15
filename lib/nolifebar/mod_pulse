@@ -7,20 +7,38 @@ echo "Executing Pulseaudio Plugin"
 . "$MODULE_CORE_DIR/functions"
 : "${TMP_DIR:=/tmp}"
 
-check_dependencies nolifebar-pa-status
+check_dependencies nolifebar-pa-status pactl
 
 mod_init_vars() {
     sink_name="default"         # pulse audio sink name to monitor
 }
 
 mod_draw_default() {
-    local volume="$1"
-    local muted="$2"
-    local sink="$3"
-    if [[ "$muted" == "yes" ]]; then
-        volume="MUTED"
+    local -n ref_var="$1"
+    local volume="$2"
+    local muted="$3"
+    local sink="$4"
+    local ref_var="Muted   "
+    if [[ "$muted" != "yes" ]]; then
+        printf -v ref_var "Vol: %2s%%" "$volume"
     fi
-    printf "Vol: %s%%\n" "$volume"
+}
+
+mod_draw_dzen2() {
+    local -n ref_var="$1"
+    local volume="$2"
+    local muted="$3"
+    local sink="$4"
+    local res="Muted   "
+    if [[ "$muted" != "yes" ]]; then
+        printf -v res "Vol: %2s%%" "$volume"
+    fi
+    ref_var="^ca(4, pactl set-sink-volume '$sink' +5%)\
+^ca(5, pactl set-sink-volume '$sink' -5%)\
+^ca(1, pactl set-sink-mute '$sink' toggle)\
+^ca(3, pactl set-sink-volume '$sink' 35%)\
+$res\
+^ca()^ca()^ca()^ca()"
 }
 
 mod_loop() {
@@ -30,7 +48,9 @@ mod_loop() {
             vol_column volume \
             mute_column muted \
             sink_column sink; do
-            mod_draw "$volume" "$muted" "$sink" > "$FIFO_FILE"
+            local output
+            mod_draw output "$volume" "$muted" "$sink"
+            printf "%s\n" "$output"> "$FIFO_FILE"
         done;
     } 3>&1
 }
