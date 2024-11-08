@@ -21,6 +21,11 @@ bin_PROGRAMS += nolifebar-throttle
 nolifebar_throttle_SOURCES = ../src/nolifebar-throttle.c
 endif
 
+if ENABLE_NOLIFEBAR_REPLACER
+bin_PROGRAMS += nolifebar-replacer
+nolifebar_replacer_SOURCES = ../src/nolifebar-replacer.c
+endif
+
 if ENABLE_NOLIFEBAR_XTITLE
 bin_PROGRAMS += nolifebar-xtitle
 nolifebar_xtitle_SOURCES = ../src/nolifebar-xtitle.c

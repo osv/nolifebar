@@ -38,6 +38,14 @@ AC_ARG_ENABLE([nolifebar-throttle],
 )
 AM_CONDITIONAL([ENABLE_NOLIFEBAR_THROTTLE], [test "x$enable_nolifebar_throttle" = "xyes"])
 
+# replacer
+AC_ARG_ENABLE([nolifebar-replacer],
+  [AS_HELP_STRING([--disable-nolifebar-replacer], [Disable compilation of nolifebar-replacer program. Replace text from STDIN])],
+  [enable_nolifebar_replacer=$enableval],
+  [enable_nolifebar_replacer=yes]
+)
+AM_CONDITIONAL([ENABLE_NOLIFEBAR_REPLACER], [test "x$enable_nolifebar_replacer" = "xyes"])
+
 # xtitle
 AC_ARG_ENABLE([nolifebar-xtitle],
   [AS_HELP_STRING([--disable-nolifebar-xtitle], [Disable compilation of nolifebar-xtitle program. Prints title of current window])],
@@ -108,6 +116,7 @@ else
   echo "  nolifebar-fn-xft      : $enable_nolifebar_fn_xft"
 fi
 echo "  nolifebar-throttle    : $enable_nolifebar_throttle"
+echo "  nolifebar-replacer    : $enable_nolifebar_replacer"
 echo "  nolifebar-xworkspaces : $enable_nolifebar_xworkspaces"
 echo "  nolifebar-xtitle      : $enable_nolifebar_xtitle"
 echo "  nolifebar-pa-status   : $enable_nolifebar_pa_status"
