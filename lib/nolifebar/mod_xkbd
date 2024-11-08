@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+
+printf "Executing XKeyboard Plugin\n"
+
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+. "$MODULE_CORE_DIR/functions"
+: "${TMP_DIR:=/tmp}"
+
+check_dependencies nolifebar-kbd xkb-switch
+
+mod_init_vars() {
+    # Used for dzen2 draw
+    declare -gA metrics_formatted
+    declare -gA metrics
+    visible_metrics=('capslock' 'numlock')
+    metrics_formatted=(
+        ["capslock"]="Capslock"
+        ["numlock"]="Numlock"
+    )
+    additional_render_params=()
+}
+
+
+mod_draw_default() {
+    local -n ref_var="$1"
+
+    local layout="${metrics["layout"]}"
+    local layout_short="${layout:0:3}"
+    local capslock="${metrics["capslock"]}"
+    local capslock_str=""
+    if [[ $capslock == ON ]]; then capslock_str=" Caps Lock "; fi
+    ref_var="${layout_short}${capslock_str}"
+}
+
+mod_draw_dzen2() {
+    local -n ref_var="$1"
+    local layout="${metrics["layout"]}"
+    local layout_short="${layout:0:3}"
+
+    local widget
+    dzen2_draw_flags widget \
+        metrics_formatted \
+        metrics \
+        visible_metrics \
+        -label "$layout_short" \
+        "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
+        -label_highlight 0 \
+        -name_size 60 \
+        -flag_align _CENTER \
+        -flag_x_padding 3 \
+        "${additional_render_params[@]}"
+
+    ref_var="^ca(1, xkb-switch -n)$widget^ca()"
+}
+
+mod_loop() {
+    nolifebar-kbd | while IFS= read -r line; do
+        if [[ $line == Layout:* ]]; then
+            metrics["layout"]="${line#Layout: }"
+        fi
+        # nolifebar-kbd returns ON / OFF for caps/num locks
+        if [[ $line == Caps\ Lock:* ]]; then
+            metrics["capslock"]="${line#Caps Lock: }"
+        fi
+        if [[ $line == Num\ Lock:* ]]; then
+            metrics["numlock"]="${line#Num Lock: }"
+        fi
+
+        if [[ -z "$line" ]]; then
+            local output
+            mod_draw output
+            printf "%s\n" "$output" > "$FIFO_FILE"
+        fi
+    done
+}
+
+mod_run
