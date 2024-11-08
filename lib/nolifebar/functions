@@ -3,6 +3,8 @@
 CFG_HEIGHT="${CFG_HEIGHT:-24}"
 CFG_BACKEND="${CFG_BACKEND:-dzen2}"
 
+CFG_REPLACER_FILE="$TMP_DIR/replace.txt"
+
 # if [ -z "${CFG_REPLACE_MAP+x}" ]; then
 #   declare -A CFG_REPLACE_MAP=()
 # fi
@@ -96,14 +98,13 @@ read_sleep() {
     read ${1:+-t "$1"} -u $_snore_fd || :
 }
 
-build_sed_replace_command() {
-    local sed_command=""
+# Save key value to CFG_REPLACER_FILE
+build_replace_file() {
+    rm "$CFG_REPLACER_FILE"
     for key in "${!CFG_REPLACE_MAP[@]}"; do
         local value="${CFG_REPLACE_MAP[$key]}"
-        sed_command+="s/$key/$value/g;"
+        printf "%-14s : %s\n" "$key" "$value" >> "$CFG_REPLACER_FILE"
     done
-
-    echo "$sed_command"
 }
 
 is_array() {

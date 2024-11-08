@@ -193,11 +193,13 @@ run_and_wait_for_nolifebar() {
     # echo "$template_fifo $(IFS=' '; echo "${fifo_files[*]}")"
     mkfifo "$template_fifo"
 
-    nolifebar-multiplexer "$template_fifo" $(IFS=' '; echo "${fifo_files[*]}") |\
-        sed --unbuffered "$SED_COMMAND" |\
-        debug_pipe_or_print_fps |\
-        "${CFG_STATUS_BAR_CMD[@]}" |\
-        process_nolifebar_output &
+    build_replace_file
+
+    nolifebar-multiplexer "$template_fifo" $(IFS=' '; echo "${fifo_files[*]}") \
+      | nolifebar-replacer "$CFG_REPLACER_FILE" \
+      | debug_pipe_or_print_fps \
+      | "${CFG_STATUS_BAR_CMD[@]}" \
+      | process_nolifebar_output &
     pid=$!
 
     format_nolifebar_template
@@ -209,5 +211,4 @@ trap cleanup_on_exit EXIT
 
 load_modules "${CFG_MODULES[@]}"
 
-SED_COMMAND=$(build_sed_replace_command)
 run_and_wait_for_nolifebar
