@@ -25,58 +25,50 @@ CFG_MODULES=("pulse" "xkbd" "xworkspaces" "xtitle" "mem" "time" "network" "cpu_b
 # # Uncomment to output data for dzen2 to STDOUT for debugging
 # DEBUG=true
 
-# Replace text before sending to status bar programm:
-declare -A CFG_REPLACE_MAP=(
-    # ["<FG>"]="#fff"
-    # ["<BG>"]="#000"
-    # ["<ON>"]="#afa"
-    # ["<OFF>"]="#777"
-    # ["<FN_MAIN>"]="RobotoMono Nerd Font:size=12"
-    # ["<FN_MEDIUM>"]="RobotoMono Nerd Font:size=10"
-    # ["<FN_2_ROWS>"]="Terminus-8"
-    # ["<FN_SANS_MAIN>"]="RobotoMono Nerd Font:size=12"
+FG="#33e"
+BG="#e7e7e7"
+MAIN_FN="Terminus:size=14:style=Light"
 
-    # ["<BAR1>"]="#ff8b92"
-    # ["<BAR2>"]="#c3e88d"
-    # ["<BAR3>"]="#e1acff"
-    # ["<BAR4>"]="#ffe585"
+# Replace text before sending to status bar programm
+CFG_REPLACE_TXT="
+<WS_NO_WIN>       : ^fg(#666)^bg(#333)
+<WS_WITH_WIN>     : ^fg(#ccc)^bg(#333)
+<WS_CUR_NO_WIN>   : ^fg(#fff)^bg(#66b)
+<WS_CUR_WITH_WIN> : ^fg(#fff)^bg(#66b)
+<WS_URGENT>       : ^fg(#334)^bg(#f22)
 
-    ["<FG>"]="#33e"
-    ["<BG>"]="#e7e7e7"
-    ["<BORDER>"]="#333"
-    ["<WIDGET_BG>"]="#ddd"
+<FG>              : #33e
+<BG>              : #e7e7e7
+<BORDER>          : #333
+<WIDGET_BG>       : #ddd
 
-    ["<ON>"]="#b82"
-    ["<OFF>"]="#777"
+<ON>  : #b82
+<OFF> : #777
 
-    # ["<FN_MAIN>"]="RobotoMono Nerd Font:size=12:style=Light"
-    # ["<FN_MEDIUM>"]="RobotoMono Nerd Font:size=10:style=Light"
-    # ["<FN_2_ROWS>"]="Terminus-8"
-    # ["<FN_SANS_MAIN>"]="RobotoMono Nerd Font:size=12:style=Light"
-    ["<FN_MAIN>"]="Terminus:size=14:style=Light"
-    ["<FN_MEDIUM>"]="Terminus:size=10:style=Light"
-    ["<FN_2_ROWS>"]="Terminus-8"
-    ["<fn_2_ROWS>"]="RobotoMono Nerd Font:size=7:style=Light"
+<FN_MAIN>    : $MAIN_FN
+<FN_MEDIUM>  : Terminus:size=10:style=Light
+<FN_2_ROWS>  : Terminus-8
+<fn_2_ROWS>  : RobotoMono Nerd Font:size=7:style=Light
 
-    # ["<BAR1>"]="#ff8b92"
-    # ["<BAR2>"]="#c3e88d"
-    # ["<BAR3>"]="#e1acff"
-    # ["<BAR4>"]="#ffe585"
-
-    ["<BAR1>"]="#a33"
-    ["<BAR2>"]="#281"
-    ["<BAR3>"]="#80b"
-    ["<BAR4>"]="#66b"
-)
+<BAR1>      : #a33
+<BAR2>      : #281
+<BAR3>      : #80b
+<BAR4>      : #66b
+"
 
 # Some functions uses this for draw rects
 CFG_HEIGHT=30
 
 # Status bar command, dzen2
-CFG_STATUS_BAR_CMD=(dzen2 -dock -fn "${CFG_REPLACE_MAP['<FN_MAIN>']}"
-                    -bg "${CFG_REPLACE_MAP['<BG>']}"
-                    -fg "${CFG_REPLACE_MAP['<FG>']}"
-                    -ta r -h "${CFG_HEIGHT}")
+# CFG_STATUS_BAR_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/dzen2 -dock -fn "$MAIN_FN"
+#                     -bg "$BG"
+#                     -fg "$FG"
+#                     -ta l -h "${CFG_HEIGHT}")
+
+CFG_STATUS_BAR_CMD=(dzen2 -dock -fn "$MAIN_FN"
+                    -bg "$BG"
+                    -fg "$FG"
+                    -ta l -h "${CFG_HEIGHT}")
 
 # Default params for stack bar
 CFG_DEFAULT_STACK_BAR_PARAMS=(
@@ -111,16 +103,27 @@ CFG_DEFAULT_DRAW_FLAG_PARAMS=(
   -flag_x_padding 0
 )
 
+MOD_XWORKSPACES_init_vars() {
+  show_index=1                # Show workspace number
+
+  print_no_windows="<WS_NO_WIN> %s "                        # optional, no windows, if blank do not draw empty workspaces
+  print_with_windows="<WS_WITH_WIN> %s "                    # not active workspace with windows
+  print_current_wrapped="^p(0;-3)%s^p()"                    # optional, current workspace, including urgent
+  print_current_no_windows="<WS_CUR_NO_WIN> %s "            # current workspace, if not urgent
+  print_current_with_windows="<WS_CUR_WITH_WIN> %s "        # current workspace, if not urgent
+  print_urgent="<WS_URGENT> %s "                            # workspace with urgent hint
+  print_wrapped="^fn(<FN_MEDIUM>)%s^fg()^bg()"              # final wrapper
+}
+
 # ################################ Network
 MOD_NETWORK_init_vars() {
     interval=2                # must be integer
     interface="[ew]*"         # interface, e.g wlp7s0, by default all ethernet + wifi.
-
     history_size=30           # history size for char
     rx_min_log_scale=2        # received min value for logarithmic scale histoy, KB
-    rx_max_log_scale=10000    # received max
-    tx_min_log_scale=2        # transmitted min value for logarithmic scale histoy
-    tx_max_log_scale=10000    # transmitted max
+    rx_max_log_scale=10000    # received max, KB
+    tx_min_log_scale=2        # transmitted min value for logarithmic scale history, KB
+    tx_max_log_scale=10000    # transmitted max, KB
     chart_stack_padding=1     # padding between rx/tx bars in chars
     chart_height=$((CFG_HEIGHT - 4)) # height of chart with paddings
     additional_chart_params=(
@@ -252,8 +255,8 @@ MOD_CPU_BARS_init_vars() {
 
 # ############################### Cava OUT (bars)
 MOD_CAVA_OUT_init_vars() {
-  sc_framerate=30      # FPS of cava output, default 15
-  sc_bars=80           # count of cava bars, default 30
+  sc_framerate=24      # FPS of cava output, default 15
+  sc_bars=60           # count of cava bars, default 30
   sc_padding=1         # Vertical padding, default: 1
 
   # sc_fn_create_file="MOD_CAVA_OUT_custom_create_config" # override create cava config file function
@@ -288,7 +291,7 @@ EOF
 
 # ############################### Cava IN (bars)
 MOD_CAVA_IN_init_vars() {
-  sc_framerate=15      # FPS of cava output, default 15
+  sc_framerate=20      # FPS of cava output, default 15
   sc_bars=30           # count of cava bars, default 30
   sc_padding=1         # Vertical padding, default: 1
 
@@ -348,7 +351,7 @@ MOD_OPENVPN_init_vars() {
 
 # ############################### NVIDIA
 MOD_NVIDIA_init_vars() {
-  interval=4
+  interval=6
   gpu_index=0
 
   # additional dzen2_draw_flags params
@@ -433,6 +436,8 @@ MOD_XTITLE_init_vars() {
 
 state=""
 MAIN_format_template() {
+  # printf "{out_xworkspaces}\n"
+  # return
   state="$1"
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"

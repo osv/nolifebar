@@ -5,9 +5,7 @@ CFG_BACKEND="${CFG_BACKEND:-dzen2}"
 
 CFG_REPLACER_FILE="$TMP_DIR/replace.txt"
 
-# if [ -z "${CFG_REPLACE_MAP+x}" ]; then
-#   declare -A CFG_REPLACE_MAP=()
-# fi
+# CFG_REPLACE_TXT=""
 
 if [ -z "${CFG_DEFAULT_STACK_COLORS+x}" ]; then
   CFG_DEFAULT_STACK_COLORS=('#ff8b92' '#c3e88d' '#e1acff' '#ffe585')
@@ -98,13 +96,12 @@ read_sleep() {
     read ${1:+-t "$1"} -u $_snore_fd || :
 }
 
-# Save key value to CFG_REPLACER_FILE
+# Save CFG_REPLACE_TXT to a file for use in the main app.
 build_replace_file() {
-    rm "$CFG_REPLACER_FILE"
-    for key in "${!CFG_REPLACE_MAP[@]}"; do
-        local value="${CFG_REPLACE_MAP[$key]}"
-        printf "%-14s : %s\n" "$key" "$value" >> "$CFG_REPLACER_FILE"
-    done
+    echo "" > "$CFG_REPLACER_FILE"
+    if [[ -n "$CFG_REPLACE_TXT" ]]; then
+        echo "$CFG_REPLACE_TXT" > "$CFG_REPLACER_FILE"
+    fi
 }
 
 is_array() {

@@ -26,7 +26,8 @@ mod_init_vars() {
         print_no_windows="^fg(#444)^bg(#000) %s "                     # optional, no windows, if blank do not draw empty workspaces 
         print_with_windows="^fg(#ccc)^bg(#000) %s "                   # not active workspace with windows
         print_current_wrapped="^p(0;-3)%s^p()"                        # optional, current workspace, including urgent
-        print_current="^fg(#fff)^bg(#330) %s "                        # current workspace, if not urgent
+        print_current_no_windows="^fg(#fff)^bg(#330) %s "             # current workspace, if not urgent
+        print_current_with_windows="^fg(#fff)^bg(#330) %s "           # current workspace, if not urgent
         print_urgent="^fg(#334)^bg(#f22) %s "                         # workspace with urgent hint
         print_wrapped="%s^fg()^bg()"                                  # final wrapper
         ;;
@@ -37,7 +38,8 @@ mod_init_vars() {
         print_no_windows=" %s "
         print_with_windows=" %s "
         print_current_wrapped="[%s]"
-        print_current="%s"
+        print_current_no_windows="%s"
+        print_current_with_windows="%s"
         print_urgent="%s!"
         print_wrapped="%s"
         ;;
@@ -58,7 +60,11 @@ mod_draw_default() {
         if [[ "${urgents[$i]}" == "U" ]]; then
             printf -v name "$print_urgent" "$tmp"
         elif [[ "${actives[$i]}" == "A" ]]; then
-            printf -v name "$print_current" "$tmp"
+            if ((counts[i] > 0)); then
+                printf -v name "$print_current_with_windows" "$tmp"
+            else
+                printf -v name "$print_current_no_windows" "$tmp"
+            fi
         elif ((counts[i] > 0)); then
             printf -v name "$print_with_windows" "$tmp"
         elif ((counts[i] == 0)); then

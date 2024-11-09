@@ -1,5 +1,8 @@
 pluginsdir = $(prefix)/lib/nolifebar
-dist_plugins_SCRIPTS = functions \
+dist_plugins_SCRIPTS = \
+	functions \
+	sc.functions \
+	cfg-top-bar.rc \
 	mod_cava_in \
 	mod_cava_out \
 	mod_cpu_bars \
@@ -7,10 +10,10 @@ dist_plugins_SCRIPTS = functions \
 	mod_network \
 	mod_nvidia \
 	mod_openvpn \
+	mod_pulse \
 	mod_time \
+	mod_xkbd \
 	mod_xtitle \
-	mod_xworkspaces \
-	cfg-dzen2-graph-test.rc \
-	cfg-top-bar.rc
+	mod_xworkspaces
 
 EXTRA_DIST = $(dist_plugins_SCRIPTS)

@@ -1,5 +1,9 @@
 .direnv
 
+bin/nolifebar-kbd
+bin/nolifebar-pa-status
+bin/nolifebar-replacer
+bin/nolifebar-xworkspaces
 bin/nolifebar-fn-xft
 bin/nolifebar-throttle
 bin/nolifebar-workspaces

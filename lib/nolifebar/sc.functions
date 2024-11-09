@@ -42,10 +42,11 @@ sc_run_cava_and_print_to_file() {
     local fifo="$2"
 
     "$sc_fn_create_file" "$config_file"
-
+    echo "Starting Cava."
     # remove last ";" and replace /;/ /
     cava -p "$config_file" \
         | sed --unbuffered "s/\;$//; s/;/,/g" \
         | mod_draw \
         > "$fifo"
+    echo "Stopped Cava"
 }
