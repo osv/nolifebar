@@ -1,9 +1,10 @@
 {
-  description = "Flake for nolifebar";
+  description = "nolifebar status bar";
 
   inputs = {
     nixpkgs = {
-      url = "github:NixOS/nixpkgs/51063ed4"; # temporary pin nixos-23.11 because of cava segfault
+      url =
+        "github:NixOS/nixpkgs/51063ed4"; # temporary pin nixos-23.11 because of cava segfault
     };
   };
 
@@ -11,39 +12,49 @@
     let
       systems = [ "x86_64-linux" "aarch64-linux" ];
 
-      # Define the overlay to override dzen2
-      overlay = final: prev: {
-        dzen2 = prev.dzen2.overrideAttrs (oldAttrs: rec {
-          src = prev.fetchFromGitHub {
+      myDzen2Fork = pkgs:
+        pkgs.dzen2.overrideAttrs (oldAttrs: rec {
+          src = pkgs.fetchFromGitHub {
             owner = "osv";
             repo = "dzen";
             rev = "8d7d7d0";
             sha256 = "sha256-Bm3CK/iNG1P8i88C3AougTz3y+QzkGr7ptp1S50OdlU=";
           };
         });
+
+    in rec {
+      defaultOptions = {
+        useOSVDzen2Fork = true; # The original dzen2 is too slow and does not support enough large pipe data.
+        useCava = true;
+        usePulseaudio = true;
+        useWirelessTools = true;
       };
 
-    in
-      rec {
-        packages = builtins.listToAttrs (map (system: {
+      # Function to create packages with options
+      packageWithOptions = { options ? { } }:
+        builtins.listToAttrs (map (system: {
           name = system;
           value = let
-            pkgs = import nixpkgs {
-              system = system;
-              overlays = [ overlay ];  # Apply the overlay
-            };
-          in
-            pkgs.stdenv.mkDerivation rec {
-              pname = "nolifebar";
-              version = "0.9";
+            pkgs = import nixpkgs { inherit system; };
+            lib = pkgs.lib;
+            actualOptions = lib.recursiveUpdate defaultOptions options;
+            runtimeDeps = with pkgs;
+              [ bash bc xkb-switch ]
+              ++ lib.optional actualOptions.useOSVDzen2Fork (myDzen2Fork pkgs)
+              ++ lib.optional actualOptions.useCava cava
+              ++ lib.optional actualOptions.usePulseaudio pulseaudio
+              ++ lib.optional actualOptions.useWirelessTools wirelesstools;
+          in pkgs.stdenv.mkDerivation rec {
+            pname = "nolifebar";
+            version = "1.0";
 
-              src = self;
-              nativeBuildInputs = [
-                pkgs.autoreconfHook  # Use autoreconfHook instead of manual autoreconf
-                pkgs.pkg-config      # Ensure pkg-config is in nativeBuildInputs
-              ];
+            src = self;
 
-              buildInputs = with pkgs; [
+            nativeBuildInputs =
+              [ pkgs.autoreconfHook pkgs.pkg-config pkgs.makeWrapper ];
+
+            buildInputs = with pkgs;
+              [
                 autoconf
                 automake
                 gcc
@@ -53,81 +64,87 @@
                 xorg.libxcb.dev
                 xorg.xcbutil.dev
                 xorg.xcbutilwm.dev
-                libpulseaudio.dev
-                dzen2
-              ];
+              ]
+              ++ lib.optional actualOptions.usePulseaudio libpulseaudio.dev;
 
-              preConfigure = ''
-                autoreconf -vfi
-              '';
+            preConfigure = ''
+              autoreconf -vfi
+            '';
 
-              meta = with pkgs.lib; {
-                description = "A small X11 utility that hides the life bar in a game";
-                license = licenses.wtfpl;
-                homepage = "https://github.com/osv/nolifebar";
-                maintainers = [ maintainers.yourname ];
-                platforms = platforms.unix;
-              };
+            postInstall = ''
+              wrapProgram $out/bin/nolifebar-start \
+                --prefix PATH : ${lib.makeBinPath runtimeDeps}
+            '';
+
+            meta = with pkgs.lib; {
+              description =
+                "A Unix way and easy-to-use tool for generating status bars (dzen2, lemonbar) ";
+              license = licenses.wtfpl;
+              homepage = "https://github.com/osv/nolifebar";
+              platforms = platforms.unix;
             };
+          };
         }) systems);
 
-        # Set the default package for the current system
-        defaultPackage.x86_64-linux = packages.x86_64-linux;
-        defaultPackage.aarch64-linux = packages.aarch64-linux;
+      # Define packages as attribute sets containing derivations
+      packages = builtins.listToAttrs (map (system: {
+        name = system;
+        value = {
+          default = (packageWithOptions { }).${system};
+          # Expose packageWithOptions for custom options
+          packageWithOptions = packageWithOptions;
+        };
+      }) systems);
 
-        # Add the apps attribute without using mkApp
-        apps = builtins.listToAttrs (map (system: {
-          name = system;
-          value = let
-            pkg = packages.${system};
-          in
-            {
-              nolifebar-start = {
-                type = "app";
-                program = "${pkg}/bin/nolifebar-start";
-              };
-            };
-        }) systems);
+      # Set the default package for the current system
+      defaultPackage =
+        builtins.mapAttrs (system: pkgSet: pkgSet.default) packages;
 
-        devShell = builtins.listToAttrs (map (system: {
-          name = system;
-          value = let
-            pkgs = import nixpkgs {
-              system = system;
-              overlays = [ overlay ];  # Apply the overlay
-            };
-          in
-            pkgs.mkShell {
-              buildInputs = with pkgs; [
-                autoconf
-                automake
-                gcc
+      # Add the apps attribute
+      apps = builtins.listToAttrs (map (system: {
+        name = system;
+        value = {
+          nolifebar-start = {
+            type = "app";
+            program = "${packages.${system}.default}/bin/nolifebar-start";
+          };
+        };
+      }) systems);
 
-                xorg.libX11.dev
-                xorg.libXft
-                xorg.libxcb.dev
-                xorg.xcbutil.dev
-                xorg.xcbutilwm.dev
-                libpulseaudio.dev
+      devShells = builtins.listToAttrs (map (system: {
+        name = system;
+        value = let pkgs = import nixpkgs { inherit system; };
+        in pkgs.mkShell {
+          buildInputs = with pkgs; [
+            autoconf
+            automake
+            gcc
 
-                xkb-switch
-                pkg-config
+            xorg.libX11.dev
+            xorg.libXft
+            xorg.libxcb.dev
+            xorg.xcbutil.dev
+            xorg.xcbutilwm.dev
+            libpulseaudio.dev
 
-                # Runtimes for plugins
-                bc
-                cava
-                pulseaudio  # pactl
-                wirelesstools  # iwgetid, iwevent
+            pkg-config
 
-                valgrind
+            # Runtimes for plugins
+            xkb-switch
+            bc
+            cava
+            pulseaudio # pactl
+            wireless_tools # iwgetid, iwevent
 
-                dzen2  # Include the overridden dzen2 in the devShell
-              ];
+            valgrind
 
-              shellHook = ''
-                echo "!! Entering the nolifebar development shell"
-              '';
-            };
-        }) systems);
-      };
+            (myDzen2Fork pkgs) # Include the overridden dzen2 in the devShell
+          ];
+
+          shellHook = ''
+            echo "!! Entering the nolifebar development shell"
+          '';
+        };
+      }) systems);
+    };
 }
