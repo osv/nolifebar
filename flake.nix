@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs = {
-      url = "github:NixOS/nixpkgs/nixos-23.11";
+      url = "github:NixOS/nixpkgs/51063ed4"; # temporary pin nixos-23.11 because of cava segfault
     };
   };
 
