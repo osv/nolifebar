@@ -111,7 +111,7 @@
         };
       }) systems);
 
-      devShells = builtins.listToAttrs (map (system: {
+      devShell = builtins.listToAttrs (map (system: {
         name = system;
         value = let pkgs = import nixpkgs { inherit system; };
         in pkgs.mkShell {
@@ -134,7 +134,7 @@
             bc
             cava
             pulseaudio # pactl
-            wireless_tools # iwgetid, iwevent
+            wirelesstools # iwgetid, iwevent
 
             valgrind
 
