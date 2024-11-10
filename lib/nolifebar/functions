@@ -80,6 +80,7 @@ Exiting" >&2
 
     if declare -f "mod_loop" > /dev/null; then
         "mod_loop"
+        echo "Terminated" >&2
     else
         echo "function mod_loop() is not declared" >&2
     fi
