@@ -61,6 +61,7 @@ get_color() {
 format_output() {
     local prefix="$1"
     local suffix="$2"
+    local color_code="$3"
     while read -r line; do
         if [ "$suffix" == "ERROR" ]; then
             printf "\033[%sm%-16s|\033[31m%s| %s\033[0m\n" "${color_code}" "$prefix" "$suffix" "$line"
@@ -78,8 +79,8 @@ run_with_output_prefix() {
     shift
     local prefix="${program_name}"
     {
-        $@ 2> >(format_output "$prefix" "ERROR" >&2)
-    } | format_output "$prefix" "INFO "
+        $@ 2> >(format_output "$prefix" "ERROR" "$color_code" >&2)
+    } | format_output "$prefix" "INFO " "$color_code"
 }
 
 cleanup_on_exit() {
