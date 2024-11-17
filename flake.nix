@@ -135,7 +135,7 @@
             cava
             pulseaudio # pactl
             wirelesstools # iwgetid, iwevent
-
+            xorg.xdpyinfo.out   # for dzen2 popup
             valgrind
 
             (myDzen2Fork pkgs) # Include the overridden dzen2 in the devShell

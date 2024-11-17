@@ -6,111 +6,175 @@ printf "Executing Memory Plugin\n"
 source "$MODULE_CORE_DIR/functions"
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 
+# Declare the associative array memstat
+declare -A memstat
+
 mod_init_vars() {
     interval=2
+    popup_delay=6
+    popup_line_height="$CFG_HEIGHT"
+    popup_line_height="24"
 }
 
 mod_draw_default() {
-    local used_percentage="$1"
-    local mem_total="$2"
-    local mem_used="$3"
-    local mem_free="$4"
-    local mem_available="$5"
-    local mem_buffers="$6"
-    local mem_cached="$7"
-    local mem_shared="$8"
-    local mem_sreclaimable="$9"
-    local mem_swap_total="${10}"
-    local mem_used_swap="${11}"
-    local mem_swap_cache="${12}"
-    local zfs_arc_size="${13}"
-
-    printf "%d%%\n" "$used_percentage"
+    printf "%d%%\n" "${memstat[used_percentage]}"
 }
+
+dzen2_show_popup() {
+    local width=$((popup_line_height * 18))
+    local rows=8
+
+    local x
+    local y
+    x11_get_good_tooltip_position x y "$width" $((popup_line_height * (1+rows)))
+
+    local mem_available="${memstat[mem_available]}"
+    local used_percentage="${memstat[used_percentage]}"
+    local mem_total="${memstat[mem_total]}"
+    local mem_used="${memstat[mem_used]}"
+    local mem_buffers="${memstat[mem_buffers]}"
+    local mem_cached="${memstat[mem_cached]}"
+    local mem_shared="${memstat[mem_shared]}"
+    local mem_swap_total="${memstat[mem_swap_total]}"
+    local mem_used_swap="${memstat[mem_used_swap]}"
+    local zfs_arc_size="${memstat[zfs_arc_size]}"
+    local mem_buf_and_shared=$((mem_buffers + mem_shared))
+    local mem_used_without_arc=$((mem_used - zfs_arc_size))
+
+    local swap_percentage="--"
+    if ((mem_swap_total > 0)); then
+        swap_percentage=$((100 * mem_used_swap / mem_swap_total))
+    fi
+
+    local mem_bar
+    dzen2_draw_stacked_bar mem_bar \
+        -width $((width - popup_line_height)) \
+        -height $((popup_line_height / 2)) \
+        -draw_outline \
+        -fg_colors '<POPUP_BAR1>,<POPUP_BAR2>,<POPUP_BAR3>,<POPUP_BAR4>' \
+        -values "${zfs_arc_size},${mem_used_without_arc},${mem_buf_and_shared},${mem_cached}" \
+        -padding 1 \
+        -max_value "${mem_total}"
+
+    local gb_mem_total
+    local gb_mem_available
+    local gb_mem_used
+    local gb_zfs_arc_size
+    local gb_mem_used_without_arc
+    local gb_mem_buf_and_shared
+    local gb_mem_cached
+    local gb_mem_used_swap
+    local gb_mem_swap_total
+    bytes_to_gigabytes_rounded gb_mem_total $((mem_total * 1024))
+    bytes_to_gigabytes_rounded gb_mem_available $((mem_available * 1024))
+    bytes_to_gigabytes_rounded gb_mem_used $((mem_used * 1024))
+    bytes_to_gigabytes_rounded gb_zfs_arc_size $((zfs_arc_size * 1024))
+    bytes_to_gigabytes_rounded gb_mem_used_without_arc $((mem_used_without_arc * 1024))
+    bytes_to_gigabytes_rounded gb_mem_buf_and_shared $((mem_buf_and_shared * 1024))
+    bytes_to_gigabytes_rounded gb_mem_cached $((mem_cached * 1024))
+    bytes_to_gigabytes_rounded gb_mem_used_swap $((mem_used_swap * 1024))
+    bytes_to_gigabytes_rounded gb_mem_swap_total $((mem_swap_total * 1024))
+
+    swap_stat=""
+    if ((mem_swap_total > 0)); then
+         swap_stat="(${gb_mem_used_swap}/${gb_mem_swap_total}GB)"
+    fi
+
+    (
+        cat <<EOS
+^normfg(<POPUP_FG>)
+^normbg(<POPUP_BG>)
+^tw()^fn(<POPUP_FN>)Memory
+^cs()
+^fn(<POPUP_FN>)  Used Memory : ${used_percentage}% (${gb_mem_used}/${gb_mem_total}GB)
+^fn(<POPUP_FN>)  Swap        : ${swap_percentage}% $swap_stat
+^fn(<POPUP_FN>)  Available   : ${gb_mem_available}GB
+^center()$mem_bar
+^fn(<POPUP_FN>)^fg(<BAR1>)  ZFS ARC : ${gb_zfs_arc_size}GB
+^fn(<POPUP_FN>)^fg(<BAR2>)  Used    : ${gb_mem_used_without_arc}GB ^fn(<POPUP_FN_SMALL>)(used - zfs)
+^fn(<POPUP_FN>)^fg(<BAR3>)  Bufers  : ${gb_mem_buf_and_shared}GB
+^fn(<POPUP_FN>)^fg(<BAR4>)  Cache   : ${gb_mem_cached}GB ^fn(<POPUP_FN_SMALL>)(cached+sreclaimable-shared)
+EOS
+    )   | nolifebar-replacer "$CFG_REPLACER_FILE" \
+        | "${CFG_DZEN2_POPUP_CMD[@]}" -p "$popup_delay" \
+          -x "$x" -y "$y" -w "$width" -h "$popup_line_height" \
+          -l "$rows" \
+          -sa 'l' -ta 'c' \
+          -e 'onstart=uncollapse;button1=exit;button3=exit'
+}
+
+trap 'dzen2_show_popup' SIGUSR1
+
 
 mod_loop() {
     while true; do
-        local mem_total=0
-        local mem_free=0
-        local mem_available=0
-        local mem_buffers=0
-        local mem_cached=0
-        local mem_shared=0
-        local mem_sreclaimable=0
-        local mem_swap_total=0
-        local mem_swap_cache=0
-        local mem_swap_free=0
+        # Initialize memstat associative array
+        memstat=(
+            [mem_total]=0
+            [mem_free]=0
+            [mem_available]=0
+            [mem_buffers]=0
+            [mem_cached]=0
+            [mem_shared]=0
+            [mem_sreclaimable]=0
+            [mem_swap_total]=0
+            [mem_swap_cache]=0
+            [mem_swap_free]=0
+        )
 
         while IFS= read -r line; do
             if [[ "$line" == MemTotal:* ]]; then
-                mem_total=${line#MemTotal: }
-                mem_total=${mem_total% kB}
+                memstat[mem_total]=${line#MemTotal: }
+                memstat[mem_total]=${memstat[mem_total]% kB}
             elif [[ "$line" == MemFree:* ]]; then
-                mem_free=${line#MemFree: }
-                mem_free=${mem_free% kB}
+                memstat[mem_free]=${line#MemFree: }
+                memstat[mem_free]=${memstat[mem_free]% kB}
             elif [[ "$line" == MemAvailable:* ]]; then
-                mem_available=${line#MemAvailable: }
-                mem_available=${mem_available% kB}
+                memstat[mem_available]=${line#MemAvailable: }
+                memstat[mem_available]=${memstat[mem_available]% kB}
             elif [[ "$line" == Buffers:* ]]; then
-                mem_buffers=${line#Buffers: }
-                mem_buffers=${mem_buffers% kB}
+                memstat[mem_buffers]=${line#Buffers: }
+                memstat[mem_buffers]=${memstat[mem_buffers]% kB}
             elif [[ "$line" == Cached:* ]]; then
-                mem_cached=${line#Cached: }
-                mem_cached=${mem_cached% kB}
+                memstat[mem_cached]=${line#Cached: }
+                memstat[mem_cached]=${memstat[mem_cached]% kB}
             elif [[ "$line" == Shmem:* ]]; then
-                mem_shared=${line#Shmem: }
-                mem_shared=${mem_shared% kB}
+                memstat[mem_shared]=${line#Shmem: }
+                memstat[mem_shared]=${memstat[mem_shared]% kB}
             elif [[ "$line" == SReclaimable:* ]]; then
-                mem_sreclaimable=${line#SReclaimable: }
-                mem_sreclaimable=${mem_sreclaimable% kB}
+                memstat[mem_sreclaimable]=${line#SReclaimable: }
+                memstat[mem_sreclaimable]=${memstat[mem_sreclaimable]% kB}
             elif [[ "$line" == SwapTotal:* ]]; then
-                mem_swap_total=${line#SwapTotal: }
-                mem_swap_total=${mem_swap_total% kB}
+                memstat[mem_swap_total]=${line#SwapTotal: }
+                memstat[mem_swap_total]=${memstat[mem_swap_total]% kB}
             elif [[ "$line" == SwapCached:* ]]; then
-                mem_swap_cache=${line#SwapCached: }
-                mem_swap_cache=${mem_swap_cache% kB}
+                memstat[mem_swap_cache]=${line#SwapCached: }
+                memstat[mem_swap_cache]=${memstat[mem_swap_cache]% kB}
             elif [[ "$line" == SwapFree:* ]]; then
-                mem_swap_free=${line#SwapFree: }
-                mem_swap_free=${mem_swap_free% kB}
+                memstat[mem_swap_free]=${line#SwapFree: }
+                memstat[mem_swap_free]=${memstat[mem_swap_free]% kB}
             fi
         done < /proc/meminfo
 
-        local zfs_arc_size=0
         if [[ -e "/proc/spl/kstat/zfs/arcstats" ]]; then
             while read -r key type value; do
                 if [ "$key" = "size" ]; then
-                    zfs_arc_size=$((value / 1024))
+                    memstat[zfs_arc_size]=$((value / 1024))
                     break
                 fi
             done < /proc/spl/kstat/zfs/arcstats
         fi
 
-        # See https://github.com/htop-dev/htop/blob/main/linux/LinuxMachine.c#L209
-
         # Adjust mem_cached and calculate mem_used
-        mem_cached=$((mem_cached + mem_sreclaimable - mem_shared))
-        local used_diff=$((mem_free + mem_cached + mem_sreclaimable + mem_buffers))
-        local mem_used=$((mem_total >= used_diff ? mem_total - used_diff : mem_total - mem_free))
+        memstat[mem_cached]=$((memstat[mem_cached] + memstat[mem_sreclaimable] - memstat[mem_shared]))
+        local used_diff=$((memstat[mem_free] + memstat[mem_cached] + memstat[mem_sreclaimable] + memstat[mem_buffers]))
+        memstat[mem_used]=$((memstat[mem_total] >= used_diff ? memstat[mem_total] - used_diff : memstat[mem_total] - memstat[mem_free]))
 
-        mem_available=$((mem_available != 0 ? mem_available : mem_free))
-        local mem_used_swap=$((mem_swap_total - mem_swap_free - mem_swap_cache))
+        memstat[mem_available]=$((memstat[mem_available] != 0 ? memstat[mem_available] : memstat[mem_free]))
+        memstat[mem_used_swap]=$((memstat[mem_swap_total] - memstat[mem_swap_free] - memstat[mem_swap_cache]))
+        memstat[used_percentage]=$((memstat[mem_used] * 100 / memstat[mem_total]))
 
-        local used_percentage=$((mem_used * 100 / mem_total))
-
-        mod_draw \
-            "$used_percentage" \
-            "${mem_total}" \
-            "${mem_used}" \
-            "${mem_free}" \
-            "${mem_available}" \
-            "${mem_buffers}" \
-            "${mem_cached}" \
-            "${mem_shared}" \
-            "${mem_sreclaimable}" \
-            "${mem_swap_total}" \
-            "${mem_used_swap}" \
-            "${mem_swap_cache}" \
-            "${zfs_arc_size}" > "$FIFO_FILE"
+        mod_draw > "$FIFO_FILE"
 
         read_sleep "$interval"
     done

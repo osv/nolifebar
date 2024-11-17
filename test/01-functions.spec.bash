@@ -216,6 +216,68 @@ test_ceil_division() {
     fi
 }
 
+# Test function for bytes_to_gigabytes_rounded
+test_bytes_to_gigabytes_rounded() {
+    increment_test_count
+
+    local result
+
+    # Test 1: Standard input
+    bytes_to_gigabytes_rounded result 1234567890
+    if [[ "$result" == "1.1" ]]; then
+        echo -e "bytes_to_gigabytes_rounded (1234567890) == 1.1: ${GREEN}Passed${NC}"
+    else
+        echo -e "bytes_to_gigabytes_rounded (1234567890): ${RED}Failed${NC}"
+        echo "Expected: 1.1, Got: $result"
+        mark_test_failed
+    fi
+
+    increment_test_count
+
+    # Test 2: Exact 1 GB
+    bytes_to_gigabytes_rounded result $((1024 * 1024 * 1024))
+    if [[ "$result" == "1.0" ]]; then
+        echo -e "bytes_to_gigabytes_rounded (1024^3) == 1.0: ${GREEN}Passed${NC}"
+    else
+        echo -e "bytes_to_gigabytes_rounded (1024^3): ${RED}Failed${NC}"
+        echo "Expected: 1.0, Got: $result"
+        mark_test_failed
+    fi
+
+    increment_test_count
+
+    # Test 3: Less than 1 GB
+    bytes_to_gigabytes_rounded result $((512 * 1024 * 1024))
+    if [[ "$result" == "0.5" ]]; then
+        echo -e "bytes_to_gigabytes_rounded (512MB) == 0.5: ${GREEN}Passed${NC}"
+    else
+        echo -e "bytes_to_gigabytes_rounded (512MB): ${RED}Failed${NC}"
+        echo "Expected: 0.5, Got: $result"
+        mark_test_failed
+    fi
+
+    increment_test_count
+
+    # Test 4: Rounding test
+    bytes_to_gigabytes_rounded result 1610612736  # ~1.5 GB
+    if [[ "$result" == "1.5" ]]; then
+        echo -e "bytes_to_gigabytes_rounded (1610612736) == 1.5: ${GREEN}Passed${NC}"
+    else
+        echo -e "bytes_to_gigabytes_rounded (1610612736): ${RED}Failed${NC}"
+        echo "Expected: 1.5, Got: $result"
+        mark_test_failed
+    fi
+
+    bytes_to_gigabytes_rounded result 0
+    if [[ "$result" == "0" ]]; then
+        echo -e "bytes_to_gigabytes_rounded (0) == 0: ${GREEN}Passed${NC}"
+    else
+        echo -e "bytes_to_gigabytes_rounded (0): ${RED}Failed${NC}"
+        echo "Expected: 0, Got: $result"
+        mark_test_failed
+    fi
+}
+
 # Run the tests
 test_apply_dictionary_value_format
 test_update_threshold
@@ -223,6 +285,7 @@ test_is_array
 test_create_log_scale
 test_find_scale_point
 test_ceil_division
+test_bytes_to_gigabytes_rounded
 
 # Print summary and exit with code 1 if any test failed
 echo

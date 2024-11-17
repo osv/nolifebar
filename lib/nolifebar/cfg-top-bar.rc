@@ -31,6 +31,14 @@ MAIN_FN="Terminus:size=14:style=Light"
 
 # Replace text before sending to status bar programm
 CFG_REPLACE_TXT="
+<POPUP_FG>   : <FG>
+<POPUP_BG>   : #ffffff
+<POPUP_BAR1> : <BAR1>
+<POPUP_BAR2> : <BAR2>
+<POPUP_BAR3> : <BAR3>
+<POPUP_BAR4> : <BAR4>
+
+
 <WS_NO_WIN>       : ^fg(#666)^bg(#333)
 <WS_WITH_WIN>     : ^fg(#ccc)^bg(#333)
 <WS_CUR_NO_WIN>   : ^fg(#fff)^bg(#66b)
@@ -39,11 +47,11 @@ CFG_REPLACE_TXT="
 
 <FG>              : #33e
 <BG>              : #e7e7e7
-<BORDER>          : #333
+<WIDGET_BORDER>   : #333
 <WIDGET_BG>       : #ddd
 
-<ON>  : #b82
-<OFF> : #777
+<WIDGET_ACTIVE>  : #b82
+<WIDGET_INACTIVE> : #777
 
 <FN_MAIN>    : $MAIN_FN
 <FN_MEDIUM>  : Terminus:size=10:style=Light
@@ -54,7 +62,24 @@ CFG_REPLACE_TXT="
 <BAR2>      : #281
 <BAR3>      : #80b
 <BAR4>      : #66b
+
 "
+
+# # Replace text before sending to status bar programm
+# CFG_REPLACE_TXT="
+
+
+# <WS_NO_WIN>       : ^fg(#666)^bg(#333)
+# <WS_WITH_WIN>     : ^fg(#ccc)^bg(#333)
+# <WS_CUR_NO_WIN>   : ^fg(#fff)^bg(#66b)
+# <WS_CUR_WITH_WIN> : ^fg(#fff)^bg(#66b)
+# <WS_URGENT>       : ^fg(#334)^bg(#f22)
+
+# <FN_MAIN>    : $MAIN_FN
+# <FN_MEDIUM>  : Terminus:size=10:style=Light
+# <FN_2_ROWS>  : Terminus-8
+# <fn_2_ROWS>  : RobotoMono Nerd Font:size=7:style=Light
+# "
 
 # Some functions uses this for draw rects
 CFG_HEIGHT=30
@@ -66,10 +91,9 @@ CFG_HEIGHT=30
 #                     -ta l -h "${CFG_HEIGHT}")
 
 CFG_STATUS_BAR_CMD=(dzen2 -dock -fn "$MAIN_FN"
-                    -bg "$BG"
-                    -fg "$FG"
                     -ta l -h "${CFG_HEIGHT}")
 
+CFG_DZEN2_POPUP_CMD=(dzen2)
 # Default params for stack bar
 CFG_DEFAULT_STACK_BAR_PARAMS=(
   -bg '<WIDGET_BG>'
@@ -90,10 +114,6 @@ CFG_DEFAULT_STACK_COLORS=("<BAR1>" "<BAR2>" "<BAR3>" "<BAR4>")
 CFG_DEFAULT_DRAW_FLAG_PARAMS=(
   -label_size 45 # size of label
   -label_highlight 0
-  -color_on "<ON>"
-  -color_all_off "<OFF>"
-  -color_bg "<BG>"
-  -color_fg "<FG>"
   -name_size 50
   -y_padding 2
   -fn_main "<FN_MAIN>"
@@ -144,53 +164,17 @@ MOD_MEM_init_vars() {
   interval=2
 }
 
-# Draw mem and bar
-# MOD_MEM_draw_dzen2() {
-#   local used_percentage="$1"
-#   local mem_total="$2"
-#   local mem_used="$3"
-#   local mem_free="$4"
-#   local mem_available="$5"
-#   local mem_buffers="$6"
-#   local mem_cached="$7"
-#   local mem_shared="$8"
-#   local mem_sreclaimable="$9"
-#   local mem_swap_total="${10}"
-#   local mem_used_swap="${11}"
-#   local mem_swap_cache="${12}"
-#   local zfs_arc_size="${13}"
-#   local mem_buf_and_shared=$((mem_buffers + mem_shared))
-#   local mem_used_without_arc=$((mem_used - zfs_arc_size))
-
-#   local mem_txt_size=92
-#   local bar
-#   bar=$(dzen2_draw_stacked_bar \
-#     -width "$mem_txt_size" \
-#     -height 7 \
-#     -draw_outline \
-#     -values "${zfs_arc_size},${mem_used_without_arc},${mem_buf_and_shared},${mem_cached}" \
-#     -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
-#     -bg "<BORDER>" \
-#     -padding 1 \
-#     -max_value "${mem_total}")
-#   printf "^p(_TOP)^fg(<FG>)^fn(<FN_MEDIUM>)^ba(${mem_txt_size},_CENTER)Mem %3s%%^p(-$((mem_txt_size));20)%s^fn(<MAIN>)\n" "$used_percentage" "$bar"
-# }
-
 # draw mem and swap bars
 MOD_MEM_draw_dzen2() {
-  local used_percentage="$1"
-  local mem_total="$2"
-  local mem_used="$3"
-  local mem_free="$4"
-  local mem_available="$5"
-  local mem_buffers="$6"
-  local mem_cached="$7"
-  local mem_shared="$8"
-  local mem_sreclaimable="$9"
-  local mem_swap_total="${10}"
-  local mem_used_swap="${11}"
-  local mem_swap_cache="${12}"
-  local zfs_arc_size="${13}"
+  local used_percentage="${memstat[used_percentage]}"
+  local mem_total="${memstat[mem_total]}"
+  local mem_used="${memstat[mem_used]}"
+  local mem_buffers="${memstat[mem_buffers]}"
+  local mem_cached="${memstat[mem_cached]}"
+  local mem_shared="${memstat[mem_shared]}"
+  local mem_swap_total="${memstat[mem_swap_total]}"
+  local mem_used_swap="${memstat[mem_used_swap]}"
+  local zfs_arc_size="${memstat[zfs_arc_size]}"
   local mem_buf_and_shared=$((mem_buffers + mem_shared))
   local mem_used_without_arc=$((mem_used - zfs_arc_size))
 
@@ -201,8 +185,7 @@ MOD_MEM_draw_dzen2() {
     -height 7 \
     -draw_outline \
     -values "${zfs_arc_size},${mem_used_without_arc},${mem_buf_and_shared},${mem_cached}" \
-    -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
-    -bg "<BORDER>" \
+    -bg "<WIDGET_BORDER>" \
     -padding 1 \
     -max_value "${mem_total}"
 
@@ -211,25 +194,24 @@ MOD_MEM_draw_dzen2() {
     -height 7 \
     -draw_outline \
     -values "${mem_used_swap}" \
-    -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
-    -bg "<BORDER>" \
+    -bg "<WIDGET_BORDER>" \
     -padding 1 \
     -max_value $((mem_swap_total == 0 ? 100 : mem_swap_total))
 
   local swap_percentage="--"
   if ((mem_swap_total > 0)); then
-    swap_percentage=$((100 * $mem_used_swap / $mem_swap_total))
+    swap_percentage=$((100 * mem_used_swap / mem_swap_total))
   fi
 
   local fmt
   printf -v fmt "^p(_TOP)^p(;2)^fg(<FG>)^fn(<FN_2_ROWS>)^ba(70,_LEFT)Mem  %3d%%" "$used_percentage"
   local out="$fmt"
-  out+="^ib(1)^fg(<BORDER>)^r(1x7-12+1)^r(10x1-0+2)^p(2;-3)${mem_bar}^ib(1)"
+  out+="^ib(1)^fg(<WIDGET_BORDER>)^r(1x7-12+1)^r(10x1-0+2)^p(2;-3)${mem_bar}^ib(1)"
   out+="^p(-175;14)^fg(<FG>)^ba(70,_LEFT)"
   printf -v fmt "Swap %3s%%" "$swap_percentage"
   out+="$fmt"
-  out+="^fg(<BORDER>)^r(1x7-12+4)^r(10x1-0+4)^p(2;-3)${swap_bar}"
-  printf "%s^p()^ib()^fn(<FN_MAIN>)\n" "$out"
+  out+="^fg(<WIDGET_BORDER>)^r(1x7-12+4)^r(10x1-0+4)^p(2;-3)${swap_bar}"
+  printf "^ca(1, kill -SIGUSR1 $$)%s^ca()^p()^ib()^fn(<FN_MAIN>)\n" "$out"
 }
 
 # ############################## CPU Bar
@@ -255,7 +237,7 @@ MOD_CPU_BARS_init_vars() {
 
 # ############################### Cava OUT (bars)
 MOD_CAVA_OUT_init_vars() {
-  sc_framerate=24      # FPS of cava output, default 15
+  sc_framerate=20      # FPS of cava output, default 15
   sc_bars=60           # count of cava bars, default 30
   sc_padding=1         # Vertical padding, default: 1
 
@@ -403,7 +385,7 @@ MOD_NVIDIA_draw_dzen2() {
     -draw_outline \
     -values "$memory_used" \
     -fg_colors "<BAR1>,<BAR2>,<BAR3>,<BAR4>" \
-    -bg "<BORDER>" \
+    -bg "<WIDGET_BORDER>" \
     -padding 1 \
     -max_value "${memory_total}"
 
@@ -439,6 +421,8 @@ MAIN_format_template() {
   # printf "{out_xworkspaces}\n"
   # return
   state="$1"
+  echo "^normfg(<FG>)"
+  echo "^normbg(<BG>)"
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"
  else

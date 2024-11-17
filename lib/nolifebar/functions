@@ -3,8 +3,44 @@
 CFG_HEIGHT="${CFG_HEIGHT:-24}"
 CFG_BACKEND="${CFG_BACKEND:-dzen2}"
 
+# PATH and additional params to dzen2
+CFG_DZEN2_POPUP_CMD=(dzen2)
+
 CFG_REPLACER_FILE="$TMP_DIR/replace.txt"
 
+# You can override all of the following by declaring the CFG_REPLACER_TXT variable.
+CFG_REPLACER_TXT_FALLBACK="
+# Defaults, incase if not defined by user
+<FG>   : #ffffff
+<BG>   : #000
+
+<BAR1> : #ff8b92
+<BAR2> : #c3e88d
+<BAR3> : #e1acff
+<BAR4> : #ffe585
+
+<POPUP_FN>       : Terminus-12
+<POPUP_FN_SMALL> : Terminus-8
+<POPUP_FG>       : white
+<POPUP_BG>       : black
+
+<POPUP_BAR1> : <BAR1>
+<POPUP_BAR2> : <BAR2>
+<POPUP_BAR3> : <BAR3>
+<POPUP_BAR4> : <BAR4>
+
+<POPUP_FG>   : <FG>
+<POPUP_BG>   : <BG>
+
+<WIDGET_BG>        : #222
+<WIDGET_BORDER>    : #444
+<WIDGET_INACTIVE>  : #777
+<WIDGET_ACTIVE>    : #afa
+<WIDGET_FLAG_FG>   : <FG>
+<WIDGET_FLAG_BG>   : <BG>
+
+
+"
 # CFG_REPLACE_TXT=""
 
 if [ -z "${CFG_DEFAULT_STACK_COLORS+x}" ]; then
@@ -102,6 +138,7 @@ build_replace_file() {
     echo "" > "$CFG_REPLACER_FILE"
     if [[ -n "$CFG_REPLACE_TXT" ]]; then
         echo "$CFG_REPLACE_TXT" > "$CFG_REPLACER_FILE"
+        echo "$CFG_REPLACER_TXT_FALLBACK" >> $CFG_REPLACER_FILE
     fi
 }
 
@@ -197,13 +234,88 @@ function find_scale_point() {
 }
 
 ceil_division() {
-    local -n result_ref="$1"
-    local numerator=$2
-    local denominator=$3
-    result_ref=$((numerator / denominator))
-    if ((numerator % denominator != 0)); then
-        result_ref=$((result_ref + 1))
+    local -n _result_ref="$1"
+    local _numerator=$2
+    local _denominator=$3
+    _result_ref=$((_numerator / _denominator))
+    if ((_numerator % _denominator != 0)); then
+        _result_ref=$((_result_ref + 1))
     fi
+}
+
+# Function to convert bytes to gigabytes with rounding
+bytes_to_gigabytes_rounded() {
+    local -n _result=$1  # Reference to the variable passed as the second argument
+    local _bytes=$2
+
+    if [[ "$_bytes" -eq 0 ]]; then
+        _result="0"
+        return
+    fi
+
+    # Correct rounding by adding 5 scaled to 1 decimal place
+    local _gigabytes=$(( (_bytes * 10 + 5) / (1024 * 1024 * 1024) ))
+    _result="$((_gigabytes / 10)).$((_gigabytes % 10))"
+    echo "Bytes $_bytes"
+}
+
+# Function to get the current mouse position using xdotool
+x11_get_mouse_position() {
+    local -n x_ref="$1"
+    local -n y_ref="$2"
+
+    # Ensure xdotool is installed
+    if ! command -v xdotool &>/dev/null; then
+        echo "Error: xdotool is not installed." >&2
+        return 1
+    fi
+
+    # Parse the output safely
+    while IFS='=' read -r key value; do
+        case "$key" in
+            X) x_ref="$value" ;;
+            Y) y_ref="$value" ;;
+        esac
+    done <<< "$(xdotool getmouselocation --shell)"
+}
+
+# Get tooltip position by using width, height and padding. Padding is equal to CFG_HEIGHT by default.
+# Usage: x11_get_good_tooltip_position x_res y_res width height [padding]
+x11_get_good_tooltip_position() {
+    local -n x_res="$1"
+    local -n y_res="$2"
+    local width="$3"
+    local height="$4"
+    local padding="$5"
+
+    if [[ -z "$padding" ]]; then
+        padding="$CFG_HEIGHT"
+    fi
+
+    local xpos
+    local ypos
+    x11_get_mouse_position xpos ypos
+    if ! command -v xdpyinfo &>/dev/null; then
+        printf "Error: xdpyinfo is not installed." >&2
+        return 1
+    fi
+
+    local screen_width
+    local screen_height
+    screen_width=$(xdpyinfo | awk -F'[ x]+' '/dimensions:/{print $3}')
+    screen_height=$(xdpyinfo | awk -F'[ x]+' '/dimensions:/{print $4}')
+    xpos=$((xpos - width / 2))
+    if (( xpos + width + padding > screen_width )); then
+        xpos=$(( screen_width - width - padding ))
+    fi
+    if (( ypos + height + padding > screen_height )); then
+        ypos=$(( screen_height - height - padding))
+    fi
+    if (( xpos < padding )); then xpos="$padding"; fi
+    if (( ypos < padding )); then ypos="$padding"; fi
+
+    x_res="$xpos"
+    y_res="$ypos"
 }
 
 #######################################################
@@ -220,7 +332,7 @@ dzen2_draw_stacked_bar() {
     local values=()
     local fg_colors=("${CFG_DEFAULT_STACK_COLORS[@]}")
     local padding=1
-    local bg="#CCCCCC"
+    local bg="<WIDGET_BG>"
     local draw_outline=""
 
     # Parse named arguments
@@ -318,8 +430,8 @@ dzen2_draw_h_stacked_bars() {
     local fg_colors=("${CFG_DEFAULT_STACK_COLORS[@]}")
     local bar_padding=1
     local stack_padding=1
-    local bg="#333"
-    local border_fg="#777"
+    local bg="<WIDGET_BG>"
+    local border_fg="<WIDGET_BORDER>"
 
     # Parse named arguments
     while [ $# -gt 0 ]; do
@@ -459,8 +571,8 @@ dzen2_draw_centered_bars() {
     local fg_colors=("${CFG_DEFAULT_STACK_COLORS[@]}")
     local bar_padding=1
     local stack_padding=1
-    local bg="#333"
-    local border_fg="#777"
+    local bg="<WIDGET_BG>"
+    local border_fg="<WIDGET_BORDER>"
 
     # Parse named arguments
     while [ $# -gt 0 ]; do
@@ -559,10 +671,10 @@ dzen2_draw_flags() {
     local label=""      # no label
     local label_size=45 # size of label
     local label_highlight=0
-    local color_on="#afa"
-    local color_all_off="#777"
-    local color_bg="#000"
-    local color_fg="#fff"
+    local color_on="<WIDGET_ACTIVE>"
+    local color_all_off="<WIDGET_INACTIVE>"
+    local color_bg="<WIDGET_FLAG_BG>"
+    local color_fg="<WIDGET_FLAG_FG>"
     local name_size=50
     local y_padding=2
     local fn_main="" # will be rendered as ^fn()
@@ -665,6 +777,6 @@ dzen2_draw_flags() {
     done
 
     # reset state
-    res+="^ib()^p()^p(3)^fg(${color_fg})^bg(${color_bg})^fn($fn_main)" # 3px - margin
+    res+="^ib()^p()^p(3)^fg()^bg()^fn($fn_main)" # 3px - margin
     eval "$ref_var=\"$res\""
 }

@@ -73,6 +73,7 @@ int load_replacements(const char *filename, Replacement **head) {
         if (newline) *newline = '\0';
 
         if (line[0] == '\0') continue;
+        if (line[0] == '#') continue;
 
         char *colon = strchr(line, SPLIT_CHAR);
         if (!colon) {
@@ -202,7 +203,8 @@ int main(int argc, char *argv[]) {
             // Copy to last line buffer
             strncpy(last_line, buffer, BUFFER_SIZE);
 
-            // Process line with replacements in place
+            // Process line with replacements in place. 2 times - to ensure replacement reference will be replaced too
+            process_line_inplace(buffer, BUFFER_SIZE, replacements);
             process_line_inplace(buffer, BUFFER_SIZE, replacements);
             printf("%s\n", buffer);
             fflush(stdout);
@@ -228,8 +230,9 @@ int main(int argc, char *argv[]) {
                         break;
                     }
 
-                    // Reprocess the last line
+                    // Reprocess the last line, 2 times - to ensure replacement reference will be replaced too
                     strncpy(buffer, last_line, BUFFER_SIZE);
+                    process_line_inplace(buffer, BUFFER_SIZE, replacements);
                     process_line_inplace(buffer, BUFFER_SIZE, replacements);
                     printf("%s\n", buffer);
                     fflush(stdout);
