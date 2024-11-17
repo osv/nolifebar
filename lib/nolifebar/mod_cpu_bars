@@ -42,13 +42,13 @@ mod_draw_dzen2() {
     printf "^ca(1, kill -SIGUSR1 $$)%s^ca()\n" "$txt"
 }
 
-handle_signal() {
+toggle_cpu_view() {
   echo "Signal received: show_total_only=${show_total_only}"
   show_total_only=$((show_total_only ? 0 : 1))
   update &
 }
 
-trap 'handle_signal' SIGUSR1
+trap 'toggle_cpu_view' SIGUSR1
 
 declare -a previousStats
 declare -a currentStats
