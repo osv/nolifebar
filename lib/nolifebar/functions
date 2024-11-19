@@ -39,8 +39,14 @@ CFG_REPLACER_TXT_FALLBACK="
 <WIDGET_FLAG_FG>   : <FG>
 <WIDGET_FLAG_BG>   : <BG>
 
-
+# xworkspaces mod: default render commands
+<DZEN_WS_NO_WIN>       : ^fg(#666)^bg(#333)
+<DZEN_WS_WITH_WIN>     : ^fg(#ccc)^bg(#333)
+<DZEN_WS_CUR_NO_WIN>   : ^fg(#fff)^bg(#66b)
+<DZEN_WS_CUR_WITH_WIN> : ^fg(#fff)^bg(#66b)
+<DZEN_WS_URGENT>       : ^fg(#334)^bg(#f22)
 "
+
 # CFG_REPLACE_TXT=""
 
 if [ -z "${CFG_DEFAULT_STACK_COLORS+x}" ]; then

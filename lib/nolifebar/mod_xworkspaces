@@ -23,12 +23,12 @@ mod_init_vars() {
         print_action_cmd="^ca(1, xdotool set_desktop %i)%s^ca()"      # optional, how to select workspace 
         print_action_cmd_prev="^ca(4, xdotool set_desktop %i)%s^ca()" # optional, wheel up action
         print_action_cmd_next="^ca(5, xdotool set_desktop %i)%s^ca()" # optional, wheel down action
-        print_no_windows="^fg(#444)^bg(#000) %s "                     # optional, no windows, if blank do not draw empty workspaces 
-        print_with_windows="^fg(#ccc)^bg(#000) %s "                   # not active workspace with windows
+        print_no_windows="<DZEN_WS_NO_WIN> %s "                       # optional, no windows, if blank do not draw empty workspaces
+        print_with_windows="<DZEN_WS_WITH_WIN> %s "                   # not active workspace with windows
         print_current_wrapped="^p(0;-3)%s^p()"                        # optional, current workspace, including urgent
-        print_current_no_windows="^fg(#fff)^bg(#330) %s "             # current workspace, if not urgent
-        print_current_with_windows="^fg(#fff)^bg(#330) %s "           # current workspace, if not urgent
-        print_urgent="^fg(#334)^bg(#f22) %s "                         # workspace with urgent hint
+        print_current_no_windows="<DZEN_WS_CUR_NO_WIN> %s "           # current workspace, if not urgent
+        print_current_with_windows="<DZEN_WS_CUR_WITH_WIN> %s "       # current workspace, if not urgent
+        print_urgent="<DZEN_WS_URGENT> %s "                           # workspace with urgent hint
         print_wrapped="%s^fg()^bg()"                                  # final wrapper
         ;;
     *)

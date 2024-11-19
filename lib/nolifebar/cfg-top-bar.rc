@@ -25,10 +25,6 @@ CFG_MODULES=("pulse" "xkbd" "xworkspaces" "xtitle" "mem" "time" "network" "cpu_b
 # # Uncomment to output data for dzen2 to STDOUT for debugging
 # DEBUG=true
 
-FG="#33e"
-BG="#e7e7e7"
-MAIN_FN="Terminus:size=14:style=Light"
-
 # Replace text before sending to status bar programm
 CFG_REPLACE_TXT="
 <POPUP_FG>   : <FG>
@@ -38,13 +34,6 @@ CFG_REPLACE_TXT="
 <POPUP_BAR3> : <BAR3>
 <POPUP_BAR4> : <BAR4>
 
-
-<WS_NO_WIN>       : ^fg(#666)^bg(#333)
-<WS_WITH_WIN>     : ^fg(#ccc)^bg(#333)
-<WS_CUR_NO_WIN>   : ^fg(#fff)^bg(#66b)
-<WS_CUR_WITH_WIN> : ^fg(#fff)^bg(#66b)
-<WS_URGENT>       : ^fg(#334)^bg(#f22)
-
 <FG>              : #33e
 <BG>              : #e7e7e7
 <WIDGET_BORDER>   : #333
@@ -53,7 +42,7 @@ CFG_REPLACE_TXT="
 <WIDGET_ACTIVE>  : #b82
 <WIDGET_INACTIVE> : #777
 
-<FN_MAIN>    : $MAIN_FN
+<FN_MAIN>    : Terminus:size=14:style=Light
 <FN_MEDIUM>  : Terminus:size=10:style=Light
 <FN_2_ROWS>  : Terminus-8
 <fn_2_ROWS>  : RobotoMono Nerd Font:size=7:style=Light
@@ -65,32 +54,24 @@ CFG_REPLACE_TXT="
 
 "
 
-# # Replace text before sending to status bar programm
-# CFG_REPLACE_TXT="
-
-
-# <WS_NO_WIN>       : ^fg(#666)^bg(#333)
-# <WS_WITH_WIN>     : ^fg(#ccc)^bg(#333)
-# <WS_CUR_NO_WIN>   : ^fg(#fff)^bg(#66b)
-# <WS_CUR_WITH_WIN> : ^fg(#fff)^bg(#66b)
-# <WS_URGENT>       : ^fg(#334)^bg(#f22)
-
-# <FN_MAIN>    : $MAIN_FN
-# <FN_MEDIUM>  : Terminus:size=10:style=Light
-# <FN_2_ROWS>  : Terminus-8
-# <fn_2_ROWS>  : RobotoMono Nerd Font:size=7:style=Light
-# "
+# Replace text before sending to status bar programm
+CFG_REPLACE_TXT="
+<FN_MAIN>    : Terminus:size=14:style=Light
+<FN_MEDIUM>  : Terminus:size=10:style=Light
+<FN_2_ROWS>  : Terminus-8
+<fn_2_ROWS>  : RobotoMono Nerd Font:size=7:style=Light
+"
 
 # Some functions uses this for draw rects
 CFG_HEIGHT=30
 
 # Status bar command, dzen2
-# CFG_STATUS_BAR_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/dzen2 -dock -fn "$MAIN_FN"
+# CFG_STATUS_BAR_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/dzen2 -dock
 #                     -bg "$BG"
 #                     -fg "$FG"
 #                     -ta l -h "${CFG_HEIGHT}")
 
-CFG_STATUS_BAR_CMD=(dzen2 -dock -fn "$MAIN_FN"
+CFG_STATUS_BAR_CMD=(dzen2 -dock
                     -ta l -h "${CFG_HEIGHT}")
 
 CFG_DZEN2_POPUP_CMD=(dzen2)
@@ -123,17 +104,16 @@ CFG_DEFAULT_DRAW_FLAG_PARAMS=(
   -flag_x_padding 0
 )
 
-MOD_XWORKSPACES_init_vars() {
-  show_index=1                # Show workspace number
-
-  print_no_windows="<WS_NO_WIN> %s "                        # optional, no windows, if blank do not draw empty workspaces
-  print_with_windows="<WS_WITH_WIN> %s "                    # not active workspace with windows
-  print_current_wrapped="^p(0;-3)%s^p()"                    # optional, current workspace, including urgent
-  print_current_no_windows="<WS_CUR_NO_WIN> %s "            # current workspace, if not urgent
-  print_current_with_windows="<WS_CUR_WITH_WIN> %s "        # current workspace, if not urgent
-  print_urgent="<WS_URGENT> %s "                            # workspace with urgent hint
-  print_wrapped="^fn(<FN_MEDIUM>)%s^fg()^bg()"              # final wrapper
-}
+# MOD_XWORKSPACES_init_vars() {
+#   show_index=1                # Show workspace number
+#   print_no_windows="<WS_NO_WIN> %s "                        # optional, no windows, if blank do not draw empty workspaces
+#   print_with_windows="<WS_WITH_WIN> %s "                    # not active workspace with windows
+#   print_current_wrapped="^p(0;-3)%s^p()"                    # optional, current workspace, including urgent
+#   print_current_no_windows="<WS_CUR_NO_WIN> %s "            # current workspace, if not urgent
+#   print_current_with_windows="<WS_CUR_WITH_WIN> %s "        # current workspace, if not urgent
+#   print_urgent="<WS_URGENT> %s "                            # workspace with urgent hint
+#   print_wrapped="^fn(<FN_MEDIUM>)%s^fg()^bg()"              # final wrapper
+# }
 
 # ################################ Network
 MOD_NETWORK_init_vars() {
@@ -426,7 +406,7 @@ MAIN_format_template() {
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"
  else
-      printf "{out_xworkspaces} {out_xtitle}^right() {out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} \
+      printf "^fn(<FN_MEDIUM>){out_xworkspaces} ^fg(<FG>){out_xtitle}^right() {out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} \
 ^i(./share/nolifebar/vol20b.xbm)\
  {out_pulse} {out_cava_out}{out_cava_in} ^fg(<FG>){out_time}\
  {out_xkbd}
