@@ -58,6 +58,9 @@ mod_init_vars() {
         ['wifi_status']="Wifi %s"
         ['torrent_running']="Torrnt %s"
     )
+
+    popup_delay=7               # when hide popup
+    popup_line_height="$CFG_POPUP_LINE_HEIGHT"
 }
 
 # Stored history
@@ -125,17 +128,51 @@ mod_draw_dzen2() {
         -flag_x_padding 3 \
         "${additional_render_params[@]}"
 
-    printf "%s^p(1)%s\n" "$log_scaled_history_bar" "$metrics"
+    printf "^ca(1, kill -SIGUSR1 $$)%s%s^ca()\n" "$log_scaled_history_bar" "$metrics"
 }
 
 mod_draw_default() {
     printf "Down: %4dKB, Up: %4dKB, Ping: 3ms\n" "${metric_values['rx']}" "${metric_values['tx']}" "${metric_values['ping']}"
 }
 
+dzen2_show_popup() {
+    local width=$((popup_line_height * 18))
+    local rows=7
+
+    local x
+    local y
+    x11_get_good_tooltip_position x y "$width" $((popup_line_height * (1+rows)))
+
+    local xt
+    (
+        cat <<EOS
+^normfg(<POPUP_FG>)
+^normbg(<POPUP_BG>)
+^tw()^fn(<POPUP_FN_BIG>)Network
+^cs()
+^fn(<POPUP_FN>)  TX/RX Interface: ^fg(<BAR3>)$interface
+^fn(<POPUP_FN>)  ^fg(<BAR2>)Download: ${metric_values[rx]}KB ^right()^fn(<POPUP_FN>)^fg(<BAR1>)Upload: ${metric_values[tx]}KB  .
+^fn(<POPUP_FN>)  Ping to $ping_host: ^fg(<BAR3>)${metric_values[ping]}ms
+^fn(<POPUP_FN>)  Wifi interface    : ^fg(<BAR3>)${metric_values[wifi_active_interface]} ^fg(<BAR1>)(${metric_values[wifi_status]})
+^fn(<POPUP_FN>)  Wifi signal       : ^fg(<BAR3>)-${metric_values[wifi_signal_level]}db
+^fn(<POPUP_FN>)  SSID              : ^fg(<BAR3>)${metric_values[wifi_ssid]}
+^fn(<POPUP_FN>)  Torrent app       : ^fg(<BAR3>)${metric_values[torrent_running]}
+EOS
+    )   | nolifebar-replacer "$CFG_REPLACER_FILE" \
+        | "${CFG_DZEN2_POPUP_CMD[@]}" -p "$popup_delay" \
+        -x "$x" -y "$y" -w "$width" -h "$popup_line_height" \
+        -l "$rows" \
+        -sa 'l' -ta 'c' \
+        -e 'onstart=uncollapse;button1=exit;button3=exit'
+
+}
+
+trap 'dzen2_show_popup&' SIGUSR1
+
 get_wireless_interface_and_signal() {
     local -n interface_ref="$1"
     local -n signal_ref="$2"
-    local interface="$3"
+    local _interface="$3"
 
     # Check if /proc/net/wireless exists
     # Static variable to track if the file check message has been printed
@@ -149,25 +186,25 @@ get_wireless_interface_and_signal() {
     fi
 
     # If interface is not provided, find the first wireless interface
-    if [ -z "$interface" ]; then
+    if [ -z "$_interface" ]; then
         while IFS= read -r line; do
             # Check if the first word ends with a colon
             if [[ "$line" =~ ^[[:alnum:]]+[:] ]]; then
                 # Extract the interface name before the first colon
-                interface="${line%%:*}"
+                _interface="${line%%:*}"
                 break
             fi
         done < /proc/net/wireless
 
-        if [ -z "$interface" ]; then
+        if [ -z "$_interface" ]; then
             return 1
         fi
     fi
-    interface_ref="$interface"
+    interface_ref="$_interface"
 
     # Now that we have the interface, find its signal level
     while IFS= read -r line; do
-        if [[ "$line" =~ ^"$interface:" ]]; then
+        if [[ "$line" =~ ^"$_interface:" ]]; then
             # Split the line into an array by spaces
             IFS=' ' read -r -a fields <<< "$line"
 
@@ -250,6 +287,7 @@ get_network_data() {
     local rx_bytes=0
     local tx_bytes=0
 
+    local interface
     for interface in "${interfaces[@]}"; do
         for rx_file in $interface/rx_bytes; do
             if [ -f "$rx_file" ]; then

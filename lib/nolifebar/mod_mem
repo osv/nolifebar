@@ -12,8 +12,7 @@ declare -A memstat
 mod_init_vars() {
     interval=2
     popup_delay=6
-    popup_line_height="$CFG_HEIGHT"
-    popup_line_height="24"
+    popup_line_height="$CFG_POPUP_LINE_HEIGHT"
 }
 
 mod_draw_default() {
@@ -84,7 +83,7 @@ dzen2_show_popup() {
         cat <<EOS
 ^normfg(<POPUP_FG>)
 ^normbg(<POPUP_BG>)
-^tw()^fn(<POPUP_FN>)Memory
+^tw()^fn(<POPUP_FN_BIG>)Memory
 ^cs()
 ^fn(<POPUP_FN>)  Used Memory : ${used_percentage}% (${gb_mem_used}/${gb_mem_total}GB)
 ^fn(<POPUP_FN>)  Swap        : ${swap_percentage}% $swap_stat
@@ -93,7 +92,7 @@ dzen2_show_popup() {
 ^fn(<POPUP_FN>)^fg(<BAR1>)  ZFS ARC : ${gb_zfs_arc_size}GB
 ^fn(<POPUP_FN>)^fg(<BAR2>)  Used    : ${gb_mem_used_without_arc}GB ^fn(<POPUP_FN_SMALL>)(used - zfs)
 ^fn(<POPUP_FN>)^fg(<BAR3>)  Bufers  : ${gb_mem_buf_and_shared}GB
-^fn(<POPUP_FN>)^fg(<BAR4>)  Cache   : ${gb_mem_cached}GB ^fn(<POPUP_FN_SMALL>)(cached+sreclaimable-shared)
+^fn(<POPUP_FN>)^fg(<BAR4>)  Cache   : ${gb_mem_cached}GB ^fn(<POPUP_FN_SMALL>)(cached + sreclaimable - shared)
 EOS
     )   | nolifebar-replacer "$CFG_REPLACER_FILE" \
         | "${CFG_DZEN2_POPUP_CMD[@]}" -p "$popup_delay" \
@@ -103,7 +102,7 @@ EOS
           -e 'onstart=uncollapse;button1=exit;button3=exit'
 }
 
-trap 'dzen2_show_popup' SIGUSR1
+trap 'dzen2_show_popup&' SIGUSR1
 
 
 mod_loop() {

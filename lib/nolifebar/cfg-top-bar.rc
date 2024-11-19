@@ -64,7 +64,7 @@ CFG_REPLACE_TXT="
 
 # Some functions uses this for draw rects
 CFG_HEIGHT=30
-
+CFG_POPUP_LINE_HEIGHT=22
 # Status bar command, dzen2
 # CFG_STATUS_BAR_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/dzen2 -dock
 #                     -bg "$BG"

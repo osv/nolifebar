@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 CFG_HEIGHT="${CFG_HEIGHT:-24}"
+CFG_POPUP_LINE_HEIGHT="$CFG_HEIGHT"
 CFG_BACKEND="${CFG_BACKEND:-dzen2}"
 
 # PATH and additional params to dzen2
@@ -19,6 +20,7 @@ CFG_REPLACER_TXT_FALLBACK="
 <BAR3> : #e1acff
 <BAR4> : #ffe585
 
+<POPUP_FN_BIG>   : Terminus-14
 <POPUP_FN>       : Terminus-12
 <POPUP_FN_SMALL> : Terminus-8
 <POPUP_FG>       : white
