@@ -89,10 +89,10 @@ dzen2_show_popup() {
 ^fn(<POPUP_FN>)  Swap        : ${swap_percentage}% $swap_stat
 ^fn(<POPUP_FN>)  Available   : ${gb_mem_available}GB
 ^center()$mem_bar
-^fn(<POPUP_FN>)^fg(<BAR1>)  ZFS ARC : ${gb_zfs_arc_size}GB
-^fn(<POPUP_FN>)^fg(<BAR2>)  Used    : ${gb_mem_used_without_arc}GB ^fn(<POPUP_FN_SMALL>)(used - zfs)
-^fn(<POPUP_FN>)^fg(<BAR3>)  Bufers  : ${gb_mem_buf_and_shared}GB
-^fn(<POPUP_FN>)^fg(<BAR4>)  Cache   : ${gb_mem_cached}GB ^fn(<POPUP_FN_SMALL>)(cached + sreclaimable - shared)
+^fn(<POPUP_FN>)^fg(<POPUP_BAR1>)  ZFS ARC : ${gb_zfs_arc_size}GB
+^fn(<POPUP_FN>)^fg(<POPUP_BAR2>)  Used    : ${gb_mem_used_without_arc}GB ^fn(<POPUP_FN_SMALL>)(used - zfs)
+^fn(<POPUP_FN>)^fg(<POPUP_BAR3>)  Bufers  : ${gb_mem_buf_and_shared}GB
+^fn(<POPUP_FN>)^fg(<POPUP_BAR4>)  Cache   : ${gb_mem_cached}GB ^fn(<POPUP_FN_SMALL>)(cached + sreclaimable - shared)
 EOS
     )   | nolifebar-replacer "$CFG_REPLACER_FILE" \
         | "${CFG_DZEN2_POPUP_CMD[@]}" -p "$popup_delay" \
@@ -103,7 +103,6 @@ EOS
 }
 
 trap 'dzen2_show_popup&' SIGUSR1
-
 
 mod_loop() {
     while true; do
