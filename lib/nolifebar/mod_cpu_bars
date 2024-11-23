@@ -4,14 +4,17 @@ set -e
 
 printf "Executing CPU Bars Plugin\n"
 
-[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 : "${MODULE_CORE_DIR:=$(dirname $0)}"
 . "$MODULE_CORE_DIR/functions"
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 
 mod_init_vars() {
     interval=1
     additional_core_params=()
     additional_total_params=()
+
+    popup_delay=7               # delay before hide popup
+    popup_line_height="$CFG_POPUP_LINE_HEIGHT"
 }
 
 show_total_only=0
@@ -39,7 +42,7 @@ mod_draw_dzen2() {
         txt="CPU $total_cpu_perc% ${total_stats_dzen}${cores_stats_dzen}"
     fi
     # 1 - left click toggle show total cpu only
-    printf "^ca(1, kill -SIGUSR1 $$)%s^ca()\n" "$txt"
+    printf "^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)%s^ca()^ca()\n" "$txt"
 }
 
 toggle_cpu_view() {
@@ -48,7 +51,101 @@ toggle_cpu_view() {
   update &
 }
 
-trap 'toggle_cpu_view' SIGUSR1
+dzen2_show_popup() {
+    local width=$((popup_line_height * 25))
+    local rows=13
+
+    kill_process() {
+        local PID=$1
+        if [[ -n "$PID" ]]; then
+            if kill -9 "$PID"; then
+                notify-send "Process $PID killed"
+            else
+                notify-send "Failed to kill $PID"
+            fi
+        fi
+    }
+
+    local x y
+    x11_get_good_tooltip_position x y "$width" $((popup_line_height * (1+rows)))
+
+    # Start dzen2 as a coprocess without subshells
+    coproc DZEN2_PROC {
+        "${CFG_DZEN2_POPUP_CMD[@]}" \
+            -x "$x" -y "$y" -w "$width" -h "$popup_line_height" \
+            -l "$rows" -p \
+            -sa 'l' -ta 'c' \
+            -e 'onstart=uncollapse;button1=exec:print REFRESH;button3=exit'
+    }
+    # Assign the coprocess file descriptors to variables
+    exec {DZEN_IN}>&"${DZEN2_PROC[1]}"
+    exec {DZEN_OUT}<&"${DZEN2_PROC[0]}"
+
+    # Ensure the coprocess started successfully
+    if [[ -z "${DZEN2_PROC_PID}" ]]; then
+        echo "Failed to start dzen2 coprocess"
+        return 1
+    fi
+
+    # Function to generate and send the process list to dzen2
+    send_process_list() {
+        {
+            printf "^cs()\n"
+            printf "^fn(<POPUP_FN>)     Command         CPU    MEM  Arguments\n"
+            ps -eo pid,comm,%cpu,%mem,args --sort=-%cpu \
+                | head -n $((rows - 1)) \
+                | tail -n +2 \
+                | awk '{
+                # Extract the last component of the command from args (column 5 onwards)
+                split($5, arg_parts, "/");
+                cmd = arg_parts[length(arg_parts)];  # Get the last part of the command
+                for (i = 6; i <= NF; i++) cmd = cmd " " $i;  # Append remaining arguments
+                printf "^fn(<POPUP_FN>) ^ca(1, echo KILL %s)[X]^ca() ^fg(<POPUP_BAR1>)%-15s ^fg(<POPUP_BAR2>)%4s%% ^fg(<POPUP_BAR3>)%4s%% ^fn(<POPUP_FN_SMALL>)^fg(<POPUP_BAR4>)%-s\n", $1, $2, $3, $4, cmd;
+            }'
+            printf "^fn(<POPUP_FN_SMALL>)^fg(<POPUP_BAR4>)  Click \"[X]\" to kill -9. Left Mouse Click - refresh, Right Mouse Click - quite\n"
+        } | nolifebar-replacer "$CFG_REPLACER_FILE" >&$DZEN_IN
+    }
+
+    # Send initial settings and process list to dzen2
+    {
+        echo "^normfg(<POPUP_FG>)"
+        echo "^normbg(<POPUP_BG>)"
+        echo "^tw()^fn(<POPUP_FN_BIG>)Process list"
+        echo "^cs"
+    } | nolifebar-replacer "$CFG_REPLACER_FILE" >&$DZEN_IN
+    send_process_list
+
+    while true; do
+        # Wait for a command from dzen2
+        if read -r command <&$DZEN_OUT; then
+            case "$command" in
+                KILL\ *)
+                    # Extract PID and kill the process
+                    PID=${command#KILL }
+                    kill_process "$PID"
+                    send_process_list
+                    ;;
+                REFRESH)
+                    send_process_list
+                    ;;
+                *)
+                    echo "Unknown command: $command"
+                    ;;
+            esac
+        else
+            # dzen2 has closed or an error occurred
+            break
+        fi
+    done
+
+    # Close file descriptors and wait for the coprocess to exit
+    exec {DZEN_IN}>&-
+    exec {DZEN_OUT}<&-
+    wait "${DZEN2_PROC_PID}"
+}
+
+trap 'dzen2_show_popup&' SIGUSR1
+trap 'toggle_cpu_view' SIGUSR2
 
 declare -a previousStats
 declare -a currentStats
