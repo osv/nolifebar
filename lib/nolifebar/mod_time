@@ -4,19 +4,68 @@ printf "Executing Time Plugin\n"
 
 : "${MODULE_CORE_DIR:=$(dirname $0)}"
 source "$MODULE_CORE_DIR/functions"
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 
+declare -A popup_cities=()
 show_short=0
+
+mod_init_vars() {
+    # Cities for popup
+    popup_cities="Los Angeles : America/Los_Angeles
+        New York        : America/New_York
+        Buenos Aires    : America/Argentina/Buenos_Aires
+        Berlin          : Europe/Berlin
+        Kyiv            : Europe/Kyiv
+        Moscow          : Europe/Moscow
+        Bangalore       : Asia/Kolkata
+        Tokyo           : Asia/Tokyo"
+    popup_format_date="%H:%M"
+    popup_format_date_addon="%Y-%m-%d %Z (%z)"
+    popup_delay=12              # delay before hide popup
+    popup_line_height="$CFG_POPUP_LINE_HEIGHT"
+}
+
+mod_draw_dzen2() {
+    local time_format="$1"
+    printf "^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)${time_format}^ca()^ca()\n" -1
+}
+
+dzen2_show_popup() {
+    local width=$((popup_line_height * 21))
+    local cities="${#popup_cities[@]}"
+    local rows=$(echo "$popup_cities" | wc -l)
+
+    local x
+    local y
+    x11_get_good_tooltip_position x y "$width" $((popup_line_height * (1+rows)))
+
+    {
+        echo "^normfg(<POPUP_FG>)"
+        echo "^normbg(<POPUP_BG>)"
+        echo "^tw()^fn(<POPUP_FN_BIG>)Date"
+        echo "^cs"
+        while IFS=':' read -r city timezone; do
+            city=$(echo "$city" | xargs)        # xargs - for trim whitespaces
+            timezone=$(echo "$timezone" | xargs)
+            time=$(TZ="$timezone" date +"$popup_format_date")
+            time_addon=$(TZ="$timezone" date +"$popup_format_date_addon")
+            printf "^fn(<POPUP_FN>)  %-12s: ^fn(<POPUP_FN_BIG>)^fg(<POPUP_BAR2>)%s ^fg(<POPUP_BAR4>)^fn(<POPUP_FN>)%s\n" "$city" "$time" "$time_addon"
+        done <<< "$popup_cities"
+    } | nolifebar-replacer "$CFG_REPLACER_FILE" \
+    | "${CFG_DZEN2_POPUP_CMD[@]}" -p "$popup_delay" \
+    -x "$x" -y "$y" -w "$width" -h "$popup_line_height" \
+    -l "$rows" \
+    -sa 'l' -ta 'c' \
+    -e 'onstart=uncollapse;button1=exit;button3=exit'
+}
+
 handle_signal() {
  echo "Signal received: show_short=${show_short}"
  show_short=$((show_short ? 0 : 1))
 }
 
-trap 'handle_signal' SIGUSR1
-
-mod_draw_dzen2() {
-    local time_format="$1"
-    printf "^ca(1, kill -SIGUSR1 $$)${time_format}^ca()\n" -1
-}
+trap 'dzen2_show_popup&' SIGUSR1
+trap 'handle_signal' SIGUSR2
 
 mod_loop() {
     while true; do
