@@ -91,7 +91,7 @@ dzen2_show_popup() {
     send_process_list() {
         {
             printf "^cs()\n"
-            printf "^fn(<POPUP_FN>)     Command         CPU    MEM  Arguments\n"
+            printf "     Command         CPU    MEM  Arguments\n"
             ps -eo pid,comm,%cpu,%mem,args --sort=-%cpu \
                 | head -n $((rows - 1)) \
                 | tail -n +2 \
@@ -100,7 +100,7 @@ dzen2_show_popup() {
                 split($5, arg_parts, "/");
                 cmd = arg_parts[length(arg_parts)];  # Get the last part of the command
                 for (i = 6; i <= NF; i++) cmd = cmd " " $i;  # Append remaining arguments
-                printf "^fn(<POPUP_FN>) ^ca(1, echo KILL %s)[X]^ca() ^fg(<POPUP_BAR1>)%-15s ^fg(<POPUP_BAR2>)%4s%% ^fg(<POPUP_BAR3>)%4s%% ^fn(<POPUP_FN_SMALL>)^fg(<POPUP_BAR4>)%-s\n", $1, $2, $3, $4, cmd;
+                printf " ^ca(1, echo KILL %s)[X]^ca() ^fg(<POPUP_BAR1>)%-15s ^fg(<POPUP_BAR2>)%4s%% ^fg(<POPUP_BAR3>)%4s%% ^fn(<POPUP_FN_SMALL>)^fg(<POPUP_BAR4>)%-s\n", $1, $2, $3, $4, cmd;
             }'
             printf "^fn(<POPUP_FN_SMALL>)^fg(<POPUP_BAR4>)  Click \"[X]\" to kill -9. Left Mouse Click - refresh, Right Mouse Click - quite\n"
         } | nolifebar-replacer "$CFG_REPLACER_FILE" >&$DZEN_IN
@@ -108,10 +108,13 @@ dzen2_show_popup() {
 
     # Send initial settings and process list to dzen2
     {
-        echo "^normfg(<POPUP_FG>)"
-        echo "^normbg(<POPUP_BG>)"
-        echo "^tw()^fn(<POPUP_FN_BIG>)Process list"
-        echo "^cs"
+                cat <<EOS
+^normfg(<POPUP_FG>)
+^normbg(<POPUP_BG>)
+^normfn(<POPUP_FN>)
+^tw()^fn(<POPUP_FN_BIG>)Process list
+^cs
+EOS
     } | nolifebar-replacer "$CFG_REPLACER_FILE" >&$DZEN_IN
     send_process_list
 

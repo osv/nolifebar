@@ -40,16 +40,19 @@ dzen2_show_popup() {
     x11_get_good_tooltip_position x y "$width" $((popup_line_height * (1+rows)))
 
     {
-        echo "^normfg(<POPUP_FG>)"
-        echo "^normbg(<POPUP_BG>)"
-        echo "^tw()^fn(<POPUP_FN_BIG>)Date"
-        echo "^cs"
+        cat <<EOS
+^normfg(<POPUP_FG>)
+^normbg(<POPUP_BG>)
+^normfn(<POPUP_FN>)
+^tw()^fn(<POPUP_FN_BIG>)Date
+^cs
+EOS
         while IFS=':' read -r city timezone; do
             city=$(echo "$city" | xargs)        # xargs - for trim whitespaces
             timezone=$(echo "$timezone" | xargs)
             time=$(TZ="$timezone" date +"$popup_format_date")
             time_addon=$(TZ="$timezone" date +"$popup_format_date_addon")
-            printf "^fn(<POPUP_FN>)  %-12s: ^fn(<POPUP_FN_BIG>)^fg(<POPUP_BAR2>)%s ^fg(<POPUP_BAR4>)^fn(<POPUP_FN>)%s\n" "$city" "$time" "$time_addon"
+            printf "  %-12s: ^fn(<POPUP_FN_BIG>)^fg(<POPUP_BAR2>)%s ^fg(<POPUP_BAR4>)^fn(<POPUP_FN>)%s\n" "$city" "$time" "$time_addon"
         done <<< "$popup_cities"
     } | nolifebar-replacer "$CFG_REPLACER_FILE" \
     | "${CFG_DZEN2_POPUP_CMD[@]}" -p "$popup_delay" \

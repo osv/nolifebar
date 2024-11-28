@@ -83,16 +83,17 @@ dzen2_show_popup() {
         cat <<EOS
 ^normfg(<POPUP_FG>)
 ^normbg(<POPUP_BG>)
+^normfn(<POPUP_FN>)
 ^tw()^fn(<POPUP_FN_BIG>)Memory
 ^cs()
-^fn(<POPUP_FN>)  Used Memory : ${used_percentage}% (${gb_mem_used}/${gb_mem_total}GB)
-^fn(<POPUP_FN>)  Swap        : ${swap_percentage}% $swap_stat
-^fn(<POPUP_FN>)  Available   : ${gb_mem_available}GB
+  Used Memory : ${used_percentage}% (${gb_mem_used}/${gb_mem_total}GB)
+  Swap        : ${swap_percentage}% $swap_stat
+  Available   : ${gb_mem_available}GB
 ^center()$mem_bar
-^fn(<POPUP_FN>)^fg(<POPUP_BAR1>)  ZFS ARC : ${gb_zfs_arc_size}GB
-^fn(<POPUP_FN>)^fg(<POPUP_BAR2>)  Used    : ${gb_mem_used_without_arc}GB ^fn(<POPUP_FN_SMALL>)(used - zfs)
-^fn(<POPUP_FN>)^fg(<POPUP_BAR3>)  Bufers  : ${gb_mem_buf_and_shared}GB
-^fn(<POPUP_FN>)^fg(<POPUP_BAR4>)  Cache   : ${gb_mem_cached}GB ^fn(<POPUP_FN_SMALL>)(cached + sreclaimable - shared)
+^fg(<POPUP_BAR1>)  ZFS ARC : ${gb_zfs_arc_size}GB
+^fg(<POPUP_BAR2>)  Used    : ${gb_mem_used_without_arc}GB ^fn(<POPUP_FN_SMALL>)(used - zfs)
+^fg(<POPUP_BAR3>)  Bufers  : ${gb_mem_buf_and_shared}GB
+^fg(<POPUP_BAR4>)  Cache   : ${gb_mem_cached}GB ^fn(<POPUP_FN_SMALL>)(cached + sreclaimable - shared)
 EOS
     )   | nolifebar-replacer "$CFG_REPLACER_FILE" \
         | "${CFG_DZEN2_POPUP_CMD[@]}" -p "$popup_delay" \
