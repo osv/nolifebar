@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+
+printf "Executing UA Alerts Plugin\n"
+
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+source "$MODULE_CORE_DIR/functions"
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+
+check_dependencies convert
+
+mod_init_vars() {
+    text="!"                    # Text to draw
+    popup_telegram_url="https://t.me/s/povitryanatrivogaaa"
+    popup_forbidden_words=("Єдиним") # TODO: Removing messages if contains this words
+    popup_delay=7
+    popup_height=400
+    popup_width=600
+}
+
+mod_draw_dzen2() {
+    local fifo="$1"
+    printf "^ca(1, kill -SIGUSR1 $$)$text^ca()\n" > "$fifo"
+}
+
+dzen2_show_popup() {
+    local height=$((popup_height + 20))
+    local x
+    local y
+    x11_get_good_tooltip_position x y $popup_width $height
+
+    {
+        cat <<EOS
+^normfg(<POPUP_FG>)
+^normbg(<POPUP_BG>)
+^normfn(<POPUP_FN_SMALL>)
+EOS
+        fetch_and_display_xpm_image
+    }   | nolifebar-replacer "$CFG_REPLACER_FILE" \
+        | "${CFG_DZEN2_POPUP_CMD[@]}" -p $popup_delay \
+            -ta 'c' \
+            -h "$height" -w "$popup_width" \
+            -x "$x" -y "$y" \
+            -e 'onstart=uncollapse;button1=exit;button3=exit'
+}
+
+fetch_and_display_xpm_image() {
+    # Configuration
+    local url="$popup_telegram_url"
+    local temp_dir="$TMP_DIR/ua_alert"
+    local xpm_image=""
+    local max_width="$popup_width"
+    local max_height="$popup_height"
+
+    # Create temporary directory
+    mkdir -p "$temp_dir"
+
+    # Fetch webpage content
+    echo "Fetching webpage content..."
+    local page_content
+    page_content=$(curl -s "$url")
+
+    if [[ -z "$page_content" ]]; then
+        echo "Error: Failed to retrieve webpage content."
+        return 1
+    fi
+
+    # Extract image URL using grep and sed
+    echo "Parsing image URL..."
+    local img_line
+    img_line=$(echo "$page_content" | grep -oE 'tgme_widget_message_photo_wrap[^>]+')
+
+    if [[ -z "$img_line" ]]; then
+        echo "Error: No image elements found on the page."
+        return 1
+    fi
+
+    # Extract the background-image URL from the last image line
+    local img_url
+    img_url=$(echo "$img_line" | tail -n 1 | sed -E "s/.*background-image:url\('([^']+)'\).*/\1/")
+
+    if [[ -z "$img_url" ]]; then
+        echo "Error: Failed to extract the image URL."
+        return 1
+    fi
+
+    echo "Image URL found: $img_url"
+
+    # Download the image
+    local original_image="$temp_dir/alert.jpg"
+    echo "Downloading image..."
+    curl -s -o "$original_image" "$img_url"
+
+    if [[ ! -f "$original_image" ]]; then
+        echo "Error: Failed to download image."
+        return 1
+    fi
+
+    echo "Image downloaded to $original_image"
+
+    # Resize the image
+    local resized_image="$temp_dir/resized_$(basename "$original_image")"
+    echo "Resizing image to max ${max_width}px width and ${max_height}px height..."
+    convert "$original_image" -resize "x${max_height}>" "$resized_image"
+
+    if [[ ! -f "$resized_image" ]]; then
+        echo "Error: Failed to resize image."
+        return 1
+    fi
+
+    echo "Image resized to $resized_image"
+
+    # Convert the image to XPM format
+    xpm_image="$temp_dir/$(basename "${resized_image%.*}").xpm"
+    echo "Converting image to XPM format..."
+    convert "$resized_image" "$xpm_image"
+
+    if [[ ! -f "$xpm_image" ]]; then
+        echo "Error: Failed to convert image to XPM format."
+        return 1
+    fi
+
+    echo "^i($xpm_image)"
+}
+
+trap 'dzen2_show_popup&' SIGUSR1
+
+mod_loop() {
+    while true; do
+        mod_draw "$FIFO_FILE"
+        read_sleep 2
+    done
+}
+
+mod_run

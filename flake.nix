@@ -130,6 +130,7 @@
             pkg-config
 
             # Runtimes for plugins
+            imagemagick         # ua alert plugin
             xkb-switch
             bc
             cava

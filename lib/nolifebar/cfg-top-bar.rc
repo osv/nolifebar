@@ -16,7 +16,7 @@
 #   $TMP_DIR - path to temp directory. Module must create temp files in this directory
 #   $MOD_NAME - upper case of current module, usuful if you want to have shared code between modules and eval
 #   $MODULE_CORE_DIR - dir to library of this project (shared bash code, modules)
-CFG_MODULES=("pulse" "xkbd" "xworkspaces" "xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
+CFG_MODULES=("ua_alerts" "pulse" "xkbd" "xworkspaces" "xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
 
 # # Draw backend: dzen2 (default), lemonbar, text
 # # Depending on the value, the appropriate draw function will be selected
@@ -54,13 +54,13 @@ CFG_REPLACE_TXT="
 
 "
 
-# Replace text before sending to status bar programm
-CFG_REPLACE_TXT="
-<FN_MAIN>    : Terminus:size=14:style=Light
-<FN_MEDIUM>  : Terminus:size=10:style=Light
-<FN_2_ROWS>  : Terminus-8
-<fn_2_ROWS>  : RobotoMono Nerd Font:size=7:style=Light
-"
+# # Replace text before sending to status bar programm
+# CFG_REPLACE_TXT="
+# <FN_MAIN>    : Terminus:size=14:style=Light
+# <FN_MEDIUM>  : Terminus:size=10:style=Light
+# <FN_2_ROWS>  : Terminus-8
+# <fn_2_ROWS>  : RobotoMono Nerd Font:size=7:style=Light
+# "
 
 # Some functions uses this for draw rects
 CFG_HEIGHT=30
@@ -71,10 +71,10 @@ CFG_POPUP_LINE_HEIGHT=22
 #                     -fg "$FG"
 #                     -ta l -h "${CFG_HEIGHT}")
 
-CFG_STATUS_BAR_CMD=(dzen2 -dock
+CFG_STATUS_BAR_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/dzen2 -dock
                     -ta l -h "${CFG_HEIGHT}")
 
-CFG_DZEN2_POPUP_CMD=(dzen2)
+CFG_DZEN2_POPUP_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/dzen2)
 # Default params for stack bar
 CFG_DEFAULT_STACK_BAR_PARAMS=(
   -bg '<WIDGET_BG>'
@@ -402,14 +402,18 @@ MAIN_format_template() {
   # return
   state="$1"
   echo "^normfg(<FG>)"
+  sleep 0.1
   echo "^normbg(<BG>)"
+  sleep 0.1
+  echo "^normfn(<FN_MAIN>)"
+  sleep 0.1
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"
  else
       printf "^fn(<FN_MEDIUM>){out_xworkspaces} ^fg(<FG>){out_xtitle}^right() {out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} \
 ^i(./share/nolifebar/vol20b.xbm)\
  {out_pulse} {out_cava_out}{out_cava_in} ^fg(<FG>){out_time}\
- {out_xkbd}
+ {out_xkbd} {out_ua_alerts}
 \n"
   fi
 
