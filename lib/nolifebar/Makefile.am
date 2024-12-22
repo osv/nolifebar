@@ -12,6 +12,7 @@ dist_plugins_SCRIPTS = \
 	mod_openvpn \
 	mod_pulse \
 	mod_time \
+	mod_ua_alerts \
 	mod_xkbd \
 	mod_xtitle \
 	mod_xworkspaces

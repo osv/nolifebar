@@ -141,6 +141,12 @@ read_sleep() {
     read ${1:+-t "$1"} -u $_snore_fd || :
 }
 
+sleep_forever() {
+    while true; do
+        read_sleep 9999
+    done
+}
+
 # Save CFG_REPLACE_TXT to a file for use in the main app.
 build_replace_file() {
     echo "" > "$CFG_REPLACER_FILE"

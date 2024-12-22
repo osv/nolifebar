@@ -125,10 +125,8 @@ fetch_and_display_xpm_image() {
 trap 'dzen2_show_popup&' SIGUSR1
 
 mod_loop() {
-    while true; do
-        mod_draw "$FIFO_FILE"
-        read_sleep 2
-    done
+    mod_draw "$FIFO_FILE"
+    sleep_forever
 }
 
 mod_run

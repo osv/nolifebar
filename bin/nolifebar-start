@@ -9,7 +9,7 @@ if [ -z "$1" ]; then
 fi
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-echo "SCRIPT_DIR $SCRIPT_DIR"
+echo "SCRIPT_DIR:      $SCRIPT_DIR"
 # Add the script directory to the PATH
 export PATH="$SCRIPT_DIR:$PATH"
 
@@ -27,7 +27,7 @@ RESOURCE_DIR=$(dirname "$RESOURCE_FILE")
 # Get the directory of the main script
 MODULE_CORE_DIR=$(realpath $(dirname "$(realpath "$0")")/../lib/nolifebar)
 export MODULE_CORE_DIR
-echo "MODULE_CORE_DIR $MODULE_CORE_DIR"
+echo "MODULE_CORE_DIR: $MODULE_CORE_DIR"
 source "$MODULE_CORE_DIR/functions"
 
 # Load the resource file
@@ -206,6 +206,7 @@ run_and_wait_for_nolifebar() {
     format_nolifebar_template
 
     wait $pid
+    cleanup_on_exit
 }
 
 trap cleanup_on_exit EXIT
