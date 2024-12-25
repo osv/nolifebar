@@ -123,6 +123,43 @@ test_is_array() {
     fi
 }
 
+# Test function for is_array_not_empty
+test_is_array_not_empty() {
+    increment_test_count
+
+    local -a non_empty_array=(1 2 3)
+    local -a empty_array=()
+    local string_var="not an array"
+
+    # Test with a non-empty array
+    if is_array_not_empty "non_empty_array"; then
+        echo -e "is_array_not_empty (non-empty array): ${GREEN}Passed${NC}"
+    else
+        echo -e "is_array_not_empty (non-empty array): ${RED}Failed${NC}"
+        mark_test_failed
+    fi
+
+    increment_test_count
+
+    # Test with an empty array
+    if ! is_array_not_empty "empty_array"; then
+        echo -e "is_array_not_empty (empty array): ${GREEN}Passed${NC}"
+    else
+        echo -e "is_array_not_empty (empty array): ${RED}Failed${NC}"
+        mark_test_failed
+    fi
+
+    increment_test_count
+
+    # Test with a non-array variable
+    if is_array_not_empty "string_var"; then
+        echo -e "is_array_not_empty (string): ${GREEN}Passed${NC}"
+    else
+        echo -e "is_array_not_empty (string): ${RED}Failed${NC}"
+        mark_test_failed
+    fi
+}
+
 # Test function for create_log_scale
 test_create_log_scale() {
     increment_test_count
@@ -282,6 +319,7 @@ test_bytes_to_gigabytes_rounded() {
 test_apply_dictionary_value_format
 test_update_threshold
 test_is_array
+test_is_array_not_empty
 test_create_log_scale
 test_find_scale_point
 test_ceil_division

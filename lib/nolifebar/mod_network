@@ -13,6 +13,7 @@ declare -A metric_alerts # ON/OFF if value > treshold in metric_alert_treshold
 declare -A metric_values # raw values of all metrics
 declare -A metric_fmt # how to format value
 declare -A metric_formatted # Formatted metric values
+dzen2_show_short_metric=1
 
 mod_init_vars() {
     interval=2                # delay for rx/tx check
@@ -36,11 +37,16 @@ mod_init_vars() {
 
     check_torrent_lock_file="$HOME/.config/qBittorrent/lockfile" # if defined check for running torrent
 
-    visible_metrics=('rx'          'tx'
-                     'ping'        'torrent_running'
-                     'wifi_ssid'   'wifi_signal_level'
-                     'wifi_status' 'wifi_active_interface'
-                    )
+    # visible by default, for dzen2 Right Mouse Click - show visible_metrics_long
+    visible_metrics_short=('rx'   'tx'
+                           'ping' 'wifi_ssid'
+                          )
+
+    visible_metrics_long=('rx'          'tx'
+                          'ping'        'torrent_running'
+                          'wifi_ssid'   'wifi_signal_level'
+                          'wifi_status' 'wifi_active_interface'
+                         )
 
     metric_alert_treshold=(
         ['rx']=1000 # KB
@@ -50,11 +56,12 @@ mod_init_vars() {
         ['ping']=300
         ['wifi_signal_level']=81
     )
+
     metric_fmt=(
         ['tx']="U %5sKB"
         ['rx']="D %5sKB"
-        ['tx_60']="U60 %5sKB/s"
-        ['rx_60']="D60 %5sKB/s"
+        ['tx_60']="U60 %5sKB"
+        ['rx_60']="D60 %5sKB"
         ['ping']="Ping %3s"
         ['wifi_active_interface']="Iw %s"
         ['wifi_signal_level']="Lvl -%sdb"
@@ -140,18 +147,24 @@ mod_draw_dzen2() {
     mod_draw_dzen2_log_scaled_bar \
         log_scaled_history_bar
 
-    local metrics
-    dzen2_draw_flags metrics \
-        metric_formatted \
-        metric_alerts \
-        visible_metrics \
-        -label "NET" \
-        "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
-        -name_size 60 \
-        -flag_align _LEFT \
-        -flag_x_padding 3 \
-        "${additional_render_params[@]}"
-
+    local metrics=""
+    if (( dzen2_show_short_metric == 1 )); then
+        selected_metrics=visible_metrics_short
+    else
+        selected_metrics=visible_metrics_long
+    fi
+    if is_array_not_empty "$selected_metrics"; then
+        dzen2_draw_flags metrics \
+            metric_formatted \
+            metric_alerts \
+            "${selected_metrics}" \
+            -label "NET" \
+            "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
+            -name_size 60 \
+            -flag_align _LEFT \
+            -flag_x_padding 3 \
+            "${additional_render_params[@]}"
+    fi
     printf "^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)%s%s^ca()^ca()\n" "$log_scaled_history_bar" "$metrics"
 }
 
@@ -193,8 +206,14 @@ EOS
 
 }
 
+dzen2_toggle_short_metric() {
+    dzen2_show_short_metric=$((dzen2_show_short_metric ? 0 : 1))
+    printf "Signal received: dzen2_show_short_metric=%s\n" "$dzen2_show_short_metric"
+    mod_draw > "$FIFO_FILE" &   # Update immediately
+}
+
 trap 'dzen2_show_popup&' SIGUSR1
-trap 'dzen2_show_popup&' SIGUSR2
+trap dzen2_toggle_short_metric SIGUSR2
 
 get_wireless_interface_and_signal() {
     local -n interface_ref="$1"

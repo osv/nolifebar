@@ -63,8 +63,8 @@ EOS
 }
 
 handle_signal() {
- echo "Signal received: show_short=${show_short}"
- show_short=$((show_short ? 0 : 1))
+    show_short=$((show_short ? 0 : 1))
+    printf "Signal received: show_short=%s\n" "${show_short}"
 }
 
 trap 'dzen2_show_popup&' SIGUSR1
