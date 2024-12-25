@@ -124,7 +124,8 @@ Exiting" >&2
 
     if declare -f "mod_loop" > /dev/null; then
         "mod_loop"
-        echo "Terminated" >&2
+        echo "Unexpected mod_loop() exit. Terminated." >&2
+        exit 1
     else
         echo "function mod_loop() is not declared" >&2
     fi

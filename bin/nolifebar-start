@@ -2,6 +2,10 @@
 
 # set -x
 
+# Exit immediately if a command exits with a non-zero status,
+# Make pipelines fail if any command fails
+set -eo pipefail
+
 # Check if the resource file path is provided
 if [ -z "$1" ]; then
     echo "Usage: $0 path_to_config_file"
@@ -9,7 +13,6 @@ if [ -z "$1" ]; then
 fi
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-echo "SCRIPT_DIR:      $SCRIPT_DIR"
 # Add the script directory to the PATH
 export PATH="$SCRIPT_DIR:$PATH"
 
@@ -27,7 +30,6 @@ RESOURCE_DIR=$(dirname "$RESOURCE_FILE")
 # Get the directory of the main script
 MODULE_CORE_DIR=$(realpath $(dirname "$(realpath "$0")")/../lib/nolifebar)
 export MODULE_CORE_DIR
-echo "MODULE_CORE_DIR: $MODULE_CORE_DIR"
 source "$MODULE_CORE_DIR/functions"
 
 # Load the resource file
@@ -38,6 +40,7 @@ if ! declare -F MAIN_format_template > /dev/null; then
     exit 1
 fi
 
+declare -a PIDS=()
 
 declare -A program_colors
 color_index=0
@@ -71,6 +74,16 @@ format_output() {
     done
 }
 
+log_info() {
+  local line="$1"
+  printf "\e[1m%s\033[0m\n" "$line"
+}
+
+log_error() {
+  local line="$1"
+  printf "\033[31m%s\033[0m\n" "$line" >&2
+}
+
 # Function to run a command and prepend its output with the program name
 run_with_output_prefix() {
     local color_code="$1"
@@ -78,17 +91,36 @@ run_with_output_prefix() {
     local program_name="$1"
     shift
     local prefix="${program_name}"
-    {
-        $@ 2> >(format_output "$prefix" "ERROR" "$color_code" >&2)
-    } | format_output "$prefix" "INFO " "$color_code"
+    "$@" 2> >(format_output "$prefix" "ERROR" "$color_code" >&2) | format_output "$prefix" "INFO " "$color_code"
+    return "${PIPESTATUS[0]}"
 }
 
+# Function to clean up all child processes and temporary files
 cleanup_on_exit() {
-    printf "\nExiting..."
-    set -x
-    jobs -p | xargs -r kill 2>/dev/null
-    rm "$TMP_DIR"/out_*
-    rm "$template_fifo"
+    log_info "Exiting..."
+
+    # prevent recursive trap
+    trap - EXIT INT TERM
+    # Terminate all background processes stored in PIDS
+    for pid in "${PIDS[@]}"; do
+      if kill -0 "$pid" 2>/dev/null; then
+        kill -15 "$pid" 2>/dev/null || true  # Graceful termination
+      fi
+    done
+
+    # Optionally wait and force kill if necessary
+    for pid in "${PIDS[@]}"; do
+      if kill -0 "$pid" 2>/dev/null; then
+        sleep 1
+        kill -9 "$pid" 2>/dev/null || true  # Forceful termination
+      fi
+    done
+
+    # Remove temporary files and FIFOs
+    rm -f "$TMP_DIR"/out_*
+    rm -f "$template_fifo"
+
+    kill -- -$$ 2>/dev/null || echo "No processes to kill."
 }
 
 load_module() {
@@ -101,7 +133,7 @@ load_module() {
     elif [ -f "$MODULE_CORE_DIR/$module_file" ]; then
         module_path="$MODULE_CORE_DIR/$module_file"
     else
-        echo "Module $module_file not found in either $RESOURCE_DIR or $MODULE_CORE_DIR"
+        log_error "Module $module_file not found in either $RESOURCE_DIR or $MODULE_CORE_DIR"
         exit 1
     fi
 
@@ -115,6 +147,7 @@ load_module() {
     MOD_NAME="mod_$module"
     export MOD_NAME="${MOD_NAME^^}" # ^^ - upper case
     run_with_output_prefix "$module_color" "mod_$module" "$module_path" "" &
+    PIDS+=($!)
 }
 
 load_modules() {
@@ -191,25 +224,27 @@ process_nolifebar_output() {
 }
 
 run_and_wait_for_nolifebar() {
-    # echo "$template_fifo $(IFS=' '; echo "${fifo_files[*]}")"
     mkfifo "$template_fifo"
 
     build_replace_file
 
-    nolifebar-multiplexer "$template_fifo" $(IFS=' '; echo "${fifo_files[*]}") \
+    nolifebar-multiplexer "$template_fifo" "${fifo_files[@]}" \
       | nolifebar-replacer "$CFG_REPLACER_FILE" \
       | debug_pipe_or_print_fps \
       | "${CFG_STATUS_BAR_CMD[@]}" \
       | process_nolifebar_output &
-    pid=$!
+    local pid=$!
+    PIDS+=("$pid")
 
     format_nolifebar_template
 
-    wait $pid
-    cleanup_on_exit
+    wait "$pid"
 }
 
-trap cleanup_on_exit EXIT
+log_info "SCRIPT_DIR:      $SCRIPT_DIR"
+log_info "MODULE_CORE_DIR: $MODULE_CORE_DIR"
+
+trap cleanup_on_exit EXIT INT TERM
 
 load_modules "${CFG_MODULES[@]}"
 
