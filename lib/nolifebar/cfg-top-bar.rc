@@ -120,7 +120,7 @@ CFG_DEFAULT_DRAW_FLAG_PARAMS=(
 MOD_NETWORK_init_vars() {
     interval=2                # must be integer
     interface="[ew]*"         # interface, e.g wlp7s0, by default all ethernet + wifi.
-    history_size=30           # history size for char
+    history_size=40           # history size for char
     rx_min_log_scale=2        # received min value for logarithmic scale histoy, KB
     rx_max_log_scale=10000    # received max, KB
     tx_min_log_scale=2        # transmitted min value for logarithmic scale history, KB
@@ -331,33 +331,12 @@ MOD_NVIDIA_init_vars() {
     ["clocks.current.memory"]=1000
   )
 
-  visible_params=('fan.speed' 'temperature.gpu'
-                  'power.draw' 'utilization.gpu'
-                  'clocks.current.memory' 'clocks.current.graphics'
-                  'utilization.decoder' 'utilization.encoder'
-                 )
-
-  # define how to format metrics
-  gpu_metrics_fmt=(
-    ["name"]="%s"
-    ["fan.speed"]="Fan %3i%%"
-    ["power.draw"]="Pwr%4iW"
-    ["memory.total"]="%i"
-    ["memory.free"]="%i"
-    ["memory.used"]="%i"
-    ["utilization.gpu"]="GPU %3i%%"
-    ["temperature.gpu"]="t  %4i°C"
-    ["utilization.decoder"]="Dec %3i%%"
-    ["utilization.encoder"]="Enc %3i%%"
-    ["clocks.current.graphics"]="P%5iMHz"
-    ["clocks.current.memory"]="M%5iMHz"
-  )
 }
 
 # Arguments: name fan_speed power_draw memory_total memory_free memory_used gpu_utilization temperature
 MOD_NVIDIA_draw_dzen2() {
-  memory_total="$4"
-  memory_used="$6"
+  memory_total="${gpu_metrics_value[memory.total]}"
+  memory_used="${gpu_metrics_value[memory.used]}"
 
   local mem_bar
   dzen2_draw_stacked_bar mem_bar \
@@ -371,18 +350,9 @@ MOD_NVIDIA_draw_dzen2() {
     -max_value "${memory_total}"
 
   local widget
-  dzen2_draw_flags widget \
-    gpu_metrics_formatted \
-    alerts \
-    visible_params \
-    -label "GPU" \
-    "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
-    -name_size 60 \
-    -flag_align _LEFT \
-    -flag_x_padding 3 \
-    "${additional_render_params[@]}"
+  mod_nvidia_draw_flags widget
 
-  local out="^p(-104)${mem_bar}^p(2)^r(10x1)^r(1x20)^p(4)${widget}"
+  local out="^p(-104)${mem_bar}^p(2)^r(10x1)^r(1x20)^p(4)^ca(3, kill -SIGUSR2 $$)${widget}^ca()"
   printf "%s\n" "$out"
 }
 
