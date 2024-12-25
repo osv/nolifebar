@@ -47,7 +47,10 @@ truncate_text() {
 }
 
 mod_loop() {
-    mod_draw "$FIFO_FILE"
+    while true; do
+        mod_draw "$FIFO_FILE"
+        read_sleep 3
+    done
 }
 
 mod_run
