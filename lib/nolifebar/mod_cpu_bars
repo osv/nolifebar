@@ -37,9 +37,16 @@ mod_draw_dzen2() {
         else
             IFS=',' read -r -a colors <<< "$colors"
         fi
-        txt="CPU: ^fg(${colors[0]})Low $total_nice_perc%^fg(${colors[1]})  Normal $total_user_perc%^fg(${colors[2]})  System $total_system_perc%^fg(${colors[3]})  Guest $total_virt_perc%"
+        printf -v txt "CPU: ^fg(%s)Low %s%%^fg(%s)  Normal %s%%^fg(%s)  System %s%%^fg(%s)  Guest %s%%" \
+            "${colors[0]}" "$total_nice_perc" \
+            "${colors[1]}" "$total_user_perc" \
+            "${colors[2]}" "$total_system_perc" \
+            "${colors[3]}" "$total_virt_perc"
     else
-        txt="CPU $total_cpu_perc% ${total_stats_dzen}${cores_stats_dzen}"
+        printf -v txt "CPU %2s%% %s%s" \
+            "$total_cpu_perc" \
+            "$total_stats_dzen" \
+            "$cores_stats_dzen"
     fi
     # 1 - left click toggle show total cpu only
     printf "^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)%s^ca()^ca()\n" "$txt"
