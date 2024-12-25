@@ -33,20 +33,49 @@ mod_draw_dzen2() {
             -height "$sc_height" \
             -max_value "$sc_height" \
             -values "$line"
-        printf "%s\n" "$out"
+        printf "^ca(3, kill -SIGUSR2 $$)^ca(1, kill -SIGUSR2 $$)%s^ca()^ca()\n" "$out"
     done
+}
+
+sc_start_cava() {
+    echo "Starting Cava."
+    cava -p "$g_config_file" \
+        | sed --unbuffered "s/;$//; s/;/,/g" \
+        | mod_draw \
+        > "$g_fifo" &
+    CAVA_PID=$!
+}
+
+sc_stop_cava() {
+    if [[ -n "$CAVA_PID" ]]; then
+        kill "$CAVA_PID"
+        wait "$CAVA_PID" 2>/dev/null
+        CAVA_PID=""
+        echo "Stopped Cava."
+    fi
+}
+
+handle_sigusr2() {
+    if [[ -n "$CAVA_PID" ]]; then
+        sc_stop_cava
+    else
+        sc_start_cava
+    fi
 }
 
 sc_run_cava_and_print_to_file() {
     local config_file="$1"
-    local fifo="$2"
+    local fifofile="$2"
 
     "$sc_fn_create_file" "$config_file"
-    echo "Starting Cava."
-    # remove last ";" and replace /;/ /
-    cava -p "$config_file" \
-        | sed --unbuffered "s/\;$//; s/;/,/g" \
-        | mod_draw \
-        > "$fifo"
-    echo "Stopped Cava"
+    g_config_file="$config_file"
+    g_fifo="$fifofile"
+    CAVA_PID=""
+
+    trap 'handle_sigusr2' SIGUSR2
+    trap 'sc_stop_cava; exit' EXIT
+
+    sc_start_cava
+
+    sleep_forever
 }
