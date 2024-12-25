@@ -31,7 +31,7 @@ mod_init_vars() {
     ping_host="github.com"    # ip or host
     ping_params=(-W 2)        # Additional params to ping command, interface (-I)?
 
-    monitor_ssid_interface="" # name of wifi interface to monitor conection, if empty - use first from /proc/net/wireless
+    monitor_ssid_interface="" # name of wifi interface to monitor connection, if empty - use first from /proc/net/wireless
     monitor_ssid_enable=1     # 0 - disable not check for wifi ssid
 
     check_torrent_lock_file="$HOME/.config/qBittorrent/lockfile" # if defined check for running torrent
@@ -45,12 +45,16 @@ mod_init_vars() {
     metric_alert_treshold=(
         ['rx']=1000 # KB
         ['tx']=1000 # KB
+        ['rx_60']=800 # KB
+        ['tx_60']=800 # KB
         ['ping']=300
         ['wifi_signal_level']=81
     )
     metric_fmt=(
         ['tx']="U %5sKB"
         ['rx']="D %5sKB"
+        ['tx_60']="U60 %5sKB/s"
+        ['rx_60']="D60 %5sKB/s"
         ['ping']="Ping %3s"
         ['wifi_active_interface']="Iw %s"
         ['wifi_signal_level']="Lvl -%sdb"
@@ -59,24 +63,28 @@ mod_init_vars() {
         ['torrent_running']="Torrnt %s"
     )
 
-    popup_delay=7               # when hide popup
+    popup_delay=7               # delay before hide popup
     popup_line_height="$CFG_POPUP_LINE_HEIGHT"
 }
 
 # Stored history
 rx_history_values=()
 tx_history_values=()
-# Stored logarithmic scale history
-rx_log_history_values=()
-tx_log_history_values=()
+# Added history arrays for 60-second averages
+rx_history_60=()
+tx_history_60=()
 
 mod_init_draw() {
-    for ((i=0; i < 2 * history_size; i++)); do
+    for ((i=0; i < history_size; i++)); do
         rx_history_values+=(0)
         tx_history_values+=(0)
-        rx_log_history_values+=(0)
-        tx_log_history_values+=(0)
     done
+    # Initialize 60-second history arrays with 0
+    for ((i=0; i < 60 / interval; i++)); do
+        rx_history_60+=(0)
+        tx_history_60+=(0)
+    done
+
     log_scale_max_value=$(((chart_height / 2) - chart_stack_padding))
     printf "Log scale: %s points\n" "$log_scale_max_value"
     rx_scales=()
@@ -99,9 +107,25 @@ mod_draw_dzen2_log_scaled_bar() {
     local tx="$3"
 
     local output
+
+    # Dynamically calculate scaled values on the fly
+    local scaled_rx=()
+    local scaled_tx=()
+    for value in "${rx_history_values[@]}"; do
+        local scaled
+        find_scale_point scaled rx_scales "$value"
+        scaled_rx+=("$scaled")
+    done
+
+    for value in "${tx_history_values[@]}"; do
+        local scaled
+        find_scale_point scaled tx_scales "$value"
+        scaled_tx+=("$scaled")
+    done
+
     dzen2_draw_centered_bars output \
-        rx_log_history_values \
-        tx_log_history_values \
+        scaled_rx \
+        scaled_tx \
         "${CFG_DEFAULT_CENTERED_BARS_PARAMS[@]}" \
         "${additional_chart_params[@]}" \
         -height "$chart_height" \
@@ -128,7 +152,7 @@ mod_draw_dzen2() {
         -flag_x_padding 3 \
         "${additional_render_params[@]}"
 
-    printf "^ca(1, kill -SIGUSR1 $$)%s%s^ca()\n" "$log_scaled_history_bar" "$metrics"
+    printf "^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)%s%s^ca()^ca()\n" "$log_scaled_history_bar" "$metrics"
 }
 
 mod_draw_default() {
@@ -137,7 +161,7 @@ mod_draw_default() {
 
 dzen2_show_popup() {
     local width=$((popup_line_height * 18))
-    local rows=7
+    local rows=9
 
     local x
     local y
@@ -151,12 +175,14 @@ dzen2_show_popup() {
 ^tw()^fn(<POPUP_FN_BIG>)Network
 ^cs()
   TX/RX Interface: ^fg(<POPUP_BAR3>)$interface
-  ^fg(<POPUP_BAR2>)Download: ${metric_values[rx]}KB ^right()^fg(<POPUP_BAR1>)Upload: ${metric_values[tx]}KB  .
   Ping to $ping_host: ^fg(<POPUP_BAR3>)${metric_values[ping]}ms
   Wifi interface    : ^fg(<POPUP_BAR3>)${metric_values[wifi_active_interface]} ^fg(<POPUP_BAR1>)(${metric_values[wifi_status]})
   Wifi signal       : ^fg(<POPUP_BAR3>)-${metric_values[wifi_signal_level]}db
   SSID              : ^fg(<POPUP_BAR3>)${metric_values[wifi_ssid]}
   Torrent app       : ^fg(<POPUP_BAR3>)${metric_values[torrent_running]}
+
+  ^fg(<POPUP_BAR2>)Download: ${metric_values[rx_60]}KB ^right()^fg(<POPUP_BAR1>)Upload: ${metric_values[tx_60]}KB .
+  ^center()^fn(<POPUP_FN_SMALL>)*Network activity in the last 60 seconds
 EOS
     )   | nolifebar-replacer "$CFG_REPLACER_FILE" \
         | "${CFG_DZEN2_POPUP_CMD[@]}" -p "$popup_delay" \
@@ -168,6 +194,7 @@ EOS
 }
 
 trap 'dzen2_show_popup&' SIGUSR1
+trap 'dzen2_show_popup&' SIGUSR2
 
 get_wireless_interface_and_signal() {
     local -n interface_ref="$1"
@@ -344,24 +371,52 @@ mod_loop() {
         rx=$(((current_rx - initial_rx) / interval))
         tx=$(((current_tx - initial_tx) / interval))
 
+        # Update current history
         rx_history_values+=("$rx")
         tx_history_values+=("$tx")
-        local tx_scaled
-        local rx_scaled
-        find_scale_point rx_scaled rx_scales "$rx"
-        find_scale_point tx_scaled tx_scales "$tx"
-        rx_log_history_values+=("$rx_scaled")
-        tx_log_history_values+=("$tx_scaled")
+
+        # Maintain history_size for drawing
         rx_history_values=("${rx_history_values[@]:1}")
         tx_history_values=("${tx_history_values[@]:1}")
-        rx_log_history_values=("${rx_log_history_values[@]:1}")
-        tx_log_history_values=("${tx_log_history_values[@]:1}")
+
+        # Update 60-second history
+        rx_history_60+=("$rx")
+        tx_history_60+=("$tx")
+
+        # Ensure 60-second history does not exceed 60/interval entries
+        if [ "${#rx_history_60[@]}" -gt $((60 / interval)) ]; then
+            rx_history_60=("${rx_history_60[@]:1}")
+            tx_history_60=("${tx_history_60[@]:1}")
+        fi
+
+        # Calculate average over the last 60 seconds
+        local sum_rx=0
+        local sum_tx=0
+        for val in "${rx_history_60[@]}"; do
+            sum_rx=$((sum_rx + val))
+        done
+        for val in "${tx_history_60[@]}"; do
+            sum_tx=$((sum_tx + val))
+        done
+
+        local avg_rx=0
+        local avg_tx=0
+        if [ "${#rx_history_60[@]}" -gt 0 ]; then
+            avg_rx=$((sum_rx / ${#rx_history_60[@]}))
+        fi
+        if [ "${#tx_history_60[@]}" -gt 0 ]; then
+            avg_tx=$((sum_tx / ${#tx_history_60[@]}))
+        fi
 
         initial_rx=$current_rx
         initial_tx=$current_tx
 
         metric_values["tx"]="$tx"
         metric_values["rx"]="$rx"
+
+        # Assign average metrics
+        metric_values["tx_60"]="$avg_tx"
+        metric_values["rx_60"]="$avg_rx"
 
         # Get ping from background running command
         metric_values["ping"]="--"
