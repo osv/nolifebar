@@ -72,6 +72,7 @@ CFG_POPUP_LINE_HEIGHT=22
 #                     -ta l -h "${CFG_HEIGHT}")
 
 CFG_STATUS_BAR_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/dzen2 -dock
+                    -e "button3="
                     -ta l -h "${CFG_HEIGHT}")
 
 CFG_DZEN2_POPUP_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/dzen2)
