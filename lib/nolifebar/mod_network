@@ -13,7 +13,6 @@ declare -A metric_alerts # ON/OFF if value > treshold in metric_alert_treshold
 declare -A metric_values # raw values of all metrics
 declare -A metric_fmt # how to format value
 declare -A metric_formatted # Formatted metric values
-dzen2_show_short_metric=1
 
 mod_init_vars() {
     interval=2                # delay for rx/tx check
@@ -37,12 +36,14 @@ mod_init_vars() {
 
     check_torrent_lock_file="$HOME/.config/qBittorrent/lockfile" # if defined check for running torrent
 
-    # visible by default, for dzen2 Right Mouse Click - show visible_metrics_long
+    dzen2_show_short_metric=1 # use visible_metrics_short by default? RMB - toggle
+
     visible_metrics_short=('rx'   'tx'
                            'ping' 'wifi_ssid'
                           )
 
     visible_metrics_long=('rx'          'tx'
+                          'rx_60'       'tx_60'
                           'ping'        'torrent_running'
                           'wifi_ssid'   'wifi_signal_level'
                           'wifi_status' 'wifi_active_interface'
