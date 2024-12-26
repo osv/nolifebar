@@ -30,6 +30,11 @@ mod_draw_dzen2() {
     printf "^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)${time_format}^ca()^ca()\n" -1
 }
 
+mod_draw_default() {
+    local time_format="$1"
+    printf "${time_format}\n" -1
+}
+
 dzen2_show_popup() {
     local width=$((popup_line_height * 21))
     local cities="${#popup_cities[@]}"
@@ -62,13 +67,13 @@ EOS
     -e 'onstart=uncollapse;button1=exit;button3=exit'
 }
 
-handle_signal() {
+handle_toggle_short() {
     show_short=$((show_short ? 0 : 1))
     printf "Signal received: show_short=%s\n" "${show_short}"
 }
 
 trap 'dzen2_show_popup&' SIGUSR1
-trap 'handle_signal' SIGUSR2
+trap 'handle_toggle_short' SIGUSR2
 
 mod_loop() {
     while true; do

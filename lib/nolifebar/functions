@@ -95,17 +95,23 @@ check_dependencies() {
 # Set draw_fn depending on CFG_BACKEND
 # call mod_loop
 mod_run() {
-    if declare -f "mod_init_vars" > /dev/null; then
-        "mod_init_vars"
-    fi
+    local suffixes=("vars" "draw")
+    local prefixes=(
+        "mod_init"
+        "mod_init_${CFG_BACKEND}"
+        "${MOD_NAME}_init"
+        "${MOD_NAME}_init_${CFG_BACKEND}"
+    )
 
-    if declare -f "${MOD_NAME}_init_vars" > /dev/null; then
-        "${MOD_NAME}_init_vars"
-    fi
-
-    if declare -f "mod_init_draw" > /dev/null; then
-        "mod_init_draw"
-    fi
+    # Iterate over each suffix and prefix to call the functions if they exist
+    for suffix in "${suffixes[@]}"; do
+        for prefix in "${prefixes[@]}"; do
+            func_name="${prefix}_${suffix}"
+            if declare -f "$func_name" > /dev/null; then
+                "$func_name"
+            fi
+        done
+    done
 
     if declare -f "${MOD_NAME}_draw_${CFG_BACKEND}" > /dev/null; then
         draw_fn="${MOD_NAME}_draw_${CFG_BACKEND}"
