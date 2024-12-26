@@ -82,3 +82,23 @@ MOD_TIME_init_vars() {
     format="Time: %(%H:%M)T"
 }
 ```
+
+# Debugging
+
+## Debug the pipe data that is sent to the backend (dzen2) application
+
+Print colored text lines that are sent to the backend:
+
+    DEBUG=true ./bin/nolifebar-start  ./lib/nolifebar/cfg-top-bar.rc
+
+## Debug backend (dzen2) application FPS
+
+You can check how many text lines per second are sent via the pipe to the backend application:
+
+    DEBUG_FPS=true ./bin/nolifebar-start  ./lib/nolifebar/cfg-top-bar.rc
+
+## Check for no forks
+
+I'm trying to avoid forking in X seconds to fetch data. I'm attempting to listen for events or use an interval flag if the program supports it (e.g., `ping -i X`). You can use `strace` to ensure no new forks occur after initialization:
+
+    strace -f -e trace=fork -c ./bin/nolifebar-start  ./lib/nolifebar/cfg-top-bar.rc
