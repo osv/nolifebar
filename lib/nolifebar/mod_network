@@ -290,8 +290,9 @@ run_wifi_ssid_monitor_cmd() {
             iwgetid -r ${monitor_ssid_interface:+$monitor_ssid_interface} > "$file_name"
         done
 
+        local delay=30
         printf "Poll wifi event failure, restarting iwevent cmd in %ss\n" "$delay"
-        read_sleep 30
+        read_sleep "$delay"
     done
 }
 
