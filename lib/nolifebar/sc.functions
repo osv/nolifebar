@@ -39,6 +39,9 @@ mod_draw_dzen2() {
 
 sc_start_cava() {
     echo "Starting Cava."
+
+    "$sc_fn_create_file" "$config_file" # Create config file for cava
+
     cava -p "$g_config_file" \
         | sed --unbuffered "s/;$//; s/;/,/g" \
         | mod_draw \
@@ -67,7 +70,6 @@ sc_run_cava_and_print_to_file() {
     local config_file="$1"
     local fifofile="$2"
 
-    "$sc_fn_create_file" "$config_file"
     g_config_file="$config_file"
     g_fifo="$fifofile"
     CAVA_PID=""
