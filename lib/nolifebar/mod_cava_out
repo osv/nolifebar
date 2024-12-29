@@ -14,6 +14,23 @@ check_dependencies cava pactl
 
 cava_cfg="$TMP_DIR/cava_out.cfg"
 
+mod_init_vars() {
+    sc_sensitivity=4400
+    sc_framerate=15
+    sc_bars=30
+    sc_fn_create_file="default_create_config"
+}
+
+mod_init_dzen2_vars() {
+    sc_bars=30
+    sc_padding=1
+    sc_height=$((CFG_HEIGHT - 2 * sc_padding))
+    sc_additional_bar_params=(
+        -text 'Audio-Out'
+        -fg_colors "<BAR4>"
+    )
+}
+
 default_create_config() {
     local config="$1"
     cat << EOF > "$config"

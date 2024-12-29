@@ -3,16 +3,17 @@
 # sc_ is prefix for shared cava functions and vars
 
 mod_init_vars() {
-  sc_sensitivity=4400
-  sc_framerate=15
-  sc_bars=30
-  sc_padding=1
-  sc_fn_create_file="default_create_config"
-  declare -a sc_additional_bar_params=()
+    sc_sensitivity=4400
+    sc_framerate=15
+    sc_bars=15
+    sc_fn_create_file="default_create_config"
 }
 
-mod_init_draw() {
-  sc_height=$((CFG_HEIGHT - 2 * sc_padding))
+mod_init_dzen2_vars() {
+    sc_bars=30
+    sc_padding=1
+    sc_height=$((CFG_HEIGHT - 2 * sc_padding))
+    sc_additional_bar_params=()
 }
 
 mod_draw_dzen2() {
@@ -25,7 +26,7 @@ mod_draw_dzen2() {
         local out=""
         dzen2_draw_h_stacked_bars out \
             "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
-            -bar_width 2 \
+            -bar_width 1 \
             -bar_padding 1 \
             -bottom_margin "$sc_padding" \
             "${sc_additional_bar_params[@]}" \

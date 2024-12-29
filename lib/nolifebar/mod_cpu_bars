@@ -43,8 +43,7 @@ mod_draw_dzen2() {
             "${colors[2]}" "$total_system_perc" \
             "${colors[3]}" "$total_virt_perc"
     else
-        printf -v txt "CPU %2s%% %s%s" \
-            "$total_cpu_perc" \
+        printf -v txt "%s%s" \
             "$total_stats_dzen" \
             "$cores_stats_dzen"
     fi
@@ -254,7 +253,6 @@ calculate_and_print_usage() {
     done
 
     local total_stats_dzen=""
-
     dzen2_draw_h_stacked_bars total_stats_dzen \
         "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
         -bar_width 5 \
@@ -266,6 +264,7 @@ calculate_and_print_usage() {
     dzen2_draw_h_stacked_bars cores_stats_dzen \
         "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
         -bar_width 3 \
+        -text "CPU ${total_cpu_perc}%" \
         "${additional_core_params[@]}" \
         -max_value 1000 \
         -stacks 4 \
