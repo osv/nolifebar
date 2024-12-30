@@ -27,7 +27,7 @@ mod_init_vars() {
 
 mod_draw_dzen2() {
     local time_format="$1"
-    printf "^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)${time_format}^ca()^ca()\n" -1
+    printf "^fn(<FN_MAIN>)^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)${time_format}^ca()^ca()\n" -1
 }
 
 mod_draw_default() {
@@ -72,8 +72,8 @@ handle_toggle_short() {
     printf "Signal received: show_short=%s\n" "${show_short}"
 }
 
-trap 'dzen2_show_popup&' SIGUSR1
-trap 'handle_toggle_short' SIGUSR2
+trap 'handle_toggle_short' SIGUSR1
+trap 'dzen2_show_popup&' SIGUSR2
 
 mod_loop() {
     while true; do

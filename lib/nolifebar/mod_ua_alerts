@@ -9,7 +9,7 @@ source "$MODULE_CORE_DIR/functions"
 check_dependencies convert
 
 mod_init_vars() {
-    text="!"                    # Text to draw
+    text="A"                    # Text to draw
     popup_telegram_url="https://t.me/s/povitryanatrivogaaa"
     popup_forbidden_words=("Єдиним") # TODO: Removing messages if contains this words
     popup_delay=7

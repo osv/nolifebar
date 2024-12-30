@@ -135,6 +135,7 @@ mod_draw_dzen2_log_scaled_bar() {
         scaled_rx \
         scaled_tx \
         "${CFG_DEFAULT_CENTERED_BARS_PARAMS[@]}" \
+        -text "NetIO" \
         "${additional_chart_params[@]}" \
         -height "$chart_height" \
         -max_value "$log_scale_max_value" \
@@ -166,7 +167,7 @@ mod_draw_dzen2() {
             -flag_x_padding 3 \
             "${additional_render_params[@]}"
     fi
-    printf "^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)%s%s^ca()^ca()\n" "$log_scaled_history_bar" "$metrics"
+    printf "^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)%s%s^ca()^ca()\n" "$metrics" "$log_scaled_history_bar"
 }
 
 mod_draw_default() {
@@ -213,8 +214,8 @@ dzen2_toggle_short_metric() {
     mod_draw > "$FIFO_FILE" &   # Update immediately
 }
 
-trap 'dzen2_show_popup&' SIGUSR1
-trap dzen2_toggle_short_metric SIGUSR2
+trap dzen2_toggle_short_metric SIGUSR1
+trap 'dzen2_show_popup&' SIGUSR2
 
 get_wireless_interface_and_signal() {
     local -n interface_ref="$1"

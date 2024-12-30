@@ -86,7 +86,7 @@ mod_nvidia_draw_flags() {
 mod_draw_dzen2() {
     local output=""
     mod_nvidia_draw_flags output
-    printf "^ca(3, kill -SIGUSR2 $$)%s^ca()\n" "$output"
+    printf "^ca(1, kill -SIGUSR1 $$)%s^ca()\n" "$output"
 }
 
 dzen2_toggle_short_metric() {
@@ -95,7 +95,7 @@ dzen2_toggle_short_metric() {
     update &
 }
 
-trap dzen2_toggle_short_metric SIGUSR2
+trap dzen2_toggle_short_metric SIGUSR1
 
 update() {
     mod_draw > "$FIFO_FILE"

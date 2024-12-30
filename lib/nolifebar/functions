@@ -12,6 +12,10 @@ CFG_REPLACER_FILE="$TMP_DIR/replace.txt"
 # You can override all of the following by declaring the CFG_REPLACER_TXT variable.
 CFG_REPLACER_TXT_FALLBACK="
 # Defaults, incase if not defined by user
+<FN_MAIN>    : Terminus:size=14:style=Light
+<FN_MEDIUM>  : Terminus:size=10:style=Light
+<FN_2_ROWS>  : Terminus-8
+
 <FG>   : #ffffff
 <BG>   : #000
 
@@ -34,17 +38,14 @@ CFG_REPLACER_TXT_FALLBACK="
 <POPUP_FG>   : <FG>
 <POPUP_BG>   : <BG>
 <WIDGET_BG>        : #222
-<WIDGET_TEXT_FG>   : #666
-<WIDGET_TEXT_FN>   : <FN_MEDIUM>
-<WIDGET_BORDER>    : #444
-<WIDGET_INACTIVE>  : #444
+<WIDGET_TEXT_FG>   : #444
+<WIDGET_TEXT_FN>   : <FN_2_ROWS>
+<WIDGET_BORDER>    : #555
+<WIDGET_INACTIVE>  : #555
 <WIDGET_ACTIVE>    : #afa
 <WIDGET_FLAG_FG>   : <FG>
 <WIDGET_FLAG_BG>   : <BG>
 
-<FN_MAIN>    : Terminus:size=14:style=Light
-<FN_MEDIUM>  : Terminus:size=10:style=Light
-<FN_2_ROWS>  : Terminus-8
 
 # xworkspaces mod: default render commands
 <DZEN_WS_NO_WIN>       : ^fg(#666)^bg(#333)
@@ -294,7 +295,6 @@ bytes_to_gigabytes_rounded() {
     # Correct rounding by adding 5 scaled to 1 decimal place
     local _gigabytes=$(( (_bytes * 10 + 5) / (1024 * 1024 * 1024) ))
     _result="$((_gigabytes / 10)).$((_gigabytes % 10))"
-    echo "Bytes $_bytes"
 }
 
 # Function to get the current mouse position using xdotool
@@ -563,6 +563,9 @@ dzen2_draw_centered_bars() {
     local stack_padding=1
     local bg="<WIDGET_BG>"
     local border_fg="<WIDGET_BORDER>"
+    local text=""
+    local text_fg="<WIDGET_TEXT_FG>"
+    local text_fn="<WIDGET_TEXT_FN>"
 
     # Parse named arguments
     while [ $# -gt 0 ]; do
@@ -575,6 +578,9 @@ dzen2_draw_centered_bars() {
             -stack_padding) stack_padding="$2"; shift 2;;
             -bg) bg="$2"; shift 2;;
             -border_fg) border_fg="$2"; shift 2;;
+            -text) text="$2"; shift 2;;
+            -text_fg) text_fg="$2"; shift 2;;
+            -text_fn) text_fn="$2"; shift 2;;
             *)
                 echo "dzen2_draw_centered_bars(): Unknown option: $1" 1>&2
                 exit 1
@@ -586,6 +592,9 @@ dzen2_draw_centered_bars() {
     local widget_width=$((num_values * (bar_width + bar_padding) + 2 - bar_padding)) # 2 - borders
 
     local res="^ib(1)^fg(${bg})^r(${widget_width}x${height})" # bg rect
+    if [[ "$text" != "" ]]; then
+        res+="^fg($text_fg)^fn($text_fn)^p(_BOTTOM)^p(-$((widget_width + 3));-$((height)))^ba(${widget_width},_CENTER)${text}^p()"
+    fi
     res+="^fg(${border_fg})^ro(${widget_width}x${height}-$widget_width)^p(-$((widget_width)))" # border
 
     local low_color="${fg_colors[0]}"
@@ -643,8 +652,8 @@ dzen2_draw_flags() {
     local color_fg="<WIDGET_FLAG_FG>"
     local name_size=50
     local y_padding=2
-    local fn_main="" # will be rendered as ^fn()
-    local fn_2rows="Terminus-8"
+    local fn_main="<FN_MAIN>" # will be rendered as ^fn()
+    local fn_2rows="<FN_2_ROWS>"
     local fn_2rows_y_offset=0
     local flag_align="_CENTER"
     local flag_x_padding=1
@@ -707,7 +716,7 @@ dzen2_draw_flags() {
     fi
     if [[  -n "$label" ]]; then
         # centered label
-        res+="${setup_label_area}^p(-${label_size})^ba(${label_size},_CENTER)${label}"
+        res+="${setup_label_area}^fn($fn_main)^p(-${label_size})^ba(${label_size},_CENTER)${label}"
     fi
 
     # set 2 rows font

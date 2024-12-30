@@ -103,7 +103,7 @@ EOS
           -e 'onstart=uncollapse;button1=exit;button3=exit'
 }
 
-trap 'dzen2_show_popup&' SIGUSR1
+trap 'dzen2_show_popup&' SIGUSR2
 
 mod_loop() {
     while true; do
