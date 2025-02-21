@@ -66,12 +66,12 @@ mod_init_vars() {
         ['ping']="Ping %3s"
         ['wifi_active_interface']="Iw %s"
         ['wifi_signal_level']="Lvl -%sdb"
-        ['wifi_ssid']="id %s"
+        ['wifi_ssid']="ID %s"
         ['wifi_status']="Wifi %s"
         ['torrent_running']="Torrnt %s"
     )
 
-    popup_delay=7               # delay before hide popup
+    popup_delay=4               # delay before hide popup
     popup_line_height="$CFG_POPUP_LINE_HEIGHT"
 }
 

@@ -11,7 +11,7 @@ declare -A memstat
 
 mod_init_vars() {
     interval=2
-    popup_delay=6
+    popup_delay=4
     popup_line_height="$CFG_POPUP_LINE_HEIGHT"
 }
 

@@ -13,7 +13,7 @@ mod_init_vars() {
     additional_core_params=()
     additional_total_params=()
 
-    popup_delay=7               # delay before hide popup
+    popup_delay=4               # delay before hide popup
     popup_line_height="$CFG_POPUP_LINE_HEIGHT"
 }
 

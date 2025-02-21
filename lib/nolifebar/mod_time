@@ -21,7 +21,7 @@ mod_init_vars() {
         Tokyo           : Asia/Tokyo"
     popup_format_date="%H:%M"
     popup_format_date_addon="%Y-%m-%d %Z (%z)"
-    popup_delay=12              # delay before hide popup
+    popup_delay=4              # delay before hide popup
     popup_line_height="$CFG_POPUP_LINE_HEIGHT"
 }
 
