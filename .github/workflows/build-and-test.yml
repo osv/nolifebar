@@ -17,7 +17,16 @@ jobs:
     - name: Checkout source code
       uses: actions/checkout@v3
 
-    # Step 2: Install dependencies for autotools and the libraries (X11, XFT, XCB, etc.)
+    # Step 2: Restore apt cache
+    - name: Restore APT Cache
+      uses: actions/cache@v3
+      with:
+        path: /var/cache/apt
+        key: ${{ runner.os }}-apt-${{ hashFiles('apt-packages-list.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-apt-
+
+    # Step 3: Install dependencies for autotools and the libraries (X11, XFT, XCB, etc.)
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -32,6 +41,9 @@ jobs:
           libxcb1-dev \
           libxcb-ewmh-dev \
           libxcb-icccm4-dev
+
+    # Save a list of installed packages to cache key
+    - run: dpkg-query -W -f='${binary:Package}\n' > apt-packages-list.txt
 
     # Step 3: Generate the configure script
     - name: Generate configure script
