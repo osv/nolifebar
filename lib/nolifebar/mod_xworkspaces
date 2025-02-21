@@ -18,6 +18,8 @@ counts=()
 
 mod_init_vars() {
     show_index=1                # Show workspace number
+    show_name=1                 # Show workspace name
+    show_empty=1                # Show workspaces without windows
     case "$CFG_BACKEND" in
     dzen2)
         print_action_cmd="^ca(1, xdotool set_desktop %i)%s^ca()"      # optional, how to select workspace 
@@ -54,7 +56,17 @@ mod_draw_default() {
         local name="${names[$i]}"
         local index="${indexes[$i]}"
         local tmp=""
-        if ((show_index)); then name="$index:${name}"; fi
+
+        if [ "$show_empty" -ne 1 ] && \
+            [ "${urgents[$i]}" != 'U' ] && \
+            [ "${counts[$i]}" -eq 0 ] && \
+            [ "${actives[$i]}" != 'A' ] ; then
+            continue
+        fi
+
+        if ((show_index & show_name)); then name="$index:${name}"; fi
+        if ((show_index & !show_name)); then name="${index}"; fi
+        if ((!show_index & show_name)); then name="${name}"; fi
         tmp="$name"
         
         if [[ "${urgents[$i]}" == "U" ]]; then
