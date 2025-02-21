@@ -134,6 +134,8 @@ MOD_NETWORK_init_vars() {
 
     ping_interval=7           # 0 - disable
     ping_host="github.com"
+    metric_fmt[tx]="↑ %5sKB"
+    metric_fmt[rx]="↓ %5sKB"
 }
 
 # MOD_NETWORK_draw() {
