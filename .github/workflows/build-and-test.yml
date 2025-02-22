@@ -19,31 +19,10 @@ jobs:
 
     # Step 2: Restore apt cache
     - name: Restore APT Cache
-      uses: actions/cache@v3
+      uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        path: /var/cache/apt
-        key: ${{ runner.os }}-apt-${{ hashFiles('apt-packages-list.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-apt-
-
-    # Step 3: Install dependencies for autotools and the libraries (X11, XFT, XCB, etc.)
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          autoconf \
-          automake \
-          libtool \
-          pkg-config \
-          libpulse-dev \
-          libx11-dev \
-          libxft-dev \
-          libxcb1-dev \
-          libxcb-ewmh-dev \
-          libxcb-icccm4-dev
-
-    # Save a list of installed packages to cache key
-    - run: dpkg-query -W -f='${binary:Package}\n' > apt-packages-list.txt
+        packages: autoconf automake libtool pkg-config libpulse-dev libx11-dev libxft-dev libxcb1-dev libxcb-ewmh-dev libxcb-icccm4-dev
+        version: 1.0
 
     # Step 3: Generate the configure script
     - name: Generate configure script
