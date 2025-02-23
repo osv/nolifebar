@@ -15,14 +15,14 @@ jobs:
     steps:
     # Step 1: Checkout the repository
     - name: Checkout source code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     # Step 2: Restore apt cache
     - name: Restore APT Cache
-      uses: awalsh128/cache-apt-pkgs-action@latest
+      uses: awalsh128/cache-apt-pkgs-action@v1.4.3
       with:
         packages: autoconf automake libtool pkg-config libpulse-dev libx11-dev libxft-dev libxcb1-dev libxcb-ewmh-dev libxcb-icccm4-dev
-        version: 1.0
+        version: 1.1
 
     # Step 3: Generate the configure script
     - name: Generate configure script
