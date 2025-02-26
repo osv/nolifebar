@@ -11,6 +11,7 @@ check_dependencies nolifebar-pa-status pactl
 
 mod_init_vars() {
     sink_name="default"         # pulse audio sink name to monitor
+    toggle_volume_min=35        # volume level on right mouse click. Click again to return volume level back
 }
 
 mod_draw_default() {
@@ -36,23 +37,34 @@ mod_draw_dzen2() {
     ref_var="^ca(4, pactl set-sink-volume '$sink' +5%)\
 ^ca(5, pactl set-sink-volume '$sink' -5%)\
 ^ca(1, pactl set-sink-mute '$sink' toggle)\
-^ca(3, pactl set-sink-volume '$sink' 35%)\
+^ca(3, kill -SIGUSR1 $$)\
 $res\
 ^ca()^ca()^ca()^ca()"
 }
 
+g_toggle_volume=70  # Default toggle volume
+
+dzen2_toggle_volume_level() {
+    local current_volume
+    current_volume=$(pactl get-sink-volume "$g_sink" | awk '{print $5}' | tr -d '%')
+
+    if [[ "$current_volume" -eq "$toggle_volume_min" ]]; then
+        pactl set-sink-volume "$g_sink" "${g_toggle_volume}%"
+    else
+        g_toggle_volume="$current_volume"
+        pactl set-sink-volume "$g_sink" "35%"
+    fi
+}
+
+trap dzen2_toggle_volume_level SIGUSR1
+
 mod_loop() {
-    {
-        nolifebar-pa-status "$sink_name" 2>&3 \
-            | while IFS=" " read -r \
-            vol_column volume \
-            mute_column muted \
-            sink_column sink; do
-            local output
-            mod_draw output "$volume" "$muted" "$sink"
-            printf "%s\n" "$output"> "$FIFO_FILE"
-        done;
-    } 3>&1
+    # Save current sink in g_sink, for toggle functionality
+    while IFS=" " read -r vol_column volume mute_column muted sink_column g_sink; do
+        local output
+        mod_draw output "$volume" "$muted" "$g_sink"
+        printf "%s\n" "$output" > "$FIFO_FILE"
+    done < <(nolifebar-pa-status "$sink_name")
 }
 
 mod_run
