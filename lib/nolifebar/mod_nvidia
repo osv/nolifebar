@@ -2,9 +2,10 @@
 
 printf "Executing Nvidia GPU Stats Plugin\n"
 
-[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 : "${MODULE_CORE_DIR:=$(dirname $0)}"
 . "$MODULE_CORE_DIR/functions"
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+
 : "${TMP_DIR:=/tmp}"
 
 check_dependencies nvidia-smi
@@ -60,6 +61,96 @@ mod_init_vars() {
         ["clocks.current.graphics"]="P%5iMHz"
         ["clocks.current.memory"]="M%5iMHz"
     )
+
+    popup_delay=4               # delay before hide popup
+    popup_line_height=14
+    popup_line_width=$((CFG_POPUP_LINE_HEIGHT * 26))
+    popup_rows=25
+}
+
+dzen2_show_popup() {
+    local width="$popup_line_width"
+    local rows="$popup_rows"
+
+    kill_process() {
+        local PID=$1
+        if [[ -n "$PID" ]]; then
+            if kill -9 "$PID"; then
+                notify-send "Process $PID killed"
+            else
+                notify-send "Failed to kill $PID"
+            fi
+        fi
+    }
+
+    local x y
+    x11_get_good_tooltip_position x y "$width" $((popup_line_height * (1+rows)))
+
+    # Start dzen2 as a coprocess without subshells
+    coproc DZEN2_PROC {
+        "${CFG_DZEN2_POPUP_CMD[@]}" \
+            -x "$x" -y "$y" -w "$width" -h "$popup_line_height" \
+            -l "$rows" -p "$popup_delay" \
+            -sa 'c' -ta 'c' \
+            -e 'onstart=uncollapse;button1=exec:print REFRESH;button3=exit'
+    }
+    # Assign the coprocess file descriptors to variables
+    exec {DZEN_IN}>&"${DZEN2_PROC[1]}"
+    exec {DZEN_OUT}<&"${DZEN2_PROC[0]}"
+
+    # Ensure the coprocess started successfully
+    if [[ -z "${DZEN2_PROC_PID}" ]]; then
+        echo "Failed to start dzen2 coprocess"
+        return 1
+    fi
+
+    # Function to generate and send the process list to dzen2
+    send_process_list() {
+        {
+            printf "^cs()\n"
+            nvidia-smi | sed -E 's/([|+=-]+)/^fg(<POPUP_BAR3>)\1^fg()/g'
+        } | nolifebar-replacer "$CFG_REPLACER_FILE" >&$DZEN_IN
+    }
+
+    # Send initial settings and process list to dzen2
+    {
+        cat <<EOS
+^normfg(<POPUP_FG>)
+^normbg(<POPUP_BG>)
+^normfn(<POPUP_FN_SMALL>)
+^tw()^fn(<POPUP_FN_BIG>)Nvidia GPU (click - refresh)
+^cs
+EOS
+    } | nolifebar-replacer "$CFG_REPLACER_FILE" >&$DZEN_IN
+    send_process_list
+
+    while true; do
+        # Wait for a command from dzen2
+        if read -r command <&$DZEN_OUT; then
+            case "$command" in
+                KILL\ *)
+                    # Extract PID and kill the process
+                    PID=${command#KILL }
+                    kill_process "$PID"
+                    send_process_list
+                    ;;
+                REFRESH)
+                    send_process_list
+                    ;;
+                *)
+                    echo "Unknown command: $command"
+                    ;;
+            esac
+        else
+            # dzen2 has closed or an error occurred
+            break
+        fi
+    done
+
+    # Close file descriptors and wait for the coprocess to exit
+    exec {DZEN_IN}>&-
+    exec {DZEN_OUT}<&-
+    wait "${DZEN2_PROC_PID}"
 }
 
 mod_nvidia_draw_flags() {
@@ -86,7 +177,7 @@ mod_nvidia_draw_flags() {
 mod_draw_dzen2() {
     local output=""
     mod_nvidia_draw_flags output
-    printf "^ca(1, kill -SIGUSR1 $$)%s^ca()\n" "$output"
+    printf "^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)%s^ca()^ca()\n" "$output"
 }
 
 dzen2_toggle_short_metric() {
@@ -96,6 +187,7 @@ dzen2_toggle_short_metric() {
 }
 
 trap dzen2_toggle_short_metric SIGUSR1
+trap 'dzen2_show_popup&' SIGUSR2
 
 update() {
     mod_draw > "$FIFO_FILE"
