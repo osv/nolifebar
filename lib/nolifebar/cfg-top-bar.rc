@@ -354,7 +354,7 @@ MOD_NVIDIA_draw_dzen2() {
   local widget
   mod_nvidia_draw_flags widget
 
-  local out="^p(-104)${mem_bar}^p(2)^r(10x1)^r(1x20)^p(4)^ca(3, kill -SIGUSR2 $$)${widget}^ca()"
+  local out="^p(-104)${mem_bar}^p(2)^r(10x1)^r(1x20)^p(4)^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)${widget}^ca()^ca()"
   printf "%s\n" "$out"
 }
 
