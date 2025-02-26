@@ -119,6 +119,7 @@ mod_loop() {
             [mem_swap_total]=0
             [mem_swap_cache]=0
             [mem_swap_free]=0
+            [zfs_arc_size]=0
         )
 
         while IFS= read -r line; do
