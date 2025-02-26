@@ -15,6 +15,8 @@ mod_init_vars() {
 
     popup_delay=4               # delay before hide popup
     popup_line_height="$CFG_POPUP_LINE_HEIGHT"
+    popup_line_width=$((CFG_POPUP_LINE_HEIGHT * 25))
+    popup_rows=13
 }
 
 show_total_only=0
@@ -58,8 +60,8 @@ toggle_cpu_view() {
 }
 
 dzen2_show_popup() {
-    local width=$((popup_line_height * 25))
-    local rows=13
+    local width="$popup_line_width"
+    local rows="$popup_rows"
 
     kill_process() {
         local PID=$1
@@ -79,7 +81,7 @@ dzen2_show_popup() {
     coproc DZEN2_PROC {
         "${CFG_DZEN2_POPUP_CMD[@]}" \
             -x "$x" -y "$y" -w "$width" -h "$popup_line_height" \
-            -l "$rows" -p \
+            -l "$rows" -p "$popup_delay" \
             -sa 'l' -ta 'c' \
             -e 'onstart=uncollapse;button1=exec:print REFRESH;button3=exit'
     }
