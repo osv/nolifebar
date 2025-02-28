@@ -10,8 +10,8 @@ printf "Executing Pulseaudio Plugin\n"
 check_dependencies nolifebar-pa-status pactl
 
 mod_init_vars() {
-    sink_name="default"         # pulse audio sink name to monitor
-    toggle_volume_min=35        # volume level on right mouse click. Click again to return volume level back
+    sink_name="default"         # PulseAudio sink name to monitor.
+    toggle_volume_min=20        # Volume level on right-click. Click again to restore the volume level.
 }
 
 mod_draw_default() {
@@ -42,7 +42,7 @@ $res\
 ^ca()^ca()^ca()^ca()"
 }
 
-g_toggle_volume=70  # Default toggle volume
+g_toggle_volume=35  # Default toggle volume
 
 dzen2_toggle_volume_level() {
     local current_volume
