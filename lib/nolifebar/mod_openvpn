@@ -9,15 +9,15 @@ printf "Executing OpenVPN Plugin\n"
 
 check_dependencies systemctl journalctl
 
-declare -A services_name_map
+declare -A c_services_name_map
 # Dictionary for service status: ON/OFF value, for using in draw fn
-declare -A services_status
+declare -A g_services_status
 
 mod_init_vars() {
     service_prefix="openvpn-" # systemd openvpn prefix
-    services=() # openvpn systemd services
-    services_name_map=()
-    additional_render_params=() # dzen2_draw_flags
+    c_services=() # openvpn systemd services
+    c_services_name_map=()
+    c_additional_render_params=() # dzen2_draw_flags
 }
 
 # First arg - fifo file for output
@@ -27,9 +27,9 @@ mod_draw_default() {
     local last_line="$2" # not used
 
     local result=""
-    for service in "${services[@]}"; do
-        service_name="${services_name_map[$service]:-$service}"
-        service_status="${services_status[$service]}"
+    for service in "${c_services[@]}"; do
+        service_name="${c_services_name_map[$service]:-$service}"
+        service_status="${g_services_status[$service]}"
         result+=" $service_name: $service_status"
     done
 
@@ -57,24 +57,24 @@ dzen2_draw_and_blink() {
     while ((i)); do
         local out
         dzen2_draw_flags out \
-            services_name_map \
-            services_status \
-            services \
+            c_services_name_map \
+            g_services_status \
+            c_services \
             -label "VPN" \
             "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
-            "${additional_render_params[@]}" \
+            "${c_additional_render_params[@]}" \
             -label_highlight 1
         printf "%s\n" "$out" > "$fifo"
 
         read_sleep 0.25
 
         dzen2_draw_flags out\
-            services_name_map \
-            services_status \
-            services \
+            c_services_name_map \
+            g_services_status \
+            c_services \
             -label "VPN" \
             "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
-            "${additional_render_params[@]}"
+            "${c_additional_render_params[@]}"
         printf "%s\n" "$out" > "$fifo"
 
         read_sleep 0.25
@@ -85,27 +85,27 @@ dzen2_draw_and_blink() {
 mod_loop() {
     local fifo="$FIFO_FILE"
 
-    if [ ${#services[@]} -eq 0 ]; then
+    if [ ${#c_services[@]} -eq 0 ]; then
         echo "No openvpn services to monitor."
-        echo "Exiting, please set services=() if you want to monitor VPN status" >&2
+        echo "Exiting, please set c_services=() if you want to monitor VPN status" >&2
         exit
     fi
 
     local journalctl_cmd=(journalctl -f --since now --output cat)
 
     # Set dict with init state
-    for service in "${services[@]}"; do
-        services_status["$service"]="OFF"
+    for service in "${c_services[@]}"; do
+        g_services_status["$service"]="OFF"
     done
 
     mod_draw "$fifo"
 
     printf "Checking status of services:\n"
-    for service in "${services[@]}"; do
+    for service in "${c_services[@]}"; do
         local service_name="${service_prefix}${service}.service"
         local status
         status=$(systemctl show -p ActiveState --value "$service_name" | sed 's/inactive/OFF/;s/active/ON/')
-        services_status["$service"]="$status"
+        g_services_status["$service"]="$status"
         journalctl_cmd+=(-u)
         journalctl_cmd+=("${service_name}")
         printf "Update: %-16s %4s\n" "$service" "$status"
@@ -119,16 +119,16 @@ mod_loop() {
         if [[ "$line" == *"Stopped OpenVPN instance"* ]]; then
             local service="${line#*‘}"
             service="${service%%’*}"
-            services_status["$service"]="OFF"
-            printf "Update: %-16s %4s\n" "$service" "${services_status[$service]}"
+            g_services_status["$service"]="OFF"
+            printf "Update: %-16s %4s\n" "$service" "${g_services_status[$service]}"
         fi
 
         # Check for "Started OpenVPN instance" and extract the service name
         if [[ "$line" == *"Started OpenVPN instance"* ]]; then
             local service="${line#*‘}"
             service="${service%%’*}"
-            services_status["$service"]="ON"
-            printf "Update: %-16s %4s\n" "$service" "${services_status[$service]}"
+            g_services_status["$service"]="ON"
+            printf "Update: %-16s %4s\n" "$service" "${g_services_status[$service]}"
         fi
         mod_draw "$fifo" "$line"
     done

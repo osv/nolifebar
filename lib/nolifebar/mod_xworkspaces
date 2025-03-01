@@ -10,40 +10,41 @@ printf "Executing XWorkspaces Plugin\n"
 check_dependencies nolifebar-xtitle nolifebar-fn-xft
 
 # Declare arrays to store the data
-indexes=()
-actives=()
-urgents=()
-names=()
-counts=()
+g_indexes=()
+g_actives=()
+g_urgents=()
+g_names=()
+g_counts=()
 
 mod_init_vars() {
-    show_index=1                # Show workspace number
-    show_name=1                 # Show workspace name
-    show_empty=1                # Show workspaces without windows
+    c_show_index=1                # Show workspace number
+    c_show_name=1                 # Show workspace name
+    c_show_empty=1                # Show workspaces without windows
+
     case "$CFG_BACKEND" in
     dzen2)
-        print_action_cmd="^ca(1, xdotool set_desktop %i)%s^ca()"      # optional, how to select workspace 
-        print_action_cmd_prev="^ca(4, xdotool set_desktop %i)%s^ca()" # optional, wheel up action
-        print_action_cmd_next="^ca(5, xdotool set_desktop %i)%s^ca()" # optional, wheel down action
-        print_no_windows="<DZEN_WS_NO_WIN> %s "                       # optional, no windows, if blank do not draw empty workspaces
-        print_with_windows="<DZEN_WS_WITH_WIN> %s "                   # not active workspace with windows
-        print_current_wrapped="^p(0;-3)%s^p()"                        # optional, current workspace, including urgent
-        print_current_no_windows="<DZEN_WS_CUR_NO_WIN> %s "           # current workspace, if not urgent
-        print_current_with_windows="<DZEN_WS_CUR_WITH_WIN> %s "       # current workspace, if not urgent
-        print_urgent="<DZEN_WS_URGENT> %s "                           # workspace with urgent hint
-        print_wrapped="%s^fg()^bg()"                                  # final wrapper
+        c_print_action_cmd="^ca(1, xdotool set_desktop %i)%s^ca()"      # optional, how to select workspace
+        c_print_action_cmd_prev="^ca(4, xdotool set_desktop %i)%s^ca()" # optional, wheel up action
+        c_print_action_cmd_next="^ca(5, xdotool set_desktop %i)%s^ca()" # optional, wheel down action
+        c_print_no_windows="<DZEN_WS_NO_WIN> %s "                       # optional, no windows, if blank do not draw empty workspaces
+        c_print_with_windows="<DZEN_WS_WITH_WIN> %s "                   # not active workspace with windows
+        c_print_current_wrapped="^p(0;-3)%s^p()"                        # optional, current workspace, including urgent
+        c_print_current_no_windows="<DZEN_WS_CUR_NO_WIN> %s "           # current workspace, if not urgent
+        c_print_current_with_windows="<DZEN_WS_CUR_WITH_WIN> %s "       # current workspace, if not urgent
+        c_print_urgent="<DZEN_WS_URGENT> %s "                           # workspace with urgent hint
+        c_print_wrapped="%s^fg()^bg()"                                  # final wrapper
         ;;
     *)
-        print_action_cmd=""
-        print_action_cmd_prev=""
-        print_action_cmd_next=""
-        print_no_windows=" %s "
-        print_with_windows=" %s "
-        print_current_wrapped="[%s]"
-        print_current_no_windows="%s"
-        print_current_with_windows="%s"
-        print_urgent="%s!"
-        print_wrapped="%s"
+        c_print_action_cmd=""
+        c_print_action_cmd_prev=""
+        c_print_action_cmd_next=""
+        c_print_no_windows=" %s "
+        c_print_with_windows=" %s "
+        c_print_current_wrapped="[%s]"
+        c_print_current_no_windows="%s"
+        c_print_current_with_windows="%s"
+        c_print_urgent="%s!"
+        c_print_wrapped="%s"
         ;;
     esac
 }
@@ -51,46 +52,46 @@ mod_init_vars() {
 mod_draw_default() {
     local out=""
     local current_desktop=0
-    local count=${#indexes[@]}
+    local count=${#g_indexes[@]}
     for ((i=0; i<count; i++)); do
-        local name="${names[$i]}"
-        local index="${indexes[$i]}"
+        local name="${g_names[$i]}"
+        local index="${g_indexes[$i]}"
         local tmp=""
 
-        if [ "$show_empty" -ne 1 ] && \
-            [ "${urgents[$i]}" != 'U' ] && \
-            [ "${counts[$i]}" -eq 0 ] && \
-            [ "${actives[$i]}" != 'A' ] ; then
+        if [ "$c_show_empty" -ne 1 ] && \
+            [ "${g_urgents[$i]}" != 'U' ] && \
+            [ "${g_counts[$i]}" -eq 0 ] && \
+            [ "${g_actives[$i]}" != 'A' ] ; then
             continue
         fi
 
-        if ((show_index & show_name)); then name="$index:${name}"; fi
-        if ((show_index & !show_name)); then name="${index}"; fi
-        if ((!show_index & show_name)); then name="${name}"; fi
+        if ((c_show_index & c_show_name)); then name="$index:${name}"; fi
+        if ((c_show_index & !c_show_name)); then name="${index}"; fi
+        if ((!c_show_index & c_show_name)); then name="${name}"; fi
         tmp="$name"
         
-        if [[ "${urgents[$i]}" == "U" ]]; then
-            printf -v name "$print_urgent" "$tmp"
-        elif [[ "${actives[$i]}" == "A" ]]; then
-            if ((counts[i] > 0)); then
-                printf -v name "$print_current_with_windows" "$tmp"
+        if [[ "${g_urgents[$i]}" == "U" ]]; then
+            printf -v name "$c_print_urgent" "$tmp"
+        elif [[ "${g_actives[$i]}" == "A" ]]; then
+            if ((g_counts[i] > 0)); then
+                printf -v name "$c_print_current_with_windows" "$tmp"
             else
-                printf -v name "$print_current_no_windows" "$tmp"
+                printf -v name "$c_print_current_no_windows" "$tmp"
             fi
-        elif ((counts[i] > 0)); then
-            printf -v name "$print_with_windows" "$tmp"
-        elif ((counts[i] == 0)); then
-            printf -v name "$print_no_windows" "$tmp"
+        elif ((g_counts[i] > 0)); then
+            printf -v name "$c_print_with_windows" "$tmp"
+        elif ((g_counts[i] == 0)); then
+            printf -v name "$c_print_no_windows" "$tmp"
         fi
 
-        if [[ -n "$print_action_cmd" ]]; then
-            printf -v tmp "$print_action_cmd" "$i" "$name"
+        if [[ -n "$c_print_action_cmd" ]]; then
+            printf -v tmp "$c_print_action_cmd" "$i" "$name"
             name="$tmp"
         fi
 
-        if [[ "${actives[$i]}" == "A" && -n "$print_current_wrapped" ]]; then
+        if [[ "${g_actives[$i]}" == "A" && -n "$c_print_current_wrapped" ]]; then
             current_desktop="$i"
-            printf -v tmp "$print_current_wrapped" "$name"
+            printf -v tmp "$c_print_current_wrapped" "$name"
             name="$tmp"
         fi
 
@@ -98,16 +99,16 @@ mod_draw_default() {
     done
 
     local tmp
-    if [[ -n "$print_action_cmd_prev" ]]; then
-        printf -v tmp "$print_action_cmd_prev" $((current_desktop > 0 ? current_desktop - 1 : count - 1)) "$out"
+    if [[ -n "$c_print_action_cmd_prev" ]]; then
+        printf -v tmp "$c_print_action_cmd_prev" $((current_desktop > 0 ? current_desktop - 1 : count - 1)) "$out"
         out="$tmp"
     fi        
-    if [[ -n "$print_action_cmd_next" ]]; then
-        printf -v tmp "$print_action_cmd_next" $((((current_desktop + 2) > count) ? 0 : current_desktop + 1)) "$out"
+    if [[ -n "$c_print_action_cmd_next" ]]; then
+        printf -v tmp "$c_print_action_cmd_next" $((((current_desktop + 2) > count) ? 0 : current_desktop + 1)) "$out"
         out="$tmp"
     fi        
 
-    printf "${print_wrapped}\n" "$out"
+    printf "${c_print_wrapped}\n" "$out"
 }
 
 
@@ -120,18 +121,18 @@ mod_loop() {
             mod_draw > "$FIFO_FILE"
 
             # Reset arrays for next data block if needed
-            indexes=()
-            actives=()
-            urgents=()
-            names=()
-            counts=()
+            g_indexes=()
+            g_actives=()
+            g_urgents=()
+            g_names=()
+            g_counts=()
         else
             # Populate the arrays with the current line's data
-            indexes+=("$idx")
-            actives+=("$act")
-            urgents+=("$urg")
-            counts+=("$count")
-            names+=("$nm")
+            g_indexes+=("$idx")
+            g_actives+=("$act")
+            g_urgents+=("$urg")
+            g_counts+=("$count")
+            g_names+=("$nm")
         fi
     done
 }

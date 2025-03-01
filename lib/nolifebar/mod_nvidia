@@ -10,19 +10,19 @@ printf "Executing Nvidia GPU Stats Plugin\n"
 
 check_dependencies nvidia-smi
 
-declare -A gpu_metrics_alert_treshold
-declare -A gpu_metrics_fmt
-declare -A alerts=() # dictionary of ON/OFF value if value > treshold in gpu_metrics_alert_treshold
-declare -A gpu_metrics_value=() # Raw metric values
-declare -A gpu_metrics_formatted=() # Formatted metrics
+declare -A c_gpu_metrics_alert_treshold
+declare -A c_gpu_metrics_fmt
+declare -A g_alerts=() # dictionary of ON/OFF value if value > treshold in c_gpu_metrics_alert_treshold
+declare -A g_gpu_metrics_value=() # Raw metric values
+declare -A g_gpu_metrics_formatted=() # Formatted metrics
 
 mod_init_vars() {
-    interval=1
-    gpu_index=0
+    c_interval=1
+    c_gpu_index=0
 
-    additional_render_params=()
+    c_additional_render_params=()
 
-    gpu_metrics_alert_treshold=(
+    c_gpu_metrics_alert_treshold=(
         ["fan.speed"]=10        # I want to know when fan is on
         ["power.draw"]=30       # power draw is importent for me
         ["utilization.gpu"]=70
@@ -33,13 +33,13 @@ mod_init_vars() {
         ["clocks.current.memory"]=1000
     )
 
-    dzen2_show_short_metric=1 # use visible_metrics_short by default? RMB - toggle
+    g_dzen2_show_short_metric=1 # use visible_metrics_short by default? RMB - toggle
 
-    visible_metrics_short=('power.draw' 'utilization.gpu'
+    c_visible_metrics_short=('power.draw' 'utilization.gpu'
                            'utilization.decoder' 'utilization.encoder'
                           )
 
-    visible_metrics_long=('memory.free' 'memory.used'
+    c_visible_metrics_long=('memory.free' 'memory.used'
                           'fan.speed' 'temperature.gpu'
                           'power.draw' 'utilization.gpu'
                           'clocks.current.memory' 'clocks.current.graphics'
@@ -47,7 +47,7 @@ mod_init_vars() {
                          )
 
     # define how to format metrics
-    gpu_metrics_fmt=(
+    c_gpu_metrics_fmt=(
         ["name"]="%s"
         ["fan.speed"]="Fan %3i%%"
         ["power.draw"]="Pwr%4iW"
@@ -62,15 +62,15 @@ mod_init_vars() {
         ["clocks.current.memory"]="M%5iMHz"
     )
 
-    popup_delay=4               # delay before hide popup
-    popup_line_height=14
-    popup_line_width=$((CFG_POPUP_LINE_HEIGHT * 26))
-    popup_rows=25
+    c_popup_delay=4               # delay before hide popup
+    c_popup_line_height=14
+    c_popup_line_width=$((CFG_POPUP_LINE_HEIGHT * 26))
+    c_popup_rows=25
 }
 
 dzen2_show_popup() {
-    local width="$popup_line_width"
-    local rows="$popup_rows"
+    local width="$c_popup_line_width"
+    local rows="$c_popup_rows"
 
     kill_process() {
         local PID=$1
@@ -84,13 +84,13 @@ dzen2_show_popup() {
     }
 
     local x y
-    x11_get_good_tooltip_position x y "$width" $((popup_line_height * (1+rows)))
+    x11_get_good_tooltip_position x y "$width" $((c_popup_line_height * (1+rows)))
 
     # Start dzen2 as a coprocess without subshells
     coproc DZEN2_PROC {
         "${CFG_DZEN2_POPUP_CMD[@]}" \
-            -x "$x" -y "$y" -w "$width" -h "$popup_line_height" \
-            -l "$rows" -p "$popup_delay" \
+            -x "$x" -y "$y" -w "$width" -h "$c_popup_line_height" \
+            -l "$rows" -p "$c_popup_delay" \
             -sa 'c' -ta 'c' \
             -e 'onstart=uncollapse;button1=exec:print REFRESH;button3=exit'
     }
@@ -156,21 +156,21 @@ EOS
 mod_nvidia_draw_flags() {
     local -n _result="$1"
     local _selected_metrics
-    if (( dzen2_show_short_metric == 1 )); then
-        _selected_metrics=visible_metrics_short
+    if (( g_dzen2_show_short_metric == 1 )); then
+        _selected_metrics=c_visible_metrics_short
     else
-        _selected_metrics=visible_metrics_long
+        _selected_metrics=c_visible_metrics_long
     fi
     dzen2_draw_flags _result \
-        gpu_metrics_formatted \
-        alerts \
+        g_gpu_metrics_formatted \
+        g_alerts \
         "${_selected_metrics}" \
         -label "GPU" \
         "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
         -name_size 60 \
         -flag_align _LEFT \
         -flag_x_padding 3 \
-        "${additional_render_params[@]}"
+        "${c_additional_render_params[@]}"
 }
 
 # First arg - fifo file for output
@@ -181,8 +181,8 @@ mod_draw_dzen2() {
 }
 
 dzen2_toggle_short_metric() {
-    dzen2_show_short_metric=$((dzen2_show_short_metric ? 0 : 1))
-    printf "Signal received: dzen2_show_short_metric=%s\n" "$dzen2_show_short_metric"
+    g_dzen2_show_short_metric=$((g_dzen2_show_short_metric ? 0 : 1))
+    printf "Signal received: g_dzen2_show_short_metric=%s\n" "$g_dzen2_show_short_metric"
     update &
 }
 
@@ -201,26 +201,26 @@ mod_loop() {
         memory_free memory_used gpu_utilization temperature \
         decoder encoder clocks_graphics clocks_memory
     do
-        if ((index != gpu_index)); then continue; fi
+        if ((index != c_gpu_index)); then continue; fi
         power_draw="${power_draw%%.*}" # to integer: 24.15 -> 24
 
-        gpu_metrics_value["name"]="$name"
-        gpu_metrics_value["fan.speed"]="$fan_speed"
-        gpu_metrics_value["power.draw"]="$power_draw"
-        gpu_metrics_value["memory.total"]="$memory_total"
-        gpu_metrics_value["memory.free"]="$memory_free"
-        gpu_metrics_value["memory.used"]="$memory_used"
-        gpu_metrics_value["utilization.gpu"]="$gpu_utilization"
-        gpu_metrics_value["temperature.gpu"]="$temperature"
-        gpu_metrics_value["utilization.decoder"]="$decoder"
-        gpu_metrics_value["utilization.encoder"]="$encoder"
-        gpu_metrics_value["clocks.current.graphics"]="$clocks_graphics"
-        gpu_metrics_value["clocks.current.memory"]="$clocks_memory"
+        g_gpu_metrics_value["name"]="$name"
+        g_gpu_metrics_value["fan.speed"]="$fan_speed"
+        g_gpu_metrics_value["power.draw"]="$power_draw"
+        g_gpu_metrics_value["memory.total"]="$memory_total"
+        g_gpu_metrics_value["memory.free"]="$memory_free"
+        g_gpu_metrics_value["memory.used"]="$memory_used"
+        g_gpu_metrics_value["utilization.gpu"]="$gpu_utilization"
+        g_gpu_metrics_value["temperature.gpu"]="$temperature"
+        g_gpu_metrics_value["utilization.decoder"]="$decoder"
+        g_gpu_metrics_value["utilization.encoder"]="$encoder"
+        g_gpu_metrics_value["clocks.current.graphics"]="$clocks_graphics"
+        g_gpu_metrics_value["clocks.current.memory"]="$clocks_memory"
 
-        apply_dictionary_value_format gpu_metrics_formatted gpu_metrics_value gpu_metrics_fmt
-        update_threshold alerts gpu_metrics_value gpu_metrics_alert_treshold
+        apply_dictionary_value_format g_gpu_metrics_formatted g_gpu_metrics_value c_gpu_metrics_fmt
+        update_threshold g_alerts g_gpu_metrics_value c_gpu_metrics_alert_treshold
         update
-    done < <(nvidia-smi -l "$interval" \
+    done < <(nvidia-smi -l "$c_interval" \
         --query-gpu=index,name,fan.speed,power.draw,memory.total,memory.free,memory.used,utilization.gpu,temperature.gpu,utilization.decoder,utilization.encoder,clocks.current.graphics,clocks.current.memory \
         --format=csv,noheader,nounits \
         | sed --unbuffered 's/, /,/g')

@@ -9,17 +9,17 @@ printf "Executing CPU Bars Plugin\n"
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 
 mod_init_vars() {
-    interval=1
-    additional_core_params=()
-    additional_total_params=()
+    c_interval=1
+    c_additional_core_params=()
+    c_additional_total_params=()
 
-    popup_delay=4               # delay before hide popup
-    popup_line_height="$CFG_POPUP_LINE_HEIGHT"
-    popup_line_width=$((CFG_POPUP_LINE_HEIGHT * 25))
-    popup_rows=13
+    c_popup_delay=4               # delay before hide popup
+    c_popup_line_height="$CFG_POPUP_LINE_HEIGHT"
+    c_popup_line_width=$((CFG_POPUP_LINE_HEIGHT * 25))
+    c_popup_rows=13
 }
 
-show_total_only=0
+g_show_total_only=0
 
 mod_draw_dzen2() {
     local total_stats_dzen="$1"
@@ -30,10 +30,10 @@ mod_draw_dzen2() {
     local total_system_perc="$6"
     local total_virt_perc="$7"
     local txt=""
-    if ((show_total_only)); then
+    if ((g_show_total_only)); then
         local colors=()
-        #extract_param_value "-fg_colors" "${additional_total_params[@]}")
-        extract_param_value colors "-fg_colors" "${additional_total_params[@]}"
+        #extract_param_value "-fg_colors" "${c_additional_total_params[@]}")
+        extract_param_value colors "-fg_colors" "${c_additional_total_params[@]}"
         if [ -z "$colors" ]; then
             colors=("${CFG_DEFAULT_STACK_COLORS[@]}")
         else
@@ -54,14 +54,14 @@ mod_draw_dzen2() {
 }
 
 toggle_cpu_view() {
-  echo "Signal received: show_total_only=${show_total_only}"
-  show_total_only=$((show_total_only ? 0 : 1))
+  echo "Signal received: g_show_total_only=${g_show_total_only}"
+  g_show_total_only=$((g_show_total_only ? 0 : 1))
   update &
 }
 
 dzen2_show_popup() {
-    local width="$popup_line_width"
-    local rows="$popup_rows"
+    local width="$c_popup_line_width"
+    local rows="$c_popup_rows"
 
     kill_process() {
         local PID=$1
@@ -75,13 +75,13 @@ dzen2_show_popup() {
     }
 
     local x y
-    x11_get_good_tooltip_position x y "$width" $((popup_line_height * (1+rows)))
+    x11_get_good_tooltip_position x y "$width" $((c_popup_line_height * (1+rows)))
 
     # Start dzen2 as a coprocess without subshells
     coproc DZEN2_PROC {
         "${CFG_DZEN2_POPUP_CMD[@]}" \
-            -x "$x" -y "$y" -w "$width" -h "$popup_line_height" \
-            -l "$rows" -p "$popup_delay" \
+            -x "$x" -y "$y" -w "$width" -h "$c_popup_line_height" \
+            -l "$rows" -p "$c_popup_delay" \
             -sa 'l' -ta 'c' \
             -e 'onstart=uncollapse;button1=exec:print REFRESH;button3=exit'
     }
@@ -158,8 +158,8 @@ EOS
 trap 'toggle_cpu_view' SIGUSR1
 trap 'dzen2_show_popup&' SIGUSR2
 
-declare -a previousStats
-declare -a currentStats
+declare -a g_previous_stats
+declare -a g_current_stats
 
 get_cpu_stats() {
     local -n cpu_stats=$1
@@ -181,32 +181,32 @@ calculate_and_print_usage() {
     local total_system_perc=0
     local total_virt_perc=0
 
-    for i in "${!previousStats[@]}"; do
-        local previousStat_elemant_array=(${previousStats[i]})
-        local currentStat_elemant_array=(${currentStats[i]})
-        local cpu_identifier="${currentStat_elemant_array[0]}"
+    for i in "${!g_previous_stats[@]}"; do
+        local previous=(${g_previous_stats[i]})
+        local current=(${g_current_stats[i]})
+        local cpu_identifier="${current[0]}"
 
-        local prev_user="${previousStat_elemant_array[1]}"
-        local prev_nice="${previousStat_elemant_array[2]}"
-        local prev_system="${previousStat_elemant_array[3]}"
-        local prev_idle="${previousStat_elemant_array[4]}"
-        local prev_iowait="${previousStat_elemant_array[5]}"
-        local prev_irq="${previousStat_elemant_array[6]}"
-        local prev_softirq="${previousStat_elemant_array[7]}"
-        local prev_steal="${previousStat_elemant_array[8]:-0}" # Might be optional for some kernel
-        local prev_guest="${previousStat_elemant_array[9]:-0}"
-        local prev_guest_nice="${previousStat_elemant_array[10]:-0}"
+        local prev_user="${previous[1]}"
+        local prev_nice="${previous[2]}"
+        local prev_system="${previous[3]}"
+        local prev_idle="${previous[4]}"
+        local prev_iowait="${previous[5]}"
+        local prev_irq="${previous[6]}"
+        local prev_softirq="${previous[7]}"
+        local prev_steal="${previous[8]:-0}" # Might be optional for some kernel
+        local prev_guest="${previous[9]:-0}"
+        local prev_guest_nice="${previous[10]:-0}"
 
-        local cur_user="${currentStat_elemant_array[1]}"
-        local cur_nice="${currentStat_elemant_array[2]}"
-        local cur_system="${currentStat_elemant_array[3]}"
-        local cur_idle="${currentStat_elemant_array[4]}"
-        local cur_iowait="${currentStat_elemant_array[5]}"
-        local cur_irq="${currentStat_elemant_array[6]}"
-        local cur_softirq="${currentStat_elemant_array[7]}"
-        local cur_steal="${currentStat_elemant_array[8]:-0}"
-        local cur_guest="${currentStat_elemant_array[9]:-0}"
-        local cur_guest_nice="${currentStat_elemant_array[10]:-0}"
+        local cur_user="${current[1]}"
+        local cur_nice="${current[2]}"
+        local cur_system="${current[3]}"
+        local cur_idle="${current[4]}"
+        local cur_iowait="${current[5]}"
+        local cur_irq="${current[6]}"
+        local cur_softirq="${current[7]}"
+        local cur_steal="${current[8]:-0}"
+        local cur_guest="${current[9]:-0}"
+        local cur_guest_nice="${current[10]:-0}"
 
         local user_delta=$((cur_user - prev_user))
         local nice_delta=$((cur_nice - prev_nice))
@@ -258,7 +258,7 @@ calculate_and_print_usage() {
     dzen2_draw_h_stacked_bars total_stats_dzen \
         "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
         -bar_width 5 \
-        "${additional_total_params[@]}" \
+        "${c_additional_total_params[@]}" \
         -max_value 1000 \
         -stacks 4 \
         -values "$result_total"
@@ -267,7 +267,7 @@ calculate_and_print_usage() {
         "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
         -bar_width 3 \
         -text "CPU ${total_cpu_perc}%" \
-        "${additional_core_params[@]}" \
+        "${c_additional_core_params[@]}" \
         -max_value 1000 \
         -stacks 4 \
         -values "$result_cores"
@@ -288,11 +288,11 @@ update() {
 
 mod_loop() {
     while true; do
-        declare -a previousStats
-        get_cpu_stats previousStats
-        read_sleep "$interval"
-        declare -a currentStats
-        get_cpu_stats currentStats
+        declare -a g_previous_stats
+        get_cpu_stats g_previous_stats
+        read_sleep "$c_interval"
+        declare -a g_current_stats
+        get_cpu_stats g_current_stats
         update
     done
 }

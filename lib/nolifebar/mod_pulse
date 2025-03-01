@@ -10,8 +10,8 @@ printf "Executing Pulseaudio Plugin\n"
 check_dependencies nolifebar-pa-status pactl
 
 mod_init_vars() {
-    sink_name="default"         # PulseAudio sink name to monitor.
-    toggle_volume_min=20        # Volume level on right-click. Click again to restore the volume level.
+    c_sink_name="default"         # PulseAudio sink name to monitor.
+    c_toggle_volume_min=20        # Volume level on right-click. Click again to restore the volume level.
 }
 
 mod_draw_default() {
@@ -42,17 +42,16 @@ $res\
 ^ca()^ca()^ca()^ca()"
 }
 
-g_toggle_volume=35  # Default toggle volume
+g_toggle_volume=0  # variable for saving last volume level
 
 dzen2_toggle_volume_level() {
     local current_volume
     current_volume=$(pactl get-sink-volume "$g_sink" | awk '{print $5}' | tr -d '%')
-
-    if [[ "$current_volume" -eq "$toggle_volume_min" ]]; then
+    if [[ "$current_volume" == "$c_toggle_volume_min" ]]; then
         pactl set-sink-volume "$g_sink" "${g_toggle_volume}%"
     else
         g_toggle_volume="$current_volume"
-        pactl set-sink-volume "$g_sink" "35%"
+        pactl set-sink-volume "$g_sink" "$c_toggle_volume_min%"
     fi
 }
 
@@ -64,7 +63,7 @@ mod_loop() {
         local output
         mod_draw output "$volume" "$muted" "$g_sink"
         printf "%s\n" "$output" > "$FIFO_FILE"
-    done < <(nolifebar-pa-status "$sink_name")
+    done < <(nolifebar-pa-status "$c_sink_name")
 }
 
 mod_run

@@ -71,11 +71,11 @@ CFG_POPUP_LINE_HEIGHT=22
 #                     -fg "$FG"
 #                     -ta l -h "${CFG_HEIGHT}")
 
-CFG_STATUS_BAR_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/dzen2 -dock
+CFG_STATUS_BAR_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/src/dzen2 -dock
                     -e "button3="
                     -ta l -h "${CFG_HEIGHT}")
 
-CFG_DZEN2_POPUP_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/dzen2)
+CFG_DZEN2_POPUP_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/src/dzen2)
 # Default params for stack bar
 CFG_DEFAULT_STACK_BAR_PARAMS=(
   -bg '<WIDGET_BG>'
@@ -127,7 +127,7 @@ MOD_NETWORK_init_vars() {
     tx_max_log_scale=10000    # transmitted max, KB
     chart_stack_padding=1     # padding between rx/tx bars in chars
     chart_height=$((CFG_HEIGHT - 4)) # height of chart with paddings
-    additional_chart_params=(
+    c_additional_chart_params=(
       -bar_width 1
       -bar_padding 0
     )
@@ -149,15 +149,15 @@ MOD_MEM_init_vars() {
 
 # draw mem and swap bars
 MOD_MEM_draw_dzen2() {
-  local used_percentage="${memstat[used_percentage]}"
-  local mem_total="${memstat[mem_total]}"
-  local mem_used="${memstat[mem_used]}"
-  local mem_buffers="${memstat[mem_buffers]}"
-  local mem_cached="${memstat[mem_cached]}"
-  local mem_shared="${memstat[mem_shared]}"
-  local mem_swap_total="${memstat[mem_swap_total]}"
-  local mem_used_swap="${memstat[mem_used_swap]}"
-  local zfs_arc_size="${memstat[zfs_arc_size]}"
+  local used_percentage="${g_memstat[used_percentage]}"
+  local mem_total="${g_memstat[mem_total]}"
+  local mem_used="${g_memstat[mem_used]}"
+  local mem_buffers="${g_memstat[mem_buffers]}"
+  local mem_cached="${g_memstat[mem_cached]}"
+  local mem_shared="${g_memstat[mem_shared]}"
+  local mem_swap_total="${g_memstat[mem_swap_total]}"
+  local mem_used_swap="${g_memstat[mem_used_swap]}"
+  local zfs_arc_size="${g_memstat[zfs_arc_size]}"
   local mem_buf_and_shared=$((mem_buffers + mem_shared))
   local mem_used_without_arc=$((mem_used - zfs_arc_size))
 
@@ -194,7 +194,7 @@ MOD_MEM_draw_dzen2() {
   printf -v fmt "Swap %3s%%" "$swap_percentage"
   out+="$fmt"
   out+="^fg(<WIDGET_BORDER>)^r(1x7-12+4)^r(10x1-0+4)^p(2;-3)${swap_bar}"
-  printf "^ca(1, kill -SIGUSR1 $$)%s^ca()^p()^ib()^fn(<FN_MAIN>)\n" "$out"
+  printf "^ca(3, kill -SIGUSR2 $$)%s^ca()^p()^ib()^fn(<FN_MAIN>)\n" "$out"
 }
 
 # ############################## CPU Bar
@@ -239,14 +239,14 @@ MOD_CAVA_OUT_custom_create_config() {
   local config="$1"
   cat << EOF > "$config"
 [general]
-bars = $sc_bars
+bars = $c_bars
 sleep_timer = 1
-framerate = $sc_framerate
+framerate = $c_framerate
 [output]
 method = raw
 raw_target = /dev/stdout
 data_format = ascii
-ascii_max_range = $sc_height
+ascii_max_range = $c_height
 channels = mono
 mono_option = average
 [smoothing]
@@ -256,18 +256,18 @@ EOF
 
 # ############################### Cava IN (bars)
 MOD_CAVA_IN_init_vars() {
-  sc_framerate=20      # FPS of cava output, default 15
-  sc_bars=30           # count of cava bars, default 30
-  sc_padding=1         # Vertical padding, default: 1
+  c_framerate=20      # FPS of cava output, default 15
+  c_bars=30           # count of cava bars, default 30
+  c_padding=1         # Vertical padding, default: 1
 
-  # sc_fn_create_file="MOD_CAVA_IN_custom_create_config" # override create cava config file function
+  # c_fn_create_file="MOD_CAVA_IN_custom_create_config" # override create cava config file function
 
-  # dzen2_draw_h_stacked_bars additional params
-  sc_additional_bar_params=(
-    -bar_width 1
-    -bar_padding 1
-    -fg_colors "<BAR1>"
-  )
+  # # dzen2_draw_h_stacked_bars additional params
+  # c_additional_bar_params=(
+  #   -bar_width 1
+  #   -bar_padding 1
+  #   -fg_colors "<BAR1>"
+  # )
 }
 
 # Custom create cava config
@@ -278,17 +278,17 @@ MOD_CAVA_IN_custom_create_config() {
 
     cat << EOF > "$config"
 [general]
-bars = $sc_bars
+bars = $c_bars
 sleep_timer = 1
-framerate = $sc_framerate
+framerate = $c_framerate
 autosens = 0
-sensitivity = $sc_sensitivity
+sensitivity = $c_sensitivity
 
 [output]
 method = raw
 raw_target = /dev/stdout
 data_format = ascii
-ascii_max_range = $sc_height
+ascii_max_range = $c_height
 mono_option = average
 channels = mono
 mono_option = average
@@ -305,9 +305,9 @@ EOF
 
 # ############################### OpenVPN
 MOD_OPENVPN_init_vars() {
-  service_prefix="openvpn-" # systemd openvpn prefix
-  services=(kz-production kz-development) # openvpn systemd services
-  services_name_map=(
+  c_service_prefix="openvpn-" # systemd openvpn prefix
+  c_services=(kz-production kz-development) # openvpn systemd services
+  c_services_name_map=(
        ["kz-production"]="Prod"
        ["kz-development"]="Dev"
   )
@@ -316,13 +316,13 @@ MOD_OPENVPN_init_vars() {
 
 # ############################### NVIDIA
 MOD_NVIDIA_init_vars() {
-  interval=6
-  gpu_index=0
+  c_interval=6
+  c_gpu_index=0
 
   # additional dzen2_draw_flags params
-  additional_render_params=()
+  c_additional_render_params=()
 
-  gpu_metrics_alert_treshold=(
+  c_gpu_metrics_alert_treshold=(
     ["fan.speed"]=10        # I want to know when fan is on
     ["power.draw"]=30       # power draw is importent for me
     ["utilization.gpu"]=70
@@ -337,8 +337,8 @@ MOD_NVIDIA_init_vars() {
 
 # Arguments: name fan_speed power_draw memory_total memory_free memory_used gpu_utilization temperature
 MOD_NVIDIA_draw_dzen2() {
-  memory_total="${gpu_metrics_value[memory.total]}"
-  memory_used="${gpu_metrics_value[memory.used]}"
+  memory_total="${g_gpu_metrics_value[memory.total]}"
+  memory_used="${g_gpu_metrics_value[memory.used]}"
 
   local mem_bar
   dzen2_draw_stacked_bar mem_bar \
@@ -360,9 +360,9 @@ MOD_NVIDIA_draw_dzen2() {
 
 # ############################### XTITLE
 MOD_XTITLE_init_vars() {
-    ellipsis="…"
-    max_length="60"
-    dzen2_fonts=("Noto Sans:size=12:style=Light" "Noto Sans CJK JP:size=12:style=Light" "Noto Color Emoji:size=12:style=Light")
+    c_ellipsis="…"
+    c_max_length="60"
+    # dzen2_fonts=("Noto Sans:size=12:style=Light" "Noto Sans CJK JP:size=12:style=Light" "Noto Color Emoji:size=12:style=Light")
 }
 
 ###############################

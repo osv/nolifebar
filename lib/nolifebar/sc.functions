@@ -3,17 +3,17 @@
 # sc_ is prefix for shared cava functions and vars
 
 mod_init_vars() {
-    sc_sensitivity=4400
-    sc_framerate=15
-    sc_bars=15
-    sc_fn_create_file="default_create_config"
+    c_sensitivity=4400
+    c_framerate=15
+    c_bars=15
+    c_fn_create_file="default_create_config"
 }
 
 mod_init_dzen2_vars() {
-    sc_bars=30
-    sc_padding=1
-    sc_height=$((CFG_HEIGHT - 2 * sc_padding))
-    sc_additional_bar_params=()
+    c_bars=30
+    c_padding=1
+    c_height=$((CFG_HEIGHT - 2 * c_padding))
+    c_additional_bar_params=()
 }
 
 mod_draw_dzen2() {
@@ -28,11 +28,11 @@ mod_draw_dzen2() {
             "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
             -bar_width 1 \
             -bar_padding 1 \
-            -bottom_margin "$sc_padding" \
-            "${sc_additional_bar_params[@]}" \
+            -bottom_margin "$c_padding" \
+            "${c_additional_bar_params[@]}" \
             -stacks 1 \
-            -height "$sc_height" \
-            -max_value "$sc_height" \
+            -height "$c_height" \
+            -max_value "$c_height" \
             -values "$line"
         printf "^ca(3, kill -SIGUSR2 $$)^ca(1, kill -SIGUSR2 $$)%s^ca()^ca()\n" "$out"
     done
@@ -41,7 +41,7 @@ mod_draw_dzen2() {
 sc_start_cava() {
     echo "Starting Cava."
 
-    "$sc_fn_create_file" "$config_file" # Create config file for cava
+    "$c_fn_create_file" "$config_file" # Create config file for cava
 
     cava -p "$g_config_file" \
         | sed --unbuffered "s/;$//; s/;/,/g" \

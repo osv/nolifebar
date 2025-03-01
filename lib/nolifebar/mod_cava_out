@@ -15,17 +15,16 @@ check_dependencies cava pactl
 cava_cfg="$TMP_DIR/cava_out.cfg"
 
 mod_init_vars() {
-    sc_sensitivity=4400
-    sc_framerate=15
-    sc_bars=30
-    sc_fn_create_file="default_create_config"
+    c_framerate=15
+    c_bars=30
+    c_fn_create_file="default_create_config"
 }
 
 mod_init_dzen2_vars() {
-    sc_bars=30
-    sc_padding=1
-    sc_height=$((CFG_HEIGHT - 2 * sc_padding))
-    sc_additional_bar_params=(
+    c_bars=30
+    c_padding=1
+    c_height=$((CFG_HEIGHT - 2 * c_padding))
+    c_additional_bar_params=(
         -text 'Audio-Out'
         -fg_colors "<BAR4>"
     )
@@ -35,15 +34,15 @@ default_create_config() {
     local config="$1"
     cat << EOF > "$config"
 [general]
-bars = $sc_bars
+bars = $c_bars
 sleep_timer = 1
-framerate = $sc_framerate
+framerate = $c_framerate
 
 [output]
 method = raw
 raw_target = /dev/stdout
 data_format = ascii
-ascii_max_range = $sc_height
+ascii_max_range = $c_height
 
 channels = mono
 mono_option = average
@@ -54,7 +53,7 @@ EOF
 
     printf "Cava is configured with
 . FPS: %15i
-. Bars: %14i\n" "$sc_framerate" "$sc_bars"
+. Bars: %14i\n" "$c_framerate" "$c_bars"
 }
 
 mod_loop() {

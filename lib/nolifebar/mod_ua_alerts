@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-printf "Executing UA Alerts Plugin\n"
+printf "Executing UA Alerts Plugin, Left button click - open Ukrain alert map\n"
 
 : "${MODULE_CORE_DIR:=$(dirname $0)}"
 source "$MODULE_CORE_DIR/functions"
@@ -9,24 +9,23 @@ source "$MODULE_CORE_DIR/functions"
 check_dependencies convert
 
 mod_init_vars() {
-    text="A"                    # Text to draw
-    popup_telegram_url="https://t.me/s/povitryanatrivogaaa"
-    popup_forbidden_words=("Єдиним") # TODO: Removing messages if contains this words
-    popup_delay=4
-    popup_height=400
-    popup_width=600
+    c_text="A"                    # Text to draw
+    c_popup_telegram_url="https://t.me/s/povitryanatrivogaaa"
+    c_popup_delay=4
+    c_popup_height=400
+    c_popup_width=600
 }
 
 mod_draw_dzen2() {
     local fifo="$1"
-    printf "^ca(1, kill -SIGUSR1 $$)$text^ca()\n" > "$fifo"
+    printf "^ca(1, kill -SIGUSR1 $$)$c_text^ca()\n" > "$fifo"
 }
 
 dzen2_show_popup() {
-    local height=$((popup_height + 20))
+    local height=$((c_popup_height + 20))
     local x
     local y
-    x11_get_good_tooltip_position x y $popup_width $height
+    x11_get_good_tooltip_position x y $c_popup_width $height
 
     {
         cat <<EOS
@@ -36,20 +35,20 @@ dzen2_show_popup() {
 EOS
         fetch_and_display_xpm_image
     }   | nolifebar-replacer "$CFG_REPLACER_FILE" \
-        | "${CFG_DZEN2_POPUP_CMD[@]}" -p $popup_delay \
+        | "${CFG_DZEN2_POPUP_CMD[@]}" -p $c_popup_delay \
             -ta 'c' \
-            -h "$height" -w "$popup_width" \
+            -h "$height" -w "$c_popup_width" \
             -x "$x" -y "$y" \
             -e 'onstart=uncollapse;button1=exit;button3=exit'
 }
 
 fetch_and_display_xpm_image() {
     # Configuration
-    local url="$popup_telegram_url"
+    local url="$c_popup_telegram_url"
     local temp_dir="$TMP_DIR/ua_alert"
     local xpm_image=""
-    local max_width="$popup_width"
-    local max_height="$popup_height"
+    local max_width="$c_popup_width"
+    local max_height="$c_popup_height"
 
     # Create temporary directory
     mkdir -p "$temp_dir"

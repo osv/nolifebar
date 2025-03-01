@@ -15,17 +15,17 @@ check_dependencies cava
 cava_cfg="$TMP_DIR/cava_in.cfg"
 
 mod_init_vars() {
-    sc_sensitivity=4400
-    sc_framerate=15
-    sc_bars=30
-    sc_fn_create_file="default_create_config"
+    c_sensitivity=4400
+    c_framerate=15
+    c_bars=30
+    c_fn_create_file="default_create_config"
 }
 
 mod_init_dzen2_vars() {
-    sc_bars=30
-    sc_padding=1
-    sc_height=$((CFG_HEIGHT - 2 * sc_padding))
-    sc_additional_bar_params=(-text "Mic")
+    c_bars=30
+    c_padding=1
+    c_height=$((CFG_HEIGHT - 2 * c_padding))
+    c_additional_bar_params=(-text "Mic")
 }
 
 default_create_config() {
@@ -37,17 +37,17 @@ default_create_config() {
 
     cat << EOF > "$config"
 [general]
-bars = $sc_bars
+bars = $c_bars
 sleep_timer = 1
-framerate = $sc_framerate
+framerate = $c_framerate
 autosens = 0
-sensitivity = $sc_sensitivity
+sensitivity = $c_sensitivity
 
 [output]
 method = raw
 raw_target = /dev/stdout
 data_format = ascii
-ascii_max_range = $sc_height
+ascii_max_range = $c_height
 mono_option = average
 channels = mono
 mono_option = average
@@ -65,7 +65,7 @@ EOF
 . FPS: %15i
 . Bars: %14i
 . Sensitivity: %7i
-. Source: %s\n" "$sc_framerate" "$sc_bars" "$sc_sensitivity" "$default_source"
+. Source: %s\n" "$c_framerate" "$c_bars" "$c_sensitivity" "$default_source"
 }
 
 mod_loop() {

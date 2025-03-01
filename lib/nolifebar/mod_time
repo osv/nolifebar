@@ -6,12 +6,12 @@ printf "Executing Time Plugin\n"
 source "$MODULE_CORE_DIR/functions"
 [ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
 
-declare -A popup_cities=()
-show_short=0
+declare -A c_popup_cities=()
+g_show_short=0
 
 mod_init_vars() {
     # Cities for popup
-    popup_cities="Los Angeles : America/Los_Angeles
+    c_popup_cities="Los Angeles : America/Los_Angeles
         New York        : America/New_York
         Buenos Aires    : America/Argentina/Buenos_Aires
         Berlin          : Europe/Berlin
@@ -19,10 +19,11 @@ mod_init_vars() {
         Moscow          : Europe/Moscow
         Bangalore       : Asia/Kolkata
         Tokyo           : Asia/Tokyo"
-    popup_format_date="%H:%M"
-    popup_format_date_addon="%Y-%m-%d %Z (%z)"
-    popup_delay=4              # delay before hide popup
-    popup_line_height="$CFG_POPUP_LINE_HEIGHT"
+
+    c_popup_format_date="%H:%M"
+    c_popup_format_date_addon="%Y-%m-%d %Z (%z)"
+    c_popup_delay=4              # delay before hide popup
+    c_popup_line_height="$CFG_POPUP_LINE_HEIGHT"
 }
 
 mod_draw_dzen2() {
@@ -36,13 +37,13 @@ mod_draw_default() {
 }
 
 dzen2_show_popup() {
-    local width=$((popup_line_height * 21))
-    local cities="${#popup_cities[@]}"
-    local rows=$(echo "$popup_cities" | wc -l)
+    local width=$((c_popup_line_height * 21))
+    local cities="${#c_popup_cities[@]}"
+    local rows=$(echo "$c_popup_cities" | wc -l)
 
     local x
     local y
-    x11_get_good_tooltip_position x y "$width" $((popup_line_height * (1+rows)))
+    x11_get_good_tooltip_position x y "$width" $((c_popup_line_height * (1+rows)))
 
     {
         cat <<EOS
@@ -55,21 +56,21 @@ EOS
         while IFS=':' read -r city timezone; do
             city=$(echo "$city" | xargs)        # xargs - for trim whitespaces
             timezone=$(echo "$timezone" | xargs)
-            time=$(TZ="$timezone" date +"$popup_format_date")
-            time_addon=$(TZ="$timezone" date +"$popup_format_date_addon")
+            time=$(TZ="$timezone" date +"$c_popup_format_date")
+            time_addon=$(TZ="$timezone" date +"$c_popup_format_date_addon")
             printf "  %-12s: ^fn(<POPUP_FN_BIG>)^fg(<POPUP_BAR2>)%s ^fg(<POPUP_BAR4>)^fn(<POPUP_FN>)%s\n" "$city" "$time" "$time_addon"
-        done <<< "$popup_cities"
+        done <<< "$c_popup_cities"
     } | nolifebar-replacer "$CFG_REPLACER_FILE" \
-    | "${CFG_DZEN2_POPUP_CMD[@]}" -p "$popup_delay" \
-    -x "$x" -y "$y" -w "$width" -h "$popup_line_height" \
+    | "${CFG_DZEN2_POPUP_CMD[@]}" -p "$c_popup_delay" \
+    -x "$x" -y "$y" -w "$width" -h "$c_popup_line_height" \
     -l "$rows" \
     -sa 'l' -ta 'c' \
     -e 'onstart=uncollapse;button1=exit;button3=exit'
 }
 
 handle_toggle_short() {
-    show_short=$((show_short ? 0 : 1))
-    printf "Signal received: show_short=%s\n" "${show_short}"
+    g_show_short=$((g_show_short ? 0 : 1))
+    printf "Signal received: g_show_short=%s\n" "${g_show_short}"
 }
 
 trap 'handle_toggle_short' SIGUSR1
@@ -77,7 +78,7 @@ trap 'dzen2_show_popup&' SIGUSR2
 
 mod_loop() {
     while true; do
-        if ((show_short == 0)); then
+        if ((g_show_short == 0)); then
             mod_draw "%(%H:%M)T" > "$FIFO_FILE"
             read_sleep 1
         else
