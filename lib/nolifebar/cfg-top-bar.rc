@@ -24,43 +24,22 @@ CFG_MODULES=("ua_alerts" "pulse" "xkbd" "xworkspaces" "xtitle" "mem" "time" "net
 
 # # Uncomment to output data for dzen2 to STDOUT for debugging
 # DEBUG=true
-
+# CFG_REPLACE_TXT="$THEME_CATPPUCCIN_FRAPPE"
+# CFG_REPLACE_TXT="$THEME_CATPPUCCIN_LATTE"
+CFG_REPLACE_TXT="$THEME_CATPPUCCIN_MACCHIATO"
+# CFG_REPLACE_TXT="$THEME_CATPPUCCIN_MOCHA"
+# CFG_REPLACE_TXT="$THEME_MIRROR_EDGE"
+# CFG_REPLACE_TXT="$THEME_NORD"
 # Replace text before sending to status bar programm
-CFG_REPLACE_TXT="
-<POPUP_FG>   : <FG>
-<POPUP_BG>   : #ffffff
-<POPUP_BAR1> : <BAR1>
-<POPUP_BAR2> : <BAR2>
-<POPUP_BAR3> : <BAR3>
-<POPUP_BAR4> : <BAR4>
-
-<FG>              : #33e
-<BG>              : #e7e7e7
-<WIDGET_BORDER>   : #333
-<WIDGET_BG>       : #ddd
-
-<WIDGET_ACTIVE>  : #b82
-<WIDGET_INACTIVE> : #777
-
-<FN_MAIN>    : Terminus:size=14:style=Light
-<FN_MEDIUM>  : Terminus:size=10:style=Light
-<FN_2_ROWS>  : Terminus-8
-<fn_2_ROWS>  : RobotoMono Nerd Font:size=7:style=Light
-
-<BAR1>      : #a33
-<BAR2>      : #281
-<BAR3>      : #80b
-<BAR4>      : #66b
-
-"
 
 # # Replace text before sending to status bar programm
 # CFG_REPLACE_TXT="
-# <FN_MAIN>    : Terminus:size=14:style=Light
-# <FN_MEDIUM>  : Terminus:size=10:style=Light
-# <FN_2_ROWS>  : Terminus-8
-# <fn_2_ROWS>  : RobotoMono Nerd Font:size=7:style=Light
+# <FN_MAIN>    : RobotoMono Nerd Font:size=14:style=Light
+# <FN_MEDIUM>  : RobotoMono Nerd Font:size=12:style=Light
+# <FN_2_ROWS>  : RobotoMono Nerd Font:size=7
+# $THEME_MIRROR_EDGE
 # "
+
 
 # Some functions uses this for draw rects
 CFG_HEIGHT=30
@@ -76,6 +55,7 @@ CFG_STATUS_BAR_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/src/dzen2 -d
                     -ta l -h "${CFG_HEIGHT}")
 
 CFG_DZEN2_POPUP_CMD=(/home/osv/work/other/repos/github.com/robm/dzen/src/dzen2)
+
 # Default params for stack bar
 CFG_DEFAULT_STACK_BAR_PARAMS=(
   -bg '<WIDGET_BG>'
@@ -93,17 +73,17 @@ CFG_DEFAULT_CENTERED_BARS_PARAMS=(
 # # Default colors for stack bars. Some modules might have other var to override colors
 CFG_DEFAULT_STACK_COLORS=("<BAR1>" "<BAR2>" "<BAR3>" "<BAR4>")
 
-CFG_DEFAULT_DRAW_FLAG_PARAMS=(
-  -label_size 45 # size of label
-  -label_highlight 0
-  -name_size 50
-  -y_padding 2
-  -fn_main "<FN_MAIN>"
-  -fn_2rows "<FN_2_ROWS>"
-  -fn_2rows_y_offset 0
-  -flag_align "_CENTER"
-  -flag_x_padding 0
-)
+# CFG_DEFAULT_DRAW_FLAG_PARAMS=(
+#   -label_size 45 # size of label
+#   -label_highlight 0
+#   -name_size 50
+#   -y_padding 2
+#   -fn_main "<FN_MAIN>"
+#   -fn_2rows "<FN_2_ROWS>"
+#   -fn_2rows_y_offset 0
+#   -flag_align "_CENTER"
+#   -flag_x_padding 0
+# )
 
 # MOD_XWORKSPACES_init_vars() {
 #   show_index=1                # Show workspace number
@@ -132,10 +112,10 @@ MOD_NETWORK_init_vars() {
       -bar_padding 0
     )
 
-    ping_interval=7           # 0 - disable
-    ping_host="github.com"
-    metric_fmt[tx]="↑ %5sKB"
-    metric_fmt[rx]="↓ %5sKB"
+    c_ping_interval=7           # 0 - disable
+    c_ping_host="github.com"
+    c_metric_fmt[tx]="↑ %5sKB"
+    c_metric_fmt[rx]="↓ %5sKB"
 }
 
 # MOD_NETWORK_draw() {
@@ -220,17 +200,17 @@ MOD_CPU_BARS_init_vars() {
 
 # ############################### Cava OUT (bars)
 MOD_CAVA_OUT_init_vars() {
-  sc_framerate=20      # FPS of cava output, default 15
-  sc_bars=60           # count of cava bars, default 30
-  sc_padding=1         # Vertical padding, default: 1
+  c_framerate=30      # FPS of cava output, default 15
+  c_bars=60           # count of cava bars, default 30
+  c_padding=1         # Vertical padding, default: 1
 
-  # sc_fn_create_file="MOD_CAVA_OUT_custom_create_config" # override create cava config file function
+  # c_fn_create_file="MOD_CAVA_OUT_custom_create_config" # override create cava config file function
 
   # dzen2_draw_h_stacked_bars additional params
-  sc_additional_bar_params=(
+  c_additional_bar_params=(
     -bar_width 1
     -bar_padding 1
-    -fg_colors "<BAR4>"
+    -fg_colors "<BAR3>"
   )
 }
 
