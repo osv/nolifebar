@@ -15,13 +15,8 @@ _CATPPUCCIN_DEFAULT_STYLES="
 <POPUP_FN_BIG>   : Terminus-14
 <POPUP_FN>       : Terminus-12
 <POPUP_FN_SMALL> : Terminus-8
-<POPUP_FG>       : <Text>
-<POPUP_BG>       : <Base>
-
-<POPUP_BAR1> : <Red>
-<POPUP_BAR2> : <Green>
-<POPUP_BAR3> : <Mauve>
-<POPUP_BAR4> : <Yellow>
+<POPUP_FG>       : <FG>
+<POPUP_BG>       : <BG>
 
 <POPUP_BAR1> : <BAR1>
 <POPUP_BAR2> : <BAR2>
@@ -34,15 +29,15 @@ _CATPPUCCIN_DEFAULT_STYLES="
 <WIDGET_BORDER>    : <Overlay1>
 <WIDGET_INACTIVE>  : <Overlay0>
 <WIDGET_ACTIVE>    : <Green>
-<WIDGET_FLAG_FG>   : <Text>
-<WIDGET_FLAG_BG>   : <Base>
+<WIDGET_FLAG_FG>   : <FG>
+<WIDGET_FLAG_BG>   : <BG>
 
 # xworkspaces mod: default render commands
-<DZEN_WS_NO_WIN>       : ^fg(<Surface1>)^bg(<Base>)
-<DZEN_WS_WITH_WIN>     : ^fg(<Text>)^bg(<Base>)
+<DZEN_WS_NO_WIN>       : ^fg(<Surface1>)^bg(<BG>)
+<DZEN_WS_WITH_WIN>     : ^fg(<FG>)^bg(<BG>)
 <DZEN_WS_CUR_NO_WIN>   : ^fg(<Surface1>)^bg(<Blue>)
-<DZEN_WS_CUR_WITH_WIN> : ^fg(<Base>)^bg(<Blue>)
-<DZEN_WS_URGENT>       : ^fg(<Base>)^bg(<Red>)
+<DZEN_WS_CUR_WITH_WIN> : ^fg(<BG>)^bg(<Blue>)
+<DZEN_WS_URGENT>       : ^fg(<BG>)^bg(<Red>)
 
 <FN_MAIN>    : Terminus:size=14:style=Light
 <FN_MEDIUM>  : Terminus:size=10:style=Light
@@ -182,6 +177,7 @@ ${_CATPPUCCIN_DEFAULT_STYLES}
 "
 
 THEME_NORD="
+# Nord palette:
 # Polar Night
 <nord0> : #2E3440
 <nord1> : #3B4252
@@ -206,6 +202,7 @@ THEME_NORD="
 <auroraGreen> : #A3BE8C
 <auroraCyan> : #B48EAD
 
+# Replacements:
 <FG>   : <snow1>
 <BG>   : <nord0>
 
@@ -217,13 +214,8 @@ THEME_NORD="
 <POPUP_FN_BIG>   : Terminus-14
 <POPUP_FN>       : Terminus-12
 <POPUP_FN_SMALL> : Terminus-8
-<POPUP_FG>       : <snow1>
-<POPUP_BG>       : <nord0>
-
-<POPUP_BAR1> : <auroraRed>
-<POPUP_BAR2> : <auroraGreen>
-<POPUP_BAR3> : <auroraCyan>
-<POPUP_BAR4> : <auroraYellow>
+<POPUP_FG>       : <FG>
+<POPUP_BG>       : <BG>
 
 <POPUP_BAR1> : <BAR1>
 <POPUP_BAR2> : <BAR2>
@@ -236,15 +228,15 @@ THEME_NORD="
 <WIDGET_BORDER>    : <nord3>
 <WIDGET_INACTIVE>  : <nord3>
 <WIDGET_ACTIVE>    : <auroraGreen>
-<WIDGET_FLAG_FG>   : <snow1>
-<WIDGET_FLAG_BG>   : <nord0>
+<WIDGET_FLAG_FG>   : <FG>
+<WIDGET_FLAG_BG>   : <BG>
 
 # xworkspaces mod: default render commands
-<DZEN_WS_NO_WIN>       : ^fg(<nord2>)^bg(<nord0>)
-<DZEN_WS_WITH_WIN>     : ^fg(<snow2>)^bg(<nord0>)
+<DZEN_WS_NO_WIN>       : ^fg(<nord2>)^bg(<BG>)
+<DZEN_WS_WITH_WIN>     : ^fg(<snow2>)^bg(<BG>)
 <DZEN_WS_CUR_NO_WIN>   : ^fg(<nord3>)^bg(<frost4>)
-<DZEN_WS_CUR_WITH_WIN> : ^fg(<snow1>)^bg(<frost4>)
-<DZEN_WS_URGENT>       : ^fg(<snow1>)^bg(<auroraRed>)
+<DZEN_WS_CUR_WITH_WIN> : ^fg(<FG>)^bg(<frost4>)
+<DZEN_WS_URGENT>       : ^fg(<FG>)^bg(<auroraRed>)
 
 <FN_MAIN>    : Terminus:size=14:style=Light
 <FN_MEDIUM>  : Terminus:size=10:style=Light

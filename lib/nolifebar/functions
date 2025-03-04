@@ -6,59 +6,22 @@ CFG_BACKEND="${CFG_BACKEND:-dzen2}"
 
 # PATH and additional params to dzen2
 CFG_DZEN2_POPUP_CMD=(dzen2)
-
+CFG_STATUS_BAR_CMD=(dzen2)
 CFG_REPLACER_FILE="$TMP_DIR/replace.txt"
+
+source "$MODULE_CORE_DIR/themes"
 
 # You can override all of the following by declaring the CFG_REPLACER_TXT variable.
 CFG_REPLACER_TXT_FALLBACK="
 # Defaults, incase if not defined by user
-<FN_MAIN>    : Terminus:size=14:style=Light
-<FN_MEDIUM>  : Terminus:size=10:style=Light
-<FN_2_ROWS>  : Terminus-8
-
-<FG>   : #ffffff
-<BG>   : #000
-
-<BAR1> : #ff8b92
-<BAR2> : #c3e88d
-<BAR3> : #e1acff
-<BAR4> : #ffe585
-
-<POPUP_FN_BIG>   : Terminus-14
-<POPUP_FN>       : Terminus-12
-<POPUP_FN_SMALL> : Terminus-8
-<POPUP_FG>       : white
-<POPUP_BG>       : black
-
-<POPUP_BAR1> : <BAR1>
-<POPUP_BAR2> : <BAR2>
-<POPUP_BAR3> : <BAR3>
-<POPUP_BAR4> : <BAR4>
-
-<POPUP_FG>   : <FG>
-<POPUP_BG>   : <BG>
-<WIDGET_BG>        : #222
-<WIDGET_TEXT_FG>   : #444
-<WIDGET_TEXT_FN>   : <FN_2_ROWS>
-<WIDGET_BORDER>    : #555
-<WIDGET_INACTIVE>  : #555
-<WIDGET_ACTIVE>    : #afa
-<WIDGET_FLAG_FG>   : <FG>
-<WIDGET_FLAG_BG>   : <BG>
-
-
-# xworkspaces mod: default render commands
-<DZEN_WS_NO_WIN>       : ^fg(#666)^bg(#333)
-<DZEN_WS_WITH_WIN>     : ^fg(#ccc)^bg(#333)
-<DZEN_WS_CUR_NO_WIN>   : ^fg(#fff)^bg(#66b)
-<DZEN_WS_CUR_WITH_WIN> : ^fg(#fff)^bg(#66b)
-<DZEN_WS_URGENT>       : ^fg(#334)^bg(#f22)
+#
+$THEME_CATPPUCCIN_LATTE
 "
 
 # CFG_REPLACE_TXT=""
 
 if [ -z "${CFG_DEFAULT_STACK_COLORS+x}" ]; then
-  CFG_DEFAULT_STACK_COLORS=('#ff8b92' '#c3e88d' '#e1acff' '#ffe585')
+  CFG_DEFAULT_STACK_COLORS=('<BAR1>' '<BAR2>' '<BAR3>' '<BAR4>')
 fi
 
 # Generate the color variables, e.g BOLD_INTENSE_GREEN

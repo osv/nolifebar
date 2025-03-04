@@ -137,7 +137,7 @@ test_reload_replacements() {
     coproc REPLACER_PROC { "$REPLACER_BIN" "$tmp_rep"; } > "$tmp_out" 2>&1
 
     # Allow time for the process to start.
-    sleep 0.5
+    sleep 0.8
 
     # Send first input. It should process "test" using the initial rule.
     echo "test" >&"${REPLACER_PROC[1]}"
@@ -176,13 +176,16 @@ updated"
     rm "$tmp_rep" "$tmp_out"
 }
 
-# Test 6: Multiple nested replacement rules
+# Test 7: Multiple nested replacement rules
 test_multiple_nested_replacements() {
     rep_file=$(mktemp)
     cat > "$rep_file" <<EOF
 <cat>      : dog
+# 1st
 <bird>     : eagle
+# 2nd
 <predator> : <bird>
+# 3rd
 <creature> : <predator>
 EOF
     result=$(echo "cat, <predator> <bird> <creature>" | "$REPLACER_BIN" "$rep_file")

@@ -85,6 +85,21 @@ int load_replacements(const char *filename, Replacement **head) {
         char *match_text = trim(line);
         char *replace_text = trim(colon + 1);
 
+        // Check if a replacement with the same match_text already exists.
+        Replacement *current = temp_head;
+        int exists = 0;
+        while (current != NULL) {
+            if (strcmp(current->match_text, match_text) == 0) {
+                exists = 1;
+                break;
+            }
+            current = current->next;
+        }
+        if (exists) {
+            // Skip adding this duplicate entry.
+            continue;
+        }
+
         Replacement *new_node = create_replacement(match_text, replace_text);
         if (!new_node) {
             fclose(fp);

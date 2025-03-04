@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+MODULE_CORE_DIR="./lib/nolifebar/"
 . "./lib/nolifebar/functions"
 
 # ANSI color codes
