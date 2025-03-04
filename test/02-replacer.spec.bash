@@ -31,9 +31,9 @@ test_basic_replacement() {
     result=$(echo "apple" | "$REPLACER_BIN" "$rep_file")
     expected="orange"
     if [ "$result" == "$expected" ]; then
-        echo -e "test_basic_replacement: ${GREEN}Passed${NC}"
+        echo -e "${FUNCNAME[0]}: ${GREEN}Passed${NC}"
     else
-        echo -e "test_basic_replacement: ${RED}Failed${NC}"
+        echo -e "${FUNCNAME[0]}: ${RED}Failed${NC}"
         echo "Expected: '$expected', Got: '$result'"
         mark_test_failed
     fi
@@ -52,9 +52,9 @@ EOF
     result=$(echo "cat bird" | "$REPLACER_BIN" "$rep_file")
     expected="dog eagle"
     if [ "$result" == "$expected" ]; then
-        echo -e "test_multiple_replacements: ${GREEN}Passed${NC}"
+        echo -e "${FUNCNAME[0]}: ${GREEN}Passed${NC}"
     else
-        echo -e "test_multiple_replacements: ${RED}Failed${NC}"
+        echo -e "${FUNCNAME[0]}: ${RED}Failed${NC}"
         echo "Expected: '$expected', Got: '$result'"
         mark_test_failed
     fi
@@ -75,9 +75,9 @@ EOF
     result=$(echo "say hello to hello" | "$REPLACER_BIN" "$rep_file")
     expected="say hi to hi"
     if [ "$result" == "$expected" ]; then
-        echo -e "test_duplicate_replacement: ${GREEN}Passed${NC}"
+        echo -e "${FUNCNAME[0]}: ${GREEN}Passed${NC}"
     else
-        echo -e "test_duplicate_replacement: ${RED}Failed${NC}"
+        echo -e "${FUNCNAME[0]}: ${RED}Failed${NC}"
         echo "Expected: '$expected', Got: '$result'"
         mark_test_failed
     fi
@@ -93,9 +93,9 @@ test_no_replacement() {
     result=$(echo "hello" | "$REPLACER_BIN" "$rep_file")
     expected="hello"
     if [ "$result" == "$expected" ]; then
-        echo -e "test_no_replacement: ${GREEN}Passed${NC}"
+        echo -e "${FUNCNAME[0]}: ${GREEN}Passed${NC}"
     else
-        echo -e "test_no_replacement: ${RED}Failed${NC}"
+        echo -e "${FUNCNAME[0]}: ${RED}Failed${NC}"
         echo "Expected: '$expected', Got: '$result'"
         mark_test_failed
     fi
@@ -111,9 +111,9 @@ test_shift_replacement() {
     result=$(echo "this is a <long> text" | "$REPLACER_BIN" "$rep_file")
     expected="this is a verylong text"
     if [ "$result" == "$expected" ]; then
-        echo -e "test_shift_replacement: ${GREEN}Passed${NC}"
+        echo -e "${FUNCNAME[0]}: ${GREEN}Passed${NC}"
     else
-        echo -e "test_shift_replacement: ${RED}Failed${NC}"
+        echo -e "${FUNCNAME[0]}: ${RED}Failed${NC}"
         echo "Expected: '$expected', Got: '$result'"
         mark_test_failed
     fi
@@ -137,7 +137,7 @@ test_reload_replacements() {
     coproc REPLACER_PROC { "$REPLACER_BIN" "$tmp_rep"; } > "$tmp_out" 2>&1
 
     # Allow time for the process to start.
-    sleep 0.8
+    sleep 1
 
     # Send first input. It should process "test" using the initial rule.
     echo "test" >&"${REPLACER_PROC[1]}"
@@ -162,9 +162,9 @@ test_reload_replacements() {
     expected="initial
 updated"
     if [ "$result" == "$expected" ]; then
-        echo -e "test_reload_replacements: ${GREEN}Passed${NC}"
+        echo -e "${FUNCNAME[0]}: ${GREEN}Passed${NC}"
     else
-        echo -e "test_reload_replacements: ${RED}Failed${NC}"
+        echo -e "${FUNCNAME[0]}: ${RED}Failed${NC}"
         echo "Expected:"
         echo "$expected"
         echo "Got:"
@@ -191,9 +191,27 @@ EOF
     result=$(echo "cat, <predator> <bird> <creature>" | "$REPLACER_BIN" "$rep_file")
     expected="cat, eagle eagle eagle"
     if [ "$result" == "$expected" ]; then
-        echo -e "test_multiple_replacements: ${GREEN}Passed${NC}"
+        echo -e "${FUNCNAME[0]}: ${GREEN}Passed${NC}"
     else
-        echo -e "test_multiple_replacements: ${RED}Failed${NC}"
+        echo -e "${FUNCNAME[0]}: ${RED}Failed${NC}"
+        echo "Expected: '$expected', Got: '$result'"
+        mark_test_failed
+    fi
+    increment_test_count
+    rm "$rep_file"
+}
+
+# Test 8:
+test_blank_replacement() {
+    rep_file=$(mktemp)
+    echo "" > "$rep_file"
+
+    result=$(echo "hello" | "$REPLACER_BIN" "$rep_file")
+    expected="hello"
+    if [ "$result" == "$expected" ]; then
+        echo -e "${FUNCNAME[0]}: ${GREEN}Passed${NC}"
+    else
+        echo -e "${FUNCNAME[0]}: ${RED}Failed${NC}"
         echo "Expected: '$expected', Got: '$result'"
         mark_test_failed
     fi
@@ -209,6 +227,7 @@ test_no_replacement
 test_shift_replacement
 test_reload_replacements
 test_multiple_nested_replacements
+test_blank_replacement
 
 echo
 if [ "$all_tests_passed" = false ]; then
