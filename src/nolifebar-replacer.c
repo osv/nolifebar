@@ -112,18 +112,21 @@ void process_line_inplace(char *buffer, size_t buffer_size, Replacement *replace
     Replacement *current = replacements;
 
     while (current) {
-        char *pos;
         size_t match_len = strlen(current->match_text);
         size_t replace_len = strlen(current->replace_text);
+        char *start = buffer;
+        char *pos = NULL;
 
-        while ((pos = strstr(buffer, current->match_text)) != NULL) {
-            size_t remaining = strlen(pos + match_len);
+        while ((pos = strstr(start, current->match_text)) != NULL) {
+            size_t current_length = strlen(buffer);
 
             // If replacement text is longer than the match text, ensure buffer has enough space
-            if (replace_len > match_len && strlen(buffer) + (replace_len - match_len) >= buffer_size) {
+            if (replace_len > match_len && current_length + (replace_len - match_len) >= buffer_size) {
                 fprintf(stderr, "Buffer too small for replacement\n");
                 return;
             }
+
+            size_t remaining = strlen(pos + match_len);
 
             // Shift buffer content if replacement text is not the same length as match text
             if (replace_len != match_len) {
@@ -132,8 +135,11 @@ void process_line_inplace(char *buffer, size_t buffer_size, Replacement *replace
 
             // Copy replacement text into the position
             memcpy(pos, current->replace_text, replace_len);
-        }
 
+            // Advance the pointer past the replaced segment to avoid infinite loop when
+            // the replacement text contains the match text.
+            start = pos + replace_len;
+        }
         current = current->next;
     }
 }
@@ -206,6 +212,7 @@ int main(int argc, char *argv[]) {
             // Process line with replacements in place. 2 times - to ensure replacement reference will be replaced too
             process_line_inplace(buffer, BUFFER_SIZE, replacements);
             process_line_inplace(buffer, BUFFER_SIZE, replacements);
+            process_line_inplace(buffer, BUFFER_SIZE, replacements);
             printf("%s\n", buffer);
             fflush(stdout);
         }
@@ -232,6 +239,7 @@ int main(int argc, char *argv[]) {
 
                     // Reprocess the last line, 2 times - to ensure replacement reference will be replaced too
                     strncpy(buffer, last_line, BUFFER_SIZE);
+                    process_line_inplace(buffer, BUFFER_SIZE, replacements);
                     process_line_inplace(buffer, BUFFER_SIZE, replacements);
                     process_line_inplace(buffer, BUFFER_SIZE, replacements);
                     printf("%s\n", buffer);
