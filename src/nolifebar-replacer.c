@@ -224,7 +224,7 @@ int main(int argc, char *argv[]) {
             // Copy to last line buffer
             strncpy(last_line, buffer, BUFFER_SIZE);
 
-            // Process line with replacements in place. 2 times - to ensure replacement reference will be replaced too
+            // Process line with replacements in place. 3 times - to ensure replacement reference will be replaced too
             process_line_inplace(buffer, BUFFER_SIZE, replacements);
             process_line_inplace(buffer, BUFFER_SIZE, replacements);
             process_line_inplace(buffer, BUFFER_SIZE, replacements);
@@ -252,7 +252,7 @@ int main(int argc, char *argv[]) {
                         break;
                     }
 
-                    // Reprocess the last line, 2 times - to ensure replacement reference will be replaced too
+                    // Reprocess the last line, 3 times - to ensure replacement reference will be replaced too
                     strncpy(buffer, last_line, BUFFER_SIZE);
                     process_line_inplace(buffer, BUFFER_SIZE, replacements);
                     process_line_inplace(buffer, BUFFER_SIZE, replacements);
