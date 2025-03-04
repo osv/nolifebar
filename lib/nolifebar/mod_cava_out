@@ -14,6 +14,8 @@ check_dependencies cava pactl
 
 cava_cfg="$TMP_DIR/cava_out.cfg"
 
+g_sc_base_dzen2_bar_params=(-text 'Audio-Out')
+
 mod_init_vars() {
     c_framerate=15
     c_bars=30
@@ -24,10 +26,7 @@ mod_init_dzen2_vars() {
     c_bars=30
     c_padding=1
     c_height=$((CFG_HEIGHT - 2 * c_padding))
-    c_additional_bar_params=(
-        -text 'Audio-Out'
-        -fg_colors "<BAR4>"
-    )
+    c_additional_bar_params=(-fg_colors "<BAR4>")
 }
 
 default_create_config() {

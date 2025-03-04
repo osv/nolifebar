@@ -14,6 +14,8 @@ check_dependencies cava
 
 cava_cfg="$TMP_DIR/cava_in.cfg"
 
+g_sc_base_dzen2_bar_params=(-text "Mic")
+
 mod_init_vars() {
     c_sensitivity=4400
     c_framerate=15
@@ -25,7 +27,7 @@ mod_init_dzen2_vars() {
     c_bars=30
     c_padding=1
     c_height=$((CFG_HEIGHT - 2 * c_padding))
-    c_additional_bar_params=(-text "Mic")
+    c_additional_bar_params=(-fg_colors "<BAR4>")
 }
 
 default_create_config() {

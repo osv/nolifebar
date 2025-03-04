@@ -2,6 +2,8 @@
 
 # sc_ is prefix for shared cava functions and vars
 
+g_sc_base_dzen2_bar_params=()
+
 mod_init_vars() {
     c_sensitivity=4400
     c_framerate=15
@@ -29,6 +31,7 @@ mod_draw_dzen2() {
             -bar_width 1 \
             -bar_padding 1 \
             -bottom_margin "$c_padding" \
+            "${g_sc_base_dzen2_bar_params[@]}" \
             "${c_additional_bar_params[@]}" \
             -stacks 1 \
             -height "$c_height" \
