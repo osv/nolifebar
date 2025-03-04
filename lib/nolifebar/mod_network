@@ -18,14 +18,17 @@ mod_init_vars() {
     c_interval=2                # delay for rx/tx check
     c_interface="[ew]*"         # Interface, e.g wlp7s0, by default all ethernet + wifi.
 
-    c_history_size=60           # History size for char
+    c_history_size=40           # History size for char
     c_rx_min_log_scale=3        # Received min value for logarithmic scale history, KB
     c_rx_max_log_scale=10000    # Received max, KB
     c_tx_min_log_scale=2        # Transmitted min value for logarithmic scale history, KB
     c_tx_max_log_scale=10000    # Transmitted max, KB
     c_chart_stack_padding=1     # Padding between rx/tx bars in chars
     c_chart_height=$((CFG_HEIGHT - 4)) # Height of chart with paddings
-    c_additional_chart_params=(-bar_width 1)
+    c_additional_chart_params=(
+        -bar_width 1
+        -bar_padding 0
+    )
 
     c_ping_interval=7           # 0 - disable
     c_ping_host="github.com"    # ip or host
