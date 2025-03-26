@@ -16,12 +16,12 @@ A Unix way and easy-to-use tool for generating status bars.
     make
     sudo make install
 
-# Module life cycle
+# Module Definition and Life Cycle
 
 Below is example for module called `mod_time` with `CFG_BACKEND=dzen2`:
 
 Each module must evaluate the config file (`$RESOURCE_FILE`) to apply the configuration.
-`MOD_*` is prefix of config functions for certain modules.
+The prefix `MOD_*` is used for config functions related to certain modules.
 
 Each module must call `mod_run` at the end, which will:
 
@@ -33,13 +33,12 @@ Each module must call `mod_run` at the end, which will:
 | `mod_init_dzen2_vars`      | Module                   |
 | `MOD_TIME_init_vars`       | Config file              |
 | `MOD_TIME_init_dzen2_vars` | Config file              |
-|----------------------------|--------------------------|
 | `mod_init_draw`            | Module                   |
 | `mod_init_dzen2_draw`      | Module                   |
 | `MOD_TIME_init_draw`       | Config file              |
 | `MOD_TIME_init_dzen2_draw` | Config file              |
 
-2. Use first exist draw function:
+2. Use first exist draw function for `mod_draw`:
 
 | Function              | Where It Must Be Defined |
 |-----------------------|--------------------------|
@@ -85,20 +84,20 @@ MOD_TIME_init_vars() {
 
 # Debugging
 
-## Debug the pipe data that is sent to the backend (dzen2) application
+## Debug the Pipe Data Sent to the Backend (dzen2) Application
 
-Print colored text lines that are sent to the backend:
+Print colored text lines sent to the backend:
 
     DEBUG=true ./bin/nolifebar-start  ./lib/nolifebar/cfg-top-bar.rc
 
-## Debug backend (dzen2) application FPS
+## Debug Backend (dzen2) Application FPS
 
 You can check how many text lines per second are sent via the pipe to the backend application:
 
     DEBUG_FPS=true ./bin/nolifebar-start  ./lib/nolifebar/cfg-top-bar.rc
 
-## Check for no forks
+## Check for No Forks
 
-I'm trying to avoid forking in X seconds to fetch data. I'm attempting to listen for events or use an interval flag if the program supports it (e.g., `ping -i X`). You can use `strace` to ensure no new forks occur after initialization:
+I am trying to avoid forking for X seconds to fetch data. I attempt to listen for events or use an interval flag if the program supports it (e.g., `ping -i X`). You can use `strace` to ensure no new forks occur after initialization:
 
     strace -f -e trace=fork -c ./bin/nolifebar-start  ./lib/nolifebar/cfg-top-bar.rc
