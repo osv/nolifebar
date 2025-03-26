@@ -99,9 +99,9 @@ mod_init_draw() {
     log_scale_max_value=$(((c_chart_height / 2) - c_chart_stack_padding))
     printf "Log scale: %s points\n" "$log_scale_max_value"
     rx_scales=()
-    create_log_scale rx_scales "$c_rx_min_log_scale" "$c_rx_max_log_scale" "$log_scale_max_value" # TODO: do not use 12 but calc based on height
+    create_log_scale rx_scales "$c_rx_min_log_scale" "$c_rx_max_log_scale" "$log_scale_max_value"
     tx_scales=()
-    create_log_scale tx_scales "$c_tx_min_log_scale" "$c_tx_max_log_scale" "$log_scale_max_value" # TODO: do not use 12 but calc based on height
+    create_log_scale tx_scales "$c_tx_min_log_scale" "$c_tx_max_log_scale" "$log_scale_max_value"
 
     printf "Using interface for TX RX: %s\n" "$c_interface"
     interfaces=("/sys/class/net/$c_interface/statistics")
@@ -114,8 +114,6 @@ mod_init_draw() {
 
 mod_draw_dzen2_log_scaled_bar() {
     local -n ref_var="$1"
-    local rx="$2"
-    local tx="$3"
 
     local output
 
@@ -399,7 +397,6 @@ mod_loop() {
         # Update current history
         g_rx_history_values+=("$rx")
         g_tx_history_values+=("$tx")
-
         # Maintain c_history_size for drawing
         g_rx_history_values=("${g_rx_history_values[@]:1}")
         g_tx_history_values=("${g_tx_history_values[@]:1}")

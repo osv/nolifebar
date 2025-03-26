@@ -440,63 +440,74 @@ dzen2_draw_h_stacked_bars() {
     local num_values=${#values[@]}
     local num_bars=$((num_values / stacks))
     local total_h_padding=$((bar_padding * (num_bars - 1)))
+    local widget_width=$((num_bars * bar_width + total_h_padding + 2)) # 2 for borders
 
-    local widget_width=$((num_bars * bar_width + total_h_padding + 2)) # 2 - borders
-    local res="^p(_BOTTOM)^p(-3)^ib(1)^fg(${bg})^r(${widget_width}x${height}+0-$((height + bottom_margin)))" # bg rect
-    if [[ "$text" != "" ]]; then
-        res+="^fg($text_fg)^fn($text_fn)^p(-${widget_width};2)^ba(${widget_width},_CENTER)${text}^p(0;-2)"
+    local fragments=()
+    fragments+=("^p(_BOTTOM)^p(-3)^ib(1)^fg(${bg})^r(${widget_width}x${height}+0-$((height + bottom_margin)))") # bg rect
+    if [[ -n "$text" ]]; then
+        fragments+=("^fg($text_fg)^fn($text_fn)^p(-${widget_width};2)^ba(${widget_width},_CENTER)${text}^p(0;-2)")
     fi
-    res+="^fg(${border_fg})^ro(${widget_width}x${height}-${widget_width}+0)^p(-${widget_width})" # border
+    fragments+=("^fg(${border_fg})^ro(${widget_width}x${height}-${widget_width}+0)^p(-${widget_width})")
 
-    # Iterate values. Step is count of stacks per bar
-    local skip_x=0 # for reducing not needed commands, optimization
-    for ((i = 0; i < num_values; i+=stacks)); do
-        local next_bar_x_offset=$((i == 0 ? 1 : bar_padding)) # for first var - border width
+    # For each bar, render its stacks
+    local skip_x=0 # optimization
+    for ((i = 0; i < num_values; i += stacks)); do
+        # For first bar, account for border offset
+        local next_bar_x_offset=$(( i == 0 ? 1 : bar_padding ))
         local non_zero_stacks=0
+
+        # Precompute a constant: the maximum vertical padding using all stacks
+        local max_v_padding=$(( stack_padding * (stacks - 1) ))
+        # Determine how many stacks produce a visible bar
         for ((s = 0; s < stacks; s++)); do
-            local total_v_padding=$((stack_padding * (stacks - 1)))
             local value=${values[$((i + s))]}
-            local available_height=$((height - 2 - total_v_padding))
-            local stack_height=$((value * available_height / max_value))
-            if ((stack_height > 0)); then
-                non_zero_stacks=$((non_zero_stacks + 1))
+            local available_height_for_test=$(( height - 2 - max_v_padding ))
+            local stack_height=$(( value * available_height_for_test / max_value ))
+            if (( stack_height > 0 )); then
+                non_zero_stacks=$(( non_zero_stacks + 1 ))
             fi
         done
-        local total_v_padding=$((stack_padding * ((non_zero_stacks > 0 ? non_zero_stacks : 1) - 1)))
 
-        # Optimization: If nothing to render then collect position offset and apply position offset on next/last render
-        if ((non_zero_stacks > 0)); then
-            if ((skip_x>0)); then
-                res+="^p($skip_x)";
-            fi
-        else
-            skip_x=$(( skip_x + next_bar_x_offset + bar_width))
+        # Compute effective vertical padding based on non-zero stacks
+        local effective_v_padding=$(( stack_padding * ((non_zero_stacks > 0 ? non_zero_stacks : 1) - 1) ))
+        local available_height=$(( height - 2 - effective_v_padding ))
+
+        # If no stacks are visible, accumulate the x offset for later
+        if (( non_zero_stacks == 0 )); then
+            skip_x=$(( skip_x + next_bar_x_offset + bar_width ))
             continue
+        fi
+
+        # If there was a gap, add it now
+        if (( skip_x > 0 )); then
+            fragments+=("^p($skip_x)")
         fi
         skip_x=0
 
+        # Draw each stack of the bar
         for ((s = 0; s < stacks; s++)); do
             local value=${values[$((i + s))]}
-            local fg_color=${fg_colors[s]} # bar color
-            local available_height=$((height - 2 - total_v_padding))
-            local stack_height=$((value * available_height / max_value))
-
-            if ((s == 0)); then
-                # For first bar, use 1px (border)
-                local y_offset=$((stack_height + bottom_margin + 1))
-                res="${res}^p(_BOTTOM)^p(-3)^fg(${fg_color})^r(${bar_width}x${stack_height}+${next_bar_x_offset}-${y_offset})"
+            local fg_color=${fg_colors[s]}
+            local stack_height=$(( value * available_height / max_value ))
+            if (( s == 0 )); then
+                # First stack gets special treatment for border offset
+                local y_offset=$(( stack_height + bottom_margin + 1 ))
+                fragments+=("^p(_BOTTOM)^p(-3)^fg(${fg_color})^r(${bar_width}x${stack_height}+${next_bar_x_offset}-${y_offset})")
             else
-                res="${res}^fg(${fg_color})^r(${bar_width}x${stack_height}-${bar_width}-$((stack_height + stack_padding )))"
+                fragments+=("^fg(${fg_color})^r(${bar_width}x${stack_height}-${bar_width}-$(( stack_height + stack_padding )) )")
             fi
 
-            if ((stack_height == 0)); then
-                res="${res}^p(0;+${stack_padding})"
+            # If no height, add vertical padding explicitly
+            if (( stack_height == 0 )); then
+                fragments+=("^p(0;+${stack_padding})")
             fi
         done
     done
-    res+="^p($((skip_x + 4)))" # 1px - border, 3ox - margin
-    res+="^ib()^p()"
-    eval "$ref_var=\"$res\""
+
+    fragments+=("^p($(( skip_x + 4 )))")  # Adjust final offset: 1px border, 3px margin
+    fragments+=("^ib()^p()")
+    # Use printf -v for safe variable assignment
+    printf -v "$ref_var" "%s" "${fragments[@]}"
 }
 
 # 2 values, render stacked 2 bars low and high, Y-centered
