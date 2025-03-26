@@ -167,10 +167,10 @@ MOD_MEM_draw_dzen2() {
   fi
 
   local fmt
-  printf -v fmt "^p(_TOP)^p(;2)^fg(<FG>)^fn(<FN_2_ROWS>)^ba(70,_LEFT)Mem  %3d%%" "$used_percentage"
+  printf -v fmt "^p(_TOP)^p(;2)^fn(<FN_2_ROWS>)^fg(<WIDGET_INACTIVE>)^ba(70,_LEFT)Mem  %3d%%" "$used_percentage"
   local out="$fmt"
   out+="^ib(1)^fg(<WIDGET_BORDER>)^r(1x7-12+1)^r(10x1-0+2)^p(2;-3)${mem_bar}^ib(1)"
-  out+="^p(-175;14)^fg(<FG>)^ba(70,_LEFT)"
+  out+="^p(-175;14)^fg(<WIDGET_INACTIVE>)^ba(70,_LEFT)"
   printf -v fmt "Swap %3s%%" "$swap_percentage"
   out+="$fmt"
   out+="^fg(<WIDGET_BORDER>)^r(1x7-12+4)^r(10x1-0+4)^p(2;-3)${swap_bar}"
