@@ -1,0 +1,224 @@
+#!/usr/bin/env bash
+
+printf "Executing Disk IO Plugin\n"
+
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+source "$MODULE_CORE_DIR/functions"
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+
+declare -A c_metric_alert_treshold
+declare -A g_metric_alerts # ON/OFF if value > treshold in c_metric_alert_treshold
+declare -A g_metric_values # raw values of all metrics
+declare -A c_metric_fmt # how to format value
+declare -A g_metric_formatted # Formatted metric values
+
+mod_init_vars() {
+    # detect first disk, but you can hardcode, e.g nvme0n1
+    c_device=$(awk '$3 ~ /^(sd[a-z]|nvme[0-9]+n[0-9]+)$/ { print $3; exit }' /proc/diskstats)
+    c_interval=2
+
+    c_history_size=40           # History size for char
+    c_rx_min_log_scale=200      # Read min value for logarithmic scale history, KB
+    c_rx_max_log_scale=100000   # write max, KB
+    c_tx_min_log_scale=200      # Read min value for logarithmic scale history, KB
+    c_tx_max_log_scale=100000   # Write max, KB
+    c_chart_stack_padding=1     # Padding between rx/tx bars in chars
+    c_chart_height=$((CFG_HEIGHT - 4)) # Height of chart with paddings
+    c_additional_chart_params=(
+        -bar_width 1
+        -bar_padding 0
+    )
+
+    c_dzen2_show_short_metric=1 # use visible_metrics_short by default? RMB - toggle
+
+    c_visible_metrics_short=( iops_read iops_write )
+
+    c_visible_metrics_long=(read write
+                            iops_read iops_write
+                           )
+
+    c_metric_alert_treshold=(
+        ['read']=10000 # KB/s
+        ['write']=10000 # KB/s
+        ['iops_read']=400 # IO/s
+        ['iops_write']=400 # IO/s
+    )
+
+    c_metric_fmt=(
+        ['read']="R %6sK"
+        ['write']="W %6sK"
+        ['iops_read']="I %5s/s"
+        ['iops_write']="O %5s/s"
+    )
+}
+
+# Stored history
+g_rx_history_values=()
+g_tx_history_values=()
+
+mod_init_draw() {
+    for ((i=0; i < c_history_size; i++)); do
+        g_rx_history_values+=(0)
+        g_tx_history_values+=(0)
+    done
+
+    log_scale_max_value=$(((c_chart_height / 2) - c_chart_stack_padding))
+    printf "Log scale: %s points\n" "$log_scale_max_value"
+    rx_scales=()
+    create_log_scale rx_scales "$c_rx_min_log_scale" "$c_rx_max_log_scale" "$log_scale_max_value"
+    tx_scales=()
+    create_log_scale tx_scales "$c_tx_min_log_scale" "$c_tx_max_log_scale" "$log_scale_max_value"
+
+    # Get hardware sector size (in bytes) from sysfs for the device
+    read -r g_hw_sector_size < /sys/block/"$c_device"/queue/hw_sector_size
+    printf "Using disk for TX RX: %s\n" "$c_device"
+}
+
+mod_draw_default() {
+    printf "Disk %4sKB/s %4sKB/s [IO: %2s, %2s]\n" "${g_metric_values[read]}" \
+        "${g_metric_values[write]}" \
+        "${g_metric_values[iops_read]}" \
+        "${g_metric_values[iops_write]}"
+}
+
+mod_draw_dzen2_log_scaled_bar() {
+    local -n ref_var="$1"
+
+    local output
+
+    # Dynamically calculate scaled values on the fly
+    local scaled_rx=()
+    local scaled_tx=()
+    for value in "${g_rx_history_values[@]}"; do
+        local scaled
+        find_scale_point scaled rx_scales "$value"
+        scaled_rx+=("$scaled")
+    done
+
+    for value in "${g_tx_history_values[@]}"; do
+        local scaled
+        find_scale_point scaled tx_scales "$value"
+        scaled_tx+=("$scaled")
+    done
+
+    dzen2_draw_centered_bars output \
+        scaled_rx \
+        scaled_tx \
+        "${CFG_DEFAULT_CENTERED_BARS_PARAMS[@]}" \
+        -text "Disk" \
+        "${c_additional_chart_params[@]}" \
+        -height "$c_chart_height" \
+        -max_value "$log_scale_max_value" \
+        -stack_padding "$c_chart_stack_padding"
+
+    ref_var="$output"
+}
+
+mod_draw_dzen2() {
+    local log_scaled_history_bar
+    mod_draw_dzen2_log_scaled_bar \
+        log_scaled_history_bar
+
+    local metrics=""
+    if (( c_dzen2_show_short_metric == 1 )); then
+        selected_metrics=c_visible_metrics_short
+    else
+        selected_metrics=c_visible_metrics_long
+    fi
+    if is_array_not_empty "$selected_metrics"; then
+        dzen2_draw_flags metrics \
+            g_metric_formatted \
+            g_metric_alerts \
+            "${selected_metrics}" \
+            -label "SSD" \
+            "${CFG_DEFAULT_DRAW_FLAG_PARAMS[@]}" \
+            -name_size 60 \
+            -flag_align _LEFT \
+            -flag_x_padding 3 \
+            "${additional_render_params[@]}"
+    fi
+    printf "^ca(1, kill -SIGUSR1 $$)^ca(3, kill -SIGUSR2 $$)%s%s^ca()^ca()\n" "$metrics" "$log_scaled_history_bar"
+}
+
+
+dzen2_toggle_short_metric() {
+    c_dzen2_show_short_metric=$((c_dzen2_show_short_metric ? 0 : 1))
+    printf "Signal received: c_dzen2_show_short_metric=%s\n" "$c_dzen2_show_short_metric"
+    mod_draw > "$FIFO_FILE" &   # Update immediately
+}
+
+trap dzen2_toggle_short_metric SIGUSR1
+
+mod_loop() {
+    local first=1
+    local prev_read=0
+    local prev_write=0
+    local prev_ops_read=0
+    local prev_ops_write=0
+
+    while true; do
+        local curr_ops_read curr_read curr_ops_write curr_write
+        # Read /proc/diskstats line-by-line
+        while IFS= read -r line; do
+            local fields
+            read -ra fields <<< "$line"
+            # Check if this line corresponds to our device (third field)
+            if [ "${fields[2]}" = "$c_device" ]; then
+                curr_ops_read="${fields[3]}"
+                curr_read="${fields[5]}"
+                curr_ops_write="${fields[7]}"
+                curr_write="${fields[9]}"
+                break
+            fi
+        done < /proc/diskstats
+
+        if [ $first -eq 1 ]; then
+            # Save initial values
+            prev_read=$curr_read
+            prev_write=$curr_write
+            prev_ops_read=$curr_ops_read
+            prev_ops_write=$curr_ops_write
+            first=0
+        else
+            local delta_read delta_write delta_ops_read delta_ops_write
+            delta_read=$(( curr_read - prev_read ))
+            delta_write=$(( curr_write - prev_write ))
+            delta_ops_read=$(( curr_ops_read - prev_ops_read ))
+            delta_ops_write=$(( curr_ops_write - prev_ops_write ))
+            prev_read=$curr_read
+            prev_write=$curr_write
+            prev_ops_read=$curr_ops_read
+            prev_ops_write=$curr_ops_write
+
+            # Conversion to KB/s (multiplying by 1000 to preserve three decimal places)
+            local read_thousandths write_thousandths
+            read_thousandths=$(( delta_read * g_hw_sector_size * 1000 / (1024 * c_interval) ))
+            write_thousandths=$(( delta_write * g_hw_sector_size * 1000 / (1024 * c_interval) ))
+
+            local read_kb=$(( read_thousandths / 1000 ))
+            local write_kb=$(( write_thousandths / 1000 ))
+            local iops_read=$(( delta_ops_read / c_interval ))
+            local iops_write=$(( delta_ops_write / c_interval ))
+
+            g_metric_values[read]="$read_kb"
+            g_metric_values[write]="$write_kb"
+            g_metric_values[iops_read]="$iops_read"
+            g_metric_values[iops_write]="$iops_write"
+
+            # Update current history
+            g_rx_history_values+=("$read_kb")
+            g_tx_history_values+=("$write_kb")
+            # Maintain c_history_size for drawing
+            g_rx_history_values=("${g_rx_history_values[@]:1}")
+            g_tx_history_values=("${g_tx_history_values[@]:1}")
+        fi
+
+        update_threshold g_metric_alerts g_metric_values c_metric_alert_treshold
+        apply_dictionary_value_format g_metric_formatted g_metric_values c_metric_fmt
+
+        mod_draw > "$FIFO_FILE"
+        read_sleep "$c_interval"
+    done
+}
+
+mod_run

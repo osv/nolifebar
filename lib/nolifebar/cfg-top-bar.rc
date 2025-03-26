@@ -16,7 +16,7 @@
 #   $TMP_DIR - path to temp directory. Module must create temp files in this directory
 #   $MOD_NAME - upper case of current module, usuful if you want to have shared code between modules and eval
 #   $MODULE_CORE_DIR - dir to library of this project (shared bash code, modules)
-CFG_MODULES=("ua_alerts" "pulse" "xkbd" "xworkspaces" "xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
+CFG_MODULES=("disk_io" "ua_alerts" "pulse" "xkbd" "xworkspaces" "xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
 
 # # Draw backend: dzen2 (default), lemonbar, text
 # # Depending on the value, the appropriate draw function will be selected
@@ -363,8 +363,9 @@ MAIN_format_template() {
   if [ "$state" = 'one' ]; then
       printf "{out_mem}\n"
  else
-      printf "^fn(<FN_MEDIUM>){out_xworkspaces} ^fg(<FG>){out_xtitle}^right() {out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} \
-^i(./share/nolifebar/vol20b.xbm)\
+      printf "^fn(<FN_MEDIUM>){out_xworkspaces} ^fg(<FG>){out_xtitle}\
+^right() {out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} {out_disk_io}\
+^fg()^fn() ^i(./share/nolifebar/vol20b.xbm)\
  {out_pulse} {out_cava_out}{out_cava_in} ^fg(<FG>){out_time}\
  {out_xkbd} {out_ua_alerts}
 \n"
