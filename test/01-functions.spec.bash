@@ -213,16 +213,16 @@ test_find_scale_point() {
         echo -e "find_scale_point (1000): ${GREEN}Passed${NC}"
     else
         echo -e "find_scale_point (1000): ${RED}Failed${NC}"
-        echo "Expected: 3, Got: $result"
+        echo "Expected: 4, Got: $result"
         mark_test_failed
     fi
 
     find_scale_point result scale_points 1001
     if [[ "$result" -eq 4 ]]; then
-        echo -e "find_scale_point (1000): ${GREEN}Passed${NC}"
+        echo -e "find_scale_point (1001): ${GREEN}Passed${NC}"
     else
-        echo -e "find_scale_point (1000): ${RED}Failed${NC}"
-        echo "Expected: 3, Got: $result"
+        echo -e "find_scale_point (1001): ${RED}Failed${NC}"
+        echo "Expected: 4, Got: $result"
         mark_test_failed
     fi
 }
