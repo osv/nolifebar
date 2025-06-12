@@ -13,7 +13,7 @@ source "$MODULE_CORE_DIR/themes"
 
 # You can override all of the following by declaring the CFG_REPLACE_TXT variable.
 CFG_REPLACER_TXT_FALLBACK="
-# Defaults, incase if not defined by user
+# Defaults, in case it's not defined by user
 #
 $THEME_CATPPUCCIN_LATTE
 "
