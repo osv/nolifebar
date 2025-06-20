@@ -30,6 +30,7 @@ CFG_REPLACE_TXT="$THEME_CATPPUCCIN_MACCHIATO"
 # CFG_REPLACE_TXT="$THEME_CATPPUCCIN_MOCHA"
 # CFG_REPLACE_TXT="$THEME_MIRROR_EDGE"
 # CFG_REPLACE_TXT="$THEME_NORD"
+# CFG_REPLACE_TXT="$THEME_MODUS_OPERANDI"
 # Replace text before sending to status bar programm
 
 # # Replace text before sending to status bar programm
