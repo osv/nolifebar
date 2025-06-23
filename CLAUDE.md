@@ -20,6 +20,8 @@ make
 ### Testing
 ```bash
 make test                   # Run all tests (bash script tests)
+make test-01-functions      # Run only functions test
+make test-02-replacer       # Run only replacer test
 make test-nolifebar-fn-xft  # Test font functionality
 ```
 
@@ -249,3 +251,9 @@ Colors are resolved through the `nolifebar-replacer` tool using `$CFG_REPLACER_F
 
 - **C Program Development**:
   - Run `make` for testing changes in c programs
+
+## Git Commit Guidelines
+
+- Do not use emojis in commit messages
+- Keep commit messages clear and descriptive
+- Follow conventional commit format when applicable
