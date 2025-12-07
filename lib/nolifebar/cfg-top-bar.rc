@@ -16,7 +16,7 @@
 #   $TMP_DIR - path to temp directory. Module must create temp files in this directory
 #   $MOD_NAME - upper case of current module, usuful if you want to have shared code between modules and eval
 #   $MODULE_CORE_DIR - dir to library of this project (shared bash code, modules)
-CFG_MODULES=("disk_io" "ua_alerts" "pulse" "xkbd" "xworkspaces" "xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
+CFG_MODULES=("disk_io" "ua_alerts" "pulse" "xkbd" "xworkspaces" "xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia" "battery")
 
 # # Draw backend: dzen2 (default), lemonbar, text
 # # Depending on the value, the appropriate draw function will be selected
@@ -316,6 +316,28 @@ MOD_NVIDIA_init_vars() {
 
 }
 
+# ############################### Battery
+MOD_BATTERY_init_vars() {
+    c_interval=5                        # Update interval in seconds
+    c_battery_device="BAT0"             # Battery device name (BAT0, BAT1, etc.)
+    c_low_battery_threshold=50          # Show urgent color below this %
+    c_critical_battery_threshold=15     # Critical level
+    c_show_no_battery=0                 # 0=hide module if no battery, 1=show "No Battery"
+
+    # Configurable battery display characters based on charge level
+    # Array of icons distributed evenly across battery capacity (0-100%)
+    # Examples:
+    #   1 item: ["BAT"] - same icon for all levels
+    #   2 items: ["", ""] - 0-50%, 50-100%
+    #   3 items: ["", "", ""] - 0-33%, 33-66%, 66-100%
+    #   4 items: ["", "", "", ""] - 0-25%, 25-50%, 50-75%, 75-100%
+    #   5 items: ["", "", "", "", ""] - quintiles
+    #
+    # Default: 4-level Nerd Font battery icons
+    c_battery_level_chars=("" "" "" "")  # Empty, Quarter, Half, Three-quarters
+    c_battery_charging_char=""                     # Charging icon (overrides level icons)
+}
+
 # Arguments: name fan_speed power_draw memory_total memory_free memory_used gpu_utilization temperature
 MOD_NVIDIA_draw_dzen2() {
   memory_total="${g_gpu_metrics_value[memory.total]}"
@@ -368,7 +390,7 @@ MAIN_format_template() {
 ^right() {out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} {out_disk_io}\
 ^fg()^fn() ^i(./share/nolifebar/vol20b.xbm)\
  {out_pulse} {out_cava_out}{out_cava_in} ^fg(<FG>){out_time}\
- {out_xkbd} {out_ua_alerts}
+ {out_battery} {out_xkbd} {out_ua_alerts}
 \n"
   fi
 

@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+
+printf "Executing Battery Plugin\n"
+
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+. "$MODULE_CORE_DIR/functions"
+: "${TMP_DIR:=/tmp}"
+
+# Global variables for battery state
+declare -A g_battery_info
+
+mod_init_vars() {
+    c_interval=5                          # Update every 5 seconds
+    c_battery_device="BAT0"               # Battery device name
+    c_low_battery_threshold=50            # Alert threshold
+    c_critical_battery_threshold=15       # Critical threshold
+    c_battery_path="/sys/class/power_supply"
+    c_show_no_battery=0                   # 0=hide if no battery, 1=show message
+
+    # Configurable battery characters/icons based on charge level
+    # Supports variable length arrays - icons are distributed evenly across 0-100%
+    # 1 item: same icon for all levels
+    # 2 items: 0-50%, 50-100%
+    # 3 items: 0-33%, 33-66%, 66-100%
+    # 4 items: 0-25%, 25-50%, 50-75%, 75-100%
+    # 5 items: 0-20%, 20-40%, 40-60%, 60-80%, 80-100%
+
+    # Default: Nerd Font battery icons showing different charge levels
+    c_battery_level_chars=(
+        ""    # Empty/Low (0-25%)
+        ""    # Quarter (25-50%)
+        ""    # Half (50-75%)
+        ""    # Three-quarters (75-100%)
+    )
+
+    # Separate icon for charging state (overrides level icons when charging)
+    c_battery_charging_char=""    # Nerd Font charging icon
+}
+
+mod_loop() {
+    set -x 
+    local battery_full_path="$c_battery_path/$c_battery_device"
+
+    # Check if battery exists
+    if [ ! -d "$battery_full_path" ]; then
+        if [ "$c_show_no_battery" -eq 1 ]; then
+            printf "No Battery\n" > "$FIFO_FILE"
+        else
+            # Exit silently if no battery and configured to hide
+            printf "" > "$FIFO_FILE"
+        fi
+        read_sleep 30  # Check less frequently
+        return
+    fi
+
+    while true; do
+        # Read battery information
+        if [ -f "$battery_full_path/capacity" ]; then
+            g_battery_info[capacity]=$(cat "$battery_full_path/capacity")
+        else
+            g_battery_info[capacity]=0
+        fi
+
+        if [ -f "$battery_full_path/status" ]; then
+            g_battery_info[status]=$(cat "$battery_full_path/status")
+        else
+            g_battery_info[status]="Unknown"
+        fi
+
+        mod_draw > "$FIFO_FILE"
+        read_sleep "$c_interval"
+    done
+}
+
+mod_draw_default() {
+    local capacity="${g_battery_info[capacity]}"
+    local status="${g_battery_info[status]}"
+    printf "Battery: %3d%% [%s]\n" "$capacity" "$status"
+}
+
+mod_draw_dzen2() {
+    local -n ref_var="$1"
+    local capacity="${g_battery_info[capacity]}"
+    local status="${g_battery_info[status]}"
+
+    # Determine color based on status and level
+    local color="<WIDGET_TEXT_FG>"
+    local battery_char=""
+
+    # Select battery character based on charging status or capacity level
+    if [[ "$status" == "Charging" || "$status" == "Full" ]]; then
+        color="<WIDGET_ACTIVE>"  # Active color when charging
+        battery_char="$c_battery_charging_char"
+    else
+        # Select icon from level array based on capacity
+        local num_levels="${#c_battery_level_chars[@]}"
+        local level_index=0
+
+        if [[ "$num_levels" -gt 1 ]]; then
+            # Calculate which icon to use based on capacity percentage
+            # Formula: index = floor(capacity * num_levels / 100)
+            # Capped at num_levels - 1 for 100% case
+            level_index=$(( capacity * num_levels / 100 ))
+            if [[ "$level_index" -ge "$num_levels" ]]; then
+                level_index=$((num_levels - 1))
+            fi
+        fi
+
+        battery_char="${c_battery_level_chars[$level_index]}"
+
+        # Set warning colors based on thresholds
+        if [[ "$capacity" -lt "$c_critical_battery_threshold" ]]; then
+            color="<URGENT>"  # Urgent/critical color
+        elif [[ "$capacity" -lt "$c_low_battery_threshold" ]]; then
+            color="<WIDGET_URGENT>"  # Warning color
+        fi
+    fi
+
+    # Format with configurable battery character and percentage
+    local formatted
+    printf -v formatted "%s %3d%%" "$battery_char" "$capacity"
+
+    # Wrap with dzen2 color markup and clickable area
+    ref_var="^fg($color)^ca(1, kill -SIGUSR1 $$)${formatted}^ca()^fg()"
+}
+
+# Signal handler for popup (future enhancement)
+trap '' SIGUSR1
+
+mod_run
