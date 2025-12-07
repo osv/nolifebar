@@ -334,8 +334,15 @@ MOD_BATTERY_init_vars() {
     #   5 items: ["", "", "", "", ""] - quintiles
     #
     # Default: 4-level Nerd Font battery icons
-    c_battery_level_chars=("" "" "" "")  # Empty, Quarter, Half, Three-quarters
-    c_battery_charging_char=""                     # Charging icon (overrides level icons)
+    c_battery_level_chars=(
+        ""    # Empty/Low (0-25%)
+        ""    # Quarter (25-50%)
+        ""    # Half (50-75%)
+        ""    # Three-quarters (75-100%)
+    )
+
+    # Separate icon for charging state (overrides level icons when charging)
+    c_battery_charging_char=""    # Nerd Font charging icon
 }
 
 # Arguments: name fan_speed power_draw memory_total memory_free memory_used gpu_utilization temperature
