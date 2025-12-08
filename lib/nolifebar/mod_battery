@@ -39,7 +39,6 @@ mod_init_vars() {
 }
 
 mod_loop() {
-    set -x 
     local battery_full_path="$c_battery_path/$c_battery_device"
 
     # Check if battery exists
@@ -80,12 +79,11 @@ mod_draw_default() {
 }
 
 mod_draw_dzen2() {
-    local -n ref_var="$1"
     local capacity="${g_battery_info[capacity]}"
     local status="${g_battery_info[status]}"
 
     # Determine color based on status and level
-    local color="<WIDGET_TEXT_FG>"
+    local color="<FG>"
     local battery_char=""
 
     # Select battery character based on charging status or capacity level
@@ -121,8 +119,8 @@ mod_draw_dzen2() {
     local formatted
     printf -v formatted "%s %3d%%" "$battery_char" "$capacity"
 
-    # Wrap with dzen2 color markup and clickable area
-    ref_var="^fg($color)^ca(1, kill -SIGUSR1 $$)${formatted}^ca()^fg()"
+    # Output dzen2 formatted string with color markup and clickable area
+    printf "^fg(%s)^ca(1, kill -SIGUSR1 %s)%s^ca()^fg()\n" "$color" "$$" "$formatted"
 }
 
 # Signal handler for popup (future enhancement)
