@@ -324,25 +324,31 @@ MOD_BATTERY_init_vars() {
     c_critical_battery_threshold=15     # Critical level
     c_show_no_battery=0                 # 0=hide module if no battery, 1=show "No Battery"
 
-    # Configurable battery display characters based on charge level
-    # Array of icons distributed evenly across battery capacity (0-100%)
-    # Examples:
-    #   1 item: ["BAT"] - same icon for all levels
-    #   2 items: ["", ""] - 0-50%, 50-100%
-    #   3 items: ["", "", ""] - 0-33%, 33-66%, 66-100%
-    #   4 items: ["", "", "", ""] - 0-25%, 25-50%, 50-75%, 75-100%
-    #   5 items: ["", "", "", "", ""] - quintiles
-    #
-    # Default: 4-level Nerd Font battery icons
-    c_battery_level_chars=(
-        ""    # Empty/Low (0-25%)
-        ""    # Quarter (25-50%)
-        ""    # Half (50-75%)
-        ""    # Three-quarters (75-100%)
+    # 9 levels (0-8) using XPM icons for discharging state
+    c_battery_discharging_chars=(
+        "^i(./share/nolifebar/battery/off/battery_off_0.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_1.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_2.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_3.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_4.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_5.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_6.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_7.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_8.xpm)"
     )
 
-    # Separate icon for charging state (overrides level icons when charging)
-    c_battery_charging_char=""    # Nerd Font charging icon
+    # 9 levels (0-8) using XPM icons for charging state
+    c_battery_charging_chars=(
+        "^i(./share/nolifebar/battery/on/battery_on_0.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_1.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_2.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_3.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_4.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_5.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_6.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_7.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_8.xpm)"
+    )
 }
 
 # Arguments: name fan_speed power_draw memory_total memory_free memory_used gpu_utilization temperature
@@ -397,7 +403,7 @@ MAIN_format_template() {
 ^right() {out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} {out_disk_io}\
 ^fg()^fn() ^i(./share/nolifebar/vol20b.xbm)\
  {out_pulse} {out_cava_out}{out_cava_in} ^fg(<FG>){out_time}\
- ^fn(RobotoMono Nerd Font:size=14:style=Light){out_battery} {out_xkbd} {out_ua_alerts}
+ {out_battery} {out_xkbd} {out_ua_alerts}
 \n"
   fi
 
