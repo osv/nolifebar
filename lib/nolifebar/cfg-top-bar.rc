@@ -397,7 +397,7 @@ MAIN_format_template() {
 ^right() {out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} {out_disk_io}\
 ^fg()^fn() ^i(./share/nolifebar/vol20b.xbm)\
  {out_pulse} {out_cava_out}{out_cava_in} ^fg(<FG>){out_time}\
- {out_battery} {out_xkbd} {out_ua_alerts}
+ ^fn(RobotoMono Nerd Font:size=14:style=Light){out_battery} {out_xkbd} {out_ua_alerts}
 \n"
   fi
 

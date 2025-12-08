@@ -26,16 +26,37 @@ mod_init_vars() {
     # 4 items: 0-25%, 25-50%, 50-75%, 75-100%
     # 5 items: 0-20%, 20-40%, 40-60%, 60-80%, 80-100%
 
-    # Default: Nerd Font battery icons showing different charge levels
-    c_battery_level_chars=(
-        ""    # Empty/Low (0-25%)
-        ""    # Quarter (25-50%)
-        ""    # Half (50-75%)
-        ""    # Three-quarters (75-100%)
+    # Icons for discharging state (Nerd Font Material Design battery icons)
+    # 11 levels: 0%, 10%, 20%, 30%, 40%, 50%, 60%, 70%, 80%, 90%, 100%
+    c_battery_discharging_chars=(
+        "󰂎"    # 0%   nf-md-battery_outline
+        "󰁺"    # 10%  nf-md-battery_10
+        "󰁻"    # 20%  nf-md-battery_20
+        "󰁼"    # 30%  nf-md-battery_30
+        "󰁽"    # 40%  nf-md-battery_40
+        "󰁾"    # 50%  nf-md-battery_50
+        "󰁿"    # 60%  nf-md-battery_60
+        "󰂀"    # 70%  nf-md-battery_70
+        "󰂁"    # 80%  nf-md-battery_80
+        "󰂂"    # 90%  nf-md-battery_90
+        "󰁹"    # 100% nf-md-battery
     )
 
-    # Separate icon for charging state (overrides level icons when charging)
-    c_battery_charging_char=""    # Nerd Font charging icon
+    # Icons for charging state (Nerd Font Material Design charging battery icons)
+    # 11 levels: 0%, 10%, 20%, 30%, 40%, 50%, 60%, 70%, 80%, 90%, 100%
+    c_battery_charging_chars=(
+        "󰢟"    # 0%   nf-md-battery_charging_outline
+        "󰢜"    # 10%  nf-md-battery_charging_10
+        "󰂆"    # 20%  nf-md-battery_charging_20
+        "󰂇"    # 30%  nf-md-battery_charging_30
+        "󰂈"    # 40%  nf-md-battery_charging_40
+        "󰢝"    # 50%  nf-md-battery_charging_50
+        "󰂉"    # 60%  nf-md-battery_charging_60
+        "󰢞"    # 70%  nf-md-battery_charging_70
+        "󰂊"    # 80%  nf-md-battery_charging_80
+        "󰂋"    # 90%  nf-md-battery_charging_90
+        "󰂅"    # 100% nf-md-battery_charging_100
+    )
 }
 
 mod_loop() {
@@ -85,35 +106,37 @@ mod_draw_dzen2() {
     # Determine color based on status and level
     local color="<FG>"
     local battery_char=""
+    local -n icon_array
 
-    # Select battery character based on charging status or capacity level
+    # Select which icon array to use based on charging status
     if [[ "$status" == "Charging" || "$status" == "Full" ]]; then
-        color="<WIDGET_ACTIVE>"  # Active color when charging
-        battery_char="$c_battery_charging_char"
+        color="<WIDGET_ACTIVE>"
+        icon_array=c_battery_charging_chars
     else
-        # Select icon from level array based on capacity
-        local num_levels="${#c_battery_level_chars[@]}"
-        local level_index=0
-
-        if [[ "$num_levels" -gt 1 ]]; then
-            # Calculate which icon to use based on capacity percentage
-            # Formula: index = floor(capacity * num_levels / 100)
-            # Capped at num_levels - 1 for 100% case
-            level_index=$(( capacity * num_levels / 100 ))
-            if [[ "$level_index" -ge "$num_levels" ]]; then
-                level_index=$((num_levels - 1))
-            fi
-        fi
-
-        battery_char="${c_battery_level_chars[$level_index]}"
-
+        icon_array=c_battery_discharging_chars
         # Set warning colors based on thresholds
         if [[ "$capacity" -lt "$c_critical_battery_threshold" ]]; then
-            color="<URGENT>"  # Urgent/critical color
+            color="<URGENT>"
         elif [[ "$capacity" -lt "$c_low_battery_threshold" ]]; then
-            color="<WIDGET_URGENT>"  # Warning color
+            color="<WIDGET_URGENT>"
         fi
     fi
+
+    # Select icon from array based on capacity
+    local num_levels="${#icon_array[@]}"
+    local level_index=0
+
+    if [[ "$num_levels" -gt 1 ]]; then
+        # Calculate which icon to use based on capacity percentage
+        # Formula: index = floor(capacity * num_levels / 100)
+        # Capped at num_levels - 1 for 100% case
+        level_index=$(( capacity * num_levels / 100 ))
+        if [[ "$level_index" -ge "$num_levels" ]]; then
+            level_index=$((num_levels - 1))
+        fi
+    fi
+
+    battery_char="${icon_array[$level_index]}"
 
     # Format with configurable battery character and percentage
     local formatted
