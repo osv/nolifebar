@@ -1,4 +1,4 @@
-SUBDIRS = bin lib/nolifebar
+SUBDIRS = bin lib/nolifebar share/nolifebar
 
 .PHONY: test test-01-functions test-02-replacer
 
