@@ -78,13 +78,13 @@ mod_loop() {
     while true; do
         # Read battery information
         if [ -f "$battery_full_path/capacity" ]; then
-            g_battery_info[capacity]=$(cat "$battery_full_path/capacity")
+            read -r g_battery_info[capacity] < "$battery_full_path/capacity"
         else
             g_battery_info[capacity]=0
         fi
 
         if [ -f "$battery_full_path/status" ]; then
-            g_battery_info[status]=$(cat "$battery_full_path/status")
+            read -r g_battery_info[status] < "$battery_full_path/status"
         else
             g_battery_info[status]="Unknown"
         fi
