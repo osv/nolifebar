@@ -1,0 +1,287 @@
+#!/usr/bin/env bash
+
+printf "Executing Battery Plugin\n"
+
+: "${MODULE_CORE_DIR:=$(dirname $0)}"
+source "$MODULE_CORE_DIR/functions"
+[ -f "$RESOURCE_FILE" ] && source "$RESOURCE_FILE"
+
+# Global variables for battery state
+declare -A g_battery_info
+
+mod_init_vars() {
+    c_interval=5                          # Update every 5 seconds
+    c_battery_device="BAT0"               # Battery device name
+    c_low_battery_threshold=50            # Alert threshold
+    c_critical_battery_threshold=15       # Critical threshold
+    c_battery_path="/sys/class/power_supply"
+    c_show_no_battery=0                   # 0=hide if no battery, 1=show message
+    c_popup_delay=6                       # Popup display time in seconds
+    c_popup_line_height="${CFG_POPUP_LINE_HEIGHT:-22}"
+
+    # Configurable battery characters/icons based on charge level
+    # Supports variable length arrays - icons are distributed evenly across 0-100%
+    # 1 item: same icon for all levels
+    # 2 items: 0-50%, 50-100%
+    # 3 items: 0-33%, 33-66%, 66-100%
+    # 4 items: 0-25%, 25-50%, 50-75%, 75-100%
+    # 5 items: 0-20%, 20-40%, 40-60%, 60-80%, 80-100%
+
+    # Icons for discharging state (Nerd Font Material Design battery icons)
+    # 11 levels: 0%, 10%, 20%, 30%, 40%, 50%, 60%, 70%, 80%, 90%, 100%
+    c_battery_discharging_chars=(
+        "󰂎"    # 0%   nf-md-battery_outline
+        "󰁺"    # 10%  nf-md-battery_10
+        "󰁻"    # 20%  nf-md-battery_20
+        "󰁼"    # 30%  nf-md-battery_30
+        "󰁽"    # 40%  nf-md-battery_40
+        "󰁾"    # 50%  nf-md-battery_50
+        "󰁿"    # 60%  nf-md-battery_60
+        "󰂀"    # 70%  nf-md-battery_70
+        "󰂁"    # 80%  nf-md-battery_80
+        "󰂂"    # 90%  nf-md-battery_90
+        "󰁹"    # 100% nf-md-battery
+    )
+
+    # Icons for charging state (Nerd Font Material Design charging battery icons)
+    # 11 levels: 0%, 10%, 20%, 30%, 40%, 50%, 60%, 70%, 80%, 90%, 100%
+    c_battery_charging_chars=(
+        "󰢟"    # 0%   nf-md-battery_charging_outline
+        "󰢜"    # 10%  nf-md-battery_charging_10
+        "󰂆"    # 20%  nf-md-battery_charging_20
+        "󰂇"    # 30%  nf-md-battery_charging_30
+        "󰂈"    # 40%  nf-md-battery_charging_40
+        "󰢝"    # 50%  nf-md-battery_charging_50
+        "󰂉"    # 60%  nf-md-battery_charging_60
+        "󰢞"    # 70%  nf-md-battery_charging_70
+        "󰂊"    # 80%  nf-md-battery_charging_80
+        "󰂋"    # 90%  nf-md-battery_charging_90
+        "󰂅"    # 100% nf-md-battery_charging_100
+    )
+}
+
+mod_loop() {
+    local battery_full_path="$c_battery_path/$c_battery_device"
+
+    # Check if battery exists
+    if [ ! -d "$battery_full_path" ]; then
+        if [ "$c_show_no_battery" -eq 1 ]; then
+            printf "No Battery\n" > "$FIFO_FILE"
+        else
+            # Exit silently if no battery and configured to hide
+            printf "" > "$FIFO_FILE"
+        fi
+        read_sleep 30  # Check less frequently
+        return
+    fi
+
+    while true; do
+        # Read battery information
+        if [ -f "$battery_full_path/capacity" ]; then
+            read -r g_battery_info[capacity] < "$battery_full_path/capacity"
+        else
+            g_battery_info[capacity]=0
+        fi
+
+        if [ -f "$battery_full_path/status" ]; then
+            read -r g_battery_info[status] < "$battery_full_path/status"
+        else
+            g_battery_info[status]="Unknown"
+        fi
+
+        mod_draw > "$FIFO_FILE"
+        read_sleep "$c_interval"
+    done
+}
+
+mod_draw_default() {
+    local capacity="${g_battery_info[capacity]}"
+    local status="${g_battery_info[status]}"
+    printf "Battery: %3d%% [%s]\n" "$capacity" "$status"
+}
+
+mod_draw_dzen2() {
+    local capacity="${g_battery_info[capacity]}"
+    local status="${g_battery_info[status]}"
+
+    # Determine color based on status and level
+    local color="<FG>"
+    local battery_char=""
+    local -n icon_array
+
+    # Select which icon array to use based on charging status
+    if [[ "$status" == "Full" ]]; then
+        color="<WIDGET_INACTIVE>"
+        icon_array=c_battery_charging_chars
+    elif [[ "$status" == "Charging" ]]; then
+        color="<WIDGET_ACTIVE>"
+        icon_array=c_battery_charging_chars
+    else
+        icon_array=c_battery_discharging_chars
+        # Set warning colors based on thresholds
+        if [[ "$capacity" -lt "$c_critical_battery_threshold" ]]; then
+            color="<BAR1>"
+        elif [[ "$capacity" -lt "$c_low_battery_threshold" ]]; then
+            color="<BAR1>"
+        fi
+    fi
+
+    # Select icon from array based on capacity
+    local num_levels="${#icon_array[@]}"
+    local level_index=0
+
+    if [[ "$num_levels" -gt 1 ]]; then
+        # Calculate which icon to use based on capacity percentage
+        # Formula: index = floor(capacity * num_levels / 100)
+        # Capped at num_levels - 1 for 100% case
+        level_index=$(( capacity * num_levels / 100 ))
+        if [[ "$level_index" -ge "$num_levels" ]]; then
+            level_index=$((num_levels - 1))
+        fi
+    fi
+
+    battery_char="${icon_array[$level_index]}"
+
+    # Format with configurable battery character and percentage
+    local formatted
+    printf -v formatted "%s^fn(<FN_MEDIUM>)%3d%%" "$battery_char" "$capacity"
+
+    # Output dzen2 formatted string with color markup and clickable area
+    printf "^fg(%s)^ca(3, kill -SIGUSR1 %s)%s^ca()^fg()\n" "$color" "$$" "$formatted"
+}
+
+# Helper to read sysfs file safely (strips trailing whitespace)
+_read_sysfs() {
+    local file="$1"
+    local default="${2:-}"
+    local value
+    if [[ -f "$file" ]]; then
+        value=$(< "$file") 2>/dev/null || value="$default"
+        # Trim trailing whitespace
+        echo "${value%"${value##*[![:space:]]}"}"
+    else
+        echo "$default"
+    fi
+}
+
+# Format a single battery's info for popup
+_format_battery_info() {
+    local bat_path="$1"
+    local bat_name
+    bat_name=$(basename "$bat_path")
+
+    local capacity status technology manufacturer model
+    local charge_full charge_full_design charge_now cycle_count
+    local voltage_now voltage_min_design current_now temp
+    local charge_start charge_end
+
+    # Read all available info
+    capacity=$(_read_sysfs "$bat_path/capacity" "?")
+    status=$(_read_sysfs "$bat_path/status" "Unknown")
+    technology=$(_read_sysfs "$bat_path/technology" "")
+    manufacturer=$(_read_sysfs "$bat_path/manufacturer" "")
+    model=$(_read_sysfs "$bat_path/model_name" "")
+    charge_full=$(_read_sysfs "$bat_path/charge_full" "0")
+    charge_full_design=$(_read_sysfs "$bat_path/charge_full_design" "0")
+    charge_now=$(_read_sysfs "$bat_path/charge_now" "0")
+    cycle_count=$(_read_sysfs "$bat_path/cycle_count" "")
+    voltage_now=$(_read_sysfs "$bat_path/voltage_now" "0")
+    voltage_min_design=$(_read_sysfs "$bat_path/voltage_min_design" "0")
+    current_now=$(_read_sysfs "$bat_path/current_now" "0")
+    temp=$(_read_sysfs "$bat_path/temp" "")
+    charge_start=$(_read_sysfs "$bat_path/charge_control_start_threshold" "")
+    charge_end=$(_read_sysfs "$bat_path/charge_control_end_threshold" "")
+
+    # Calculate health percentage
+    local health="--"
+    if [[ "$charge_full_design" -gt 0 && "$charge_full" -gt 0 ]]; then
+        health=$((100 * charge_full / charge_full_design))
+    fi
+
+    # Convert units
+    local voltage_v current_ma temp_c
+    voltage_v=$(awk "BEGIN {printf \"%.2f\", $voltage_now / 1000000}")
+    current_ma=$(awk "BEGIN {printf \"%.0f\", $current_now / 1000}")
+    if [[ -n "$temp" ]]; then
+        temp_c=$(awk "BEGIN {printf \"%.1f\", $temp / 10}")
+    fi
+
+    # Build output
+    cat <<EOS
+^fg(<POPUP_HEADER>)^fn(<POPUP_FN_BIG>)${bat_name}: ${capacity}% ${status}^fn(<POPUP_FN>)^fg()
+EOS
+
+    # Health and cycles
+    if [[ "$health" != "--" ]]; then
+        local cycle_info=""
+        [[ -n "$cycle_count" && "$cycle_count" != "0" ]] && cycle_info=" (${cycle_count} cycles)"
+        echo "  Health    : ${health}%${cycle_info}"
+    fi
+
+    # Temperature
+    [[ -n "$temp" ]] && echo "  Temp      : ${temp_c} C"
+
+    # Power info
+    echo "  Voltage   : ${voltage_v}V @ ${current_ma}mA"
+
+    # Charge limits
+    if [[ -n "$charge_start" && -n "$charge_end" ]]; then
+        echo "  Limits    : ${charge_start}-${charge_end}%"
+    fi
+
+    # Hardware info
+    local hw_info=""
+    [[ -n "$manufacturer" ]] && hw_info="$manufacturer"
+    [[ -n "$model" ]] && hw_info="$hw_info $model"
+    [[ -n "$technology" ]] && hw_info="$hw_info ($technology)"
+    [[ -n "$hw_info" ]] && echo "^fg(<WIDGET_INACTIVE>)  ${hw_info}^fg()"
+}
+
+dzen2_show_popup() {
+    local width=300
+    local batteries=()
+    local bat
+
+    # Find all batteries
+    for bat in "$c_battery_path"/BAT*; do
+        [[ -d "$bat" ]] && batteries+=("$bat")
+    done
+
+    if [[ ${#batteries[@]} -eq 0 ]]; then
+        return
+    fi
+
+    # Build content first to count actual lines
+    local content=""
+    for bat in "${batteries[@]}"; do
+        content+="$(_format_battery_info "$bat")"
+        content+=$'\n'
+    done
+
+    # Count rows (number of newlines in content)
+    local rows
+    rows=$(echo -n "$content" | grep -c '^')
+
+    local x y
+    x11_get_good_tooltip_position x y "$width" $((c_popup_line_height * (1 + rows)))
+
+    (
+        cat <<EOS
+^normfg(<POPUP_FG>)
+^normbg(<POPUP_BG>)
+^normfn(<POPUP_FN>)
+^tw()^fn(<POPUP_FN_BIG>)Battery Info
+^cs()
+${content}
+EOS
+    ) | nolifebar-replacer "$CFG_REPLACER_FILE" \
+      | "${CFG_DZEN2_POPUP_CMD[@]}" -p "$c_popup_delay" \
+        -x "$x" -y "$y" -w "$width" -h "$c_popup_line_height" \
+        -l "$rows" \
+        -sa 'l' -ta 'c' \
+        -e 'onstart=uncollapse;button1=exit;button3=exit'
+}
+
+trap 'dzen2_show_popup&' SIGUSR1
+
+mod_run

@@ -4,6 +4,7 @@ dist_plugins_SCRIPTS = \
 	sc.functions \
 	cfg-top-bar.rc \
 	mod_cava_in \
+	mod_battery \
 	mod_cava_out \
 	mod_cpu_bars \
 	mod_mem \

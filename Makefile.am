@@ -1,10 +1,14 @@
-SUBDIRS = bin lib/nolifebar
+SUBDIRS = bin lib/nolifebar share/nolifebar
 
-.PHONY: test
+.PHONY: test test-01-functions test-02-replacer
 
-test:
+test: test-01-functions test-02-replacer
+
+test-01-functions:
 	@echo "---> Running tests for lib/functions"
 	-./test/01-functions.spec.bash
+
+test-02-replacer:
 	@echo "---> Running tests for ./bin/nolifebar-replacer"
 	-./test/02-replacer.spec.bash
 

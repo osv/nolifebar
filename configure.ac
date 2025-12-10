@@ -99,6 +99,7 @@ AC_CONFIG_FILES([
   Makefile
   bin/Makefile
   lib/nolifebar/Makefile
+  share/nolifebar/Makefile
 ])
 
 # Generate the configuration script.

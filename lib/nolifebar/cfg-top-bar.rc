@@ -16,7 +16,7 @@
 #   $TMP_DIR - path to temp directory. Module must create temp files in this directory
 #   $MOD_NAME - upper case of current module, usuful if you want to have shared code between modules and eval
 #   $MODULE_CORE_DIR - dir to library of this project (shared bash code, modules)
-CFG_MODULES=("disk_io" "ua_alerts" "pulse" "xkbd" "xworkspaces" "xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia")
+CFG_MODULES=("disk_io" "ua_alerts" "pulse" "xkbd" "xworkspaces" "xtitle" "mem" "time" "network" "cpu_bars" "cava_out" "cava_in" "openvpn" "nvidia" "battery")
 
 # # Draw backend: dzen2 (default), lemonbar, text
 # # Depending on the value, the appropriate draw function will be selected
@@ -30,6 +30,7 @@ CFG_REPLACE_TXT="$THEME_CATPPUCCIN_MACCHIATO"
 # CFG_REPLACE_TXT="$THEME_CATPPUCCIN_MOCHA"
 # CFG_REPLACE_TXT="$THEME_MIRROR_EDGE"
 # CFG_REPLACE_TXT="$THEME_NORD"
+# CFG_REPLACE_TXT="$THEME_MODUS_OPERANDI"
 # Replace text before sending to status bar programm
 
 # # Replace text before sending to status bar programm
@@ -315,6 +316,41 @@ MOD_NVIDIA_init_vars() {
 
 }
 
+# ############################### Battery
+MOD_BATTERY_init_vars() {
+    c_interval=5                        # Update interval in seconds
+    c_battery_device="BAT0"             # Battery device name (BAT0, BAT1, etc.)
+    c_low_battery_threshold=50          # Show urgent color below this %
+    c_critical_battery_threshold=15     # Critical level
+    c_show_no_battery=0                 # 0=hide module if no battery, 1=show "No Battery"
+
+    # 9 levels (0-8) using XPM icons for discharging state
+    c_battery_discharging_chars=(
+        "^i(./share/nolifebar/battery/off/battery_off_0.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_1.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_2.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_3.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_4.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_5.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_6.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_7.xpm)"
+        "^i(./share/nolifebar/battery/off/battery_off_8.xpm)"
+    )
+
+    # 9 levels (0-8) using XPM icons for charging state
+    c_battery_charging_chars=(
+        "^i(./share/nolifebar/battery/on/battery_on_0.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_1.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_2.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_3.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_4.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_5.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_6.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_7.xpm)"
+        "^i(./share/nolifebar/battery/on/battery_on_8.xpm)"
+    )
+}
+
 # Arguments: name fan_speed power_draw memory_total memory_free memory_used gpu_utilization temperature
 MOD_NVIDIA_draw_dzen2() {
   memory_total="${g_gpu_metrics_value[memory.total]}"
@@ -367,7 +403,7 @@ MAIN_format_template() {
 ^right() {out_network}{out_openvpn} {out_cpu_bars} {out_mem}{out_nvidia} {out_disk_io}\
 ^fg()^fn() ^i(./share/nolifebar/vol20b.xbm)\
  {out_pulse} {out_cava_out}{out_cava_in} ^fg(<FG>){out_time}\
- {out_xkbd} {out_ua_alerts}
+ {out_battery} {out_xkbd} {out_ua_alerts}
 \n"
   fi
 
