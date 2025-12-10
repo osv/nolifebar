@@ -110,16 +110,19 @@ mod_draw_dzen2() {
     local -n icon_array
 
     # Select which icon array to use based on charging status
-    if [[ "$status" == "Charging" || "$status" == "Full" ]]; then
+    if [[ "$status" == "Full" ]]; then
+        color="<WIDGET_INACTIVE>"
+        icon_array=c_battery_charging_chars
+    elif [[ "$status" == "Charging" ]]; then
         color="<WIDGET_ACTIVE>"
         icon_array=c_battery_charging_chars
     else
         icon_array=c_battery_discharging_chars
         # Set warning colors based on thresholds
         if [[ "$capacity" -lt "$c_critical_battery_threshold" ]]; then
-            color="<URGENT>"
+            color="<BAR1>"
         elif [[ "$capacity" -lt "$c_low_battery_threshold" ]]; then
-            color="<WIDGET_URGENT>"
+            color="<BAR1>"
         fi
     fi
 
@@ -141,7 +144,7 @@ mod_draw_dzen2() {
 
     # Format with configurable battery character and percentage
     local formatted
-    printf -v formatted "%s %3d%%" "$battery_char" "$capacity"
+    printf -v formatted "%s^fn(<FN_MEDIUM>)%3d%%" "$battery_char" "$capacity"
 
     # Output dzen2 formatted string with color markup and clickable area
     printf "^fg(%s)^ca(3, kill -SIGUSR1 %s)%s^ca()^fg()\n" "$color" "$$" "$formatted"
