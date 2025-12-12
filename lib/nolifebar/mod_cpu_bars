@@ -17,9 +17,21 @@ mod_init_vars() {
     c_popup_line_height="$CFG_POPUP_LINE_HEIGHT"
     c_popup_line_width=$((CFG_POPUP_LINE_HEIGHT * 25))
     c_popup_rows=13
+
+    # P-core vs E-core bar appearance (Intel hybrid CPUs)
+    c_pcore_width=4               # Width for performance cores
+    c_ecore_width=2               # Width for efficiency cores
+    c_same_pcore_padding=1        # Padding between HT siblings on P-core
+    c_same_ecore_padding=2        # Padding between HT siblings on E-core
+    c_diff_pcore_padding=2        # Padding between different P-cores
+    c_diff_ecore_padding=2        # Padding between different E-cores
+    c_pcore_ecore_padding=4       # Padding between P-core and E-core boundary
+    c_freq_threshold=0            # MHz threshold to distinguish P/E (0=auto)
+    c_adaptive_bars=1             # Enable adaptive bar widths/paddings (0=disable)
 }
 
 g_show_total_only=0
+g_cpu_bar_params=""  # Cached adaptive bar parameters
 
 mod_draw_dzen2() {
     local total_stats_dzen="$1"
@@ -262,15 +274,29 @@ calculate_and_print_usage() {
         -max_value 1000 \
         -stacks 4 \
         -values "$result_total"
+
     local cores_stats_dzen=""
-    dzen2_draw_h_stacked_bars cores_stats_dzen \
-        "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
-        -bar_width 3 \
-        -text "CPU ${total_cpu_perc}%" \
-        "${c_additional_core_params[@]}" \
-        -max_value 1000 \
-        -stacks 4 \
-        -values "$result_cores"
+    if ((c_adaptive_bars)); then
+        # Use cached adaptive bar parameters
+        dzen2_draw_h_stacked_bars cores_stats_dzen \
+            "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
+            -text "CPU ${total_cpu_perc}%" \
+            "${c_additional_core_params[@]}" \
+            -max_value 1000 \
+            -stacks 4 \
+            -values "$result_cores" \
+            -bar_params "$g_cpu_bar_params"
+    else
+        # Use uniform bar width and padding
+        dzen2_draw_h_stacked_bars cores_stats_dzen \
+            "${CFG_DEFAULT_STACK_BAR_PARAMS[@]}" \
+            -bar_width 3 \
+            -text "CPU ${total_cpu_perc}%" \
+            "${c_additional_core_params[@]}" \
+            -max_value 1000 \
+            -stacks 4 \
+            -values "$result_cores"
+    fi
 
     mod_draw \
         "$total_stats_dzen" \
@@ -287,6 +313,19 @@ update() {
 }
 
 mod_loop() {
+    # Initialize adaptive bar parameters once at startup
+    if ((c_adaptive_bars)); then
+        cpu_get_adaptive_bar_params g_cpu_bar_params \
+            -pcore_width "$c_pcore_width" \
+            -ecore_width "$c_ecore_width" \
+            -same_pcore_padding "$c_same_pcore_padding" \
+            -same_ecore_padding "$c_same_ecore_padding" \
+            -diff_pcore_padding "$c_diff_pcore_padding" \
+            -diff_ecore_padding "$c_diff_ecore_padding" \
+            -pcore_ecore_padding "$c_pcore_ecore_padding" \
+            -freq_threshold "$c_freq_threshold"
+    fi
+
     while true; do
         declare -a g_previous_stats
         get_cpu_stats g_previous_stats
