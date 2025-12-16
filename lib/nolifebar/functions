@@ -11,9 +11,9 @@ CFG_REPLACER_FILE="$TMP_DIR/replace.txt"
 
 source "$MODULE_CORE_DIR/themes"
 
-# You can override all of the following by declaring the CFG_REPLACER_TXT variable.
+# You can override all of the following by declaring the CFG_REPLACE_TXT variable.
 CFG_REPLACER_TXT_FALLBACK="
-# Defaults, incase if not defined by user
+# Defaults, in case it's not defined by user
 #
 $THEME_CATPPUCCIN_LATTE
 "
@@ -513,7 +513,7 @@ dzen2_draw_stacked_bar() {
         local bar_width=$((value * available_width / max_value))
 
         if ((bar_width > 0)); then
-            res="${res}^fg(${fg_color})^r(${bar_width}x${height}})^p(${padding},0)"
+            res="${res}^fg(${fg_color})^r(${bar_width}x${height})^p(${padding},0)"
             rendered_width=$((rendered_width + bar_width + padding))
         fi
     done

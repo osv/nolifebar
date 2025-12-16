@@ -305,7 +305,7 @@ MOD_NVIDIA_init_vars() {
 
   c_gpu_metrics_alert_treshold=(
     ["fan.speed"]=10        # I want to know when fan is on
-    ["power.draw"]=30       # power draw is importent for me
+    ["power.draw"]=30       # power draw is important for me
     ["utilization.gpu"]=70
     ["temperature.gpu"]=70
     ["utilization.decoder"]=1
